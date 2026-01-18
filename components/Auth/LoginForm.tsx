@@ -18,18 +18,41 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginForm() {
-  const [isPromoter, setIsPromoter] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const { setAuth } = useAuthStore()
+  const [inputValue, setInputValue] = useState('')
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  // Автоматическое определение типа ввода (email или promoter_id)
+  const handleInputChange = (value: string) => {
+    setInputValue(value)
+    
+    // Если введены только цифры - это promoter_id
+    if (/^\d+$/.test(value)) {
+      setValue('promoter_id', parseInt(value, 10))
+      setValue('email', undefined)
+    } 
+    // Если есть @ или это похоже на email - это email
+    else if (value.includes('@') || /^[^\s@]+@[^\s@]+\.[^\s@]+/.test(value)) {
+      setValue('email', value)
+      setValue('promoter_id', undefined)
+    }
+    // Пока ввод не завершен - оставляем оба пустыми
+    else {
+      setValue('email', undefined)
+      setValue('promoter_id', undefined)
+    }
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -87,53 +110,28 @@ export default function LoginForm() {
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="mb-6">
-              <label className="flex items-center space-x-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={isPromoter}
-                  onChange={(e) => setIsPromoter(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 border-white/30 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer bg-white/10"
-                />
-                <span className="text-white/90 text-sm group-hover:text-white transition-colors">
-                  Я промоутер (вход по ID)
-                </span>
-              </label>
-            </div>
-
             <div className="space-y-4">
-              {!isPromoter ? (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
-                    Email
-                  </label>
-                  <input
-                    {...register('email')}
-                    type="email"
-                    autoComplete="email"
-                    className="input-glass"
-                    placeholder="your@email.com"
-                  />
-                  {errors.email && (
-                    <p className="text-red-300 text-xs mt-1.5">{errors.email.message}</p>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <label htmlFor="promoter_id" className="block text-sm font-medium text-white/90 mb-2">
-                    ID промоутера
-                  </label>
-                  <input
-                    {...register('promoter_id', { valueAsNumber: true })}
-                    type="number"
-                    className="input-glass"
-                    placeholder="12345"
-                  />
-                  {errors.promoter_id && (
-                    <p className="text-red-300 text-xs mt-1.5">{errors.promoter_id.message}</p>
-                  )}
-                </div>
-              )}
+              <div>
+                <label htmlFor="login" className="block text-sm font-medium text-white/90 mb-2">
+                  Email или ID промоутера
+                </label>
+                <input
+                  id="login"
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  className="input-glass"
+                  placeholder="email@example.com или 12345"
+                  autoComplete="username"
+                />
+                <input type="hidden" {...register('email')} />
+                <input type="hidden" {...register('promoter_id', { valueAsNumber: true })} />
+                {(errors.email || errors.promoter_id) && (
+                  <p className="text-red-300 text-xs mt-1.5">
+                    {errors.email?.message || errors.promoter_id?.message || 'Введите email или ID промоутера'}
+                  </p>
+                )}
+              </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
@@ -141,6 +139,7 @@ export default function LoginForm() {
                 </label>
                 <input
                   {...register('password')}
+                  id="password"
                   type="password"
                   autoComplete="current-password"
                   className="input-glass"
