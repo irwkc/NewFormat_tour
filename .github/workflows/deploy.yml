@@ -60,10 +60,7 @@ jobs:
             echo "🗄️ Удаление старых автоматически созданных помощников и контролеров..."
             # Удаляем старых помощников владельца и контролеров партнеров
             # которые были созданы автоматически и имеют тот же email
-            npx prisma db execute --stdin <<'SQL' || echo "Ошибка при удалении (возможно уже удалены)"
-            DELETE FROM users WHERE role = 'owner_assistant';
-            DELETE FROM users WHERE role = 'partner_controller';
-            SQL
+            echo "DELETE FROM users WHERE role = 'owner_assistant'; DELETE FROM users WHERE role = 'partner_controller';" | npx prisma db execute --stdin || echo "Ошибка при удалении (возможно уже удалены)"
             
             echo "🗄️ Применение миграций..."
             npx prisma db push --accept-data-loss --skip-generate
