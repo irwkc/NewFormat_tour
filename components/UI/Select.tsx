@@ -95,7 +95,7 @@ export default function Select({
             backdropFilter: 'blur(24px) saturate(180%)',
           }}>
             <div 
-              className="py-2 max-h-60 overflow-y-auto scrollbar-hide"
+              className="py-1 max-h-60 overflow-y-auto scrollbar-hide"
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
@@ -108,48 +108,13 @@ export default function Select({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className="w-full text-left px-5 py-4 transition-all duration-200"
-                  style={{
-                    background: value === option.value 
-                      ? 'rgba(99, 102, 241, 0.6)' 
-                      : 'transparent',
-                    color: '#ffffff',
-                    fontWeight: value === option.value ? '600' : '400',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (value !== option.value) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (value !== option.value) {
-                      e.currentTarget.style.background = 'transparent'
-                    }
-                  }}
+                  className={`w-full text-left px-4 py-2.5 text-base ${
+                    value === option.value
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-800 hover:bg-gray-100'
+                  }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-medium" style={{
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-                    }}>{option.label}</span>
-                    {value === option.value && (
-                      <svg
-                        className="w-5 h-5 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        style={{
-                          filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
-                        }}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
+                  {option.label}
                 </button>
               ))}
             </div>
