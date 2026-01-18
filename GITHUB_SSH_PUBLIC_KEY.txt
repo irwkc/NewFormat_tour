@@ -1,0 +1,9 @@
+=== ПУБЛИЧНЫЙ SSH КЛЮЧ ДЛЯ GITHUB ===
+
+Добавьте этот ключ в GitHub:
+https://github.com/settings/ssh/new
+
+Скопируйте весь текст ниже:
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOficvkk6CgFIWeEturr5+hGUgevwra0Dlxq+oWmgMuL github-push
+
+=== КОНЕЦ КЛЮЧА ===
