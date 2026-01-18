@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
       
       - name: Deploy to server
         run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o ServerAliveInterval=30 -o ServerAliveCountMax=10 root@91.210.171.176 << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 root@91.210.171.176 << 'ENDSSH'
             set -e
             echo "🚀 Начало деплоя..."
             
@@ -87,7 +87,7 @@ jobs:
             
             # Сборка проекта
             echo "🏗️ Сборка проекта..."
-            NODE_OPTIONS="--max-old-space-size=1536" timeout 300 npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
+            NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
             
             # Перезапуск приложения
             echo "🔄 Перезапуск приложения..."

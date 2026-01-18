@@ -24,6 +24,8 @@ export const metadata: Metadata = {
     maximumScale: 1,
     userScalable: false,
     viewportFit: 'cover',
+    // Отключаем zoom при фокусе на input
+    interactiveWidget: 'resizes-content',
   },
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#6366f1' },
