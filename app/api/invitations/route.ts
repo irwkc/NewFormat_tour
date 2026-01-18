@@ -26,6 +26,13 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        if (req.user!.role === UserRole.promoter && target_role !== 'promoter') {
+          return NextResponse.json(
+            { success: false, error: 'Promoters can only invite other promoters (referral program)' },
+            { status: 403 }
+          )
+        }
+
         if (req.user!.role !== UserRole.owner && target_role === 'partner') {
           return NextResponse.json(
             { success: false, error: 'Only owner can invite partners' },
@@ -88,7 +95,7 @@ export async function POST(request: NextRequest) {
         )
       }
     },
-    [UserRole.owner, UserRole.manager]
+    [UserRole.owner, UserRole.manager, UserRole.promoter]
   )
 }
 
