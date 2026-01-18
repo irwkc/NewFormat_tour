@@ -46,39 +46,39 @@ export default function ModerationPage() {
 
   return (
     <DashboardLayout title="Модерация экскурсий" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-6">Экскурсии на модерации</h2>
+      <div className="space-y-6">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Экскурсии на модерации</h2>
 
           {loading ? (
-            <p>Загрузка...</p>
+            <p className="text-white/70">Загрузка...</p>
           ) : tours.length === 0 ? (
-            <p className="text-gray-600">Нет экскурсий на модерации</p>
+            <p className="text-white/70">Нет экскурсий на модерации</p>
           ) : (
             <div className="space-y-4">
               {tours.map((tour) => (
                 <Link
                   key={tour.id}
                   href={`/dashboard/owner/moderation/${tour.id}`}
-                  className="block p-4 border rounded hover:bg-gray-50"
+                  className="block glass rounded-2xl p-4 hover:bg-white/10 transition-all"
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-semibold text-lg">{tour.company} - {tour.flight_number}</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="font-semibold text-lg text-white">{tour.company} - {tour.flight_number}</div>
+                      <div className="text-sm text-white/70 mt-1">
                         Категория: {tour.category.name}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-white/70">
                         Дата: {new Date(tour.date).toLocaleDateString('ru-RU')} в {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-white/70">
                         Мест: {tour.max_places}
                       </div>
-                      <div className="text-sm mt-2">
-                        <span className="font-medium">Цены партнера:</span> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽
+                      <div className="text-sm mt-2 text-white/70">
+                        <span className="font-medium text-white">Цены партнера:</span> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽
                       </div>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                    <span className="px-3 py-1 bg-yellow-300/30 text-yellow-200 rounded-full text-sm border border-yellow-400/30">
                       На модерации
                     </span>
                   </div>

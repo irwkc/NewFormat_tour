@@ -87,101 +87,90 @@ export default function PartnerToursPage() {
 
   return (
     <DashboardLayout title="Мои экскурсии" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Мои экскурсии</h2>
+            <p className="text-white/70 text-sm mt-1">Управление экскурсиями</p>
+          </div>
           <Link
             href="/dashboard/partner/tours/create"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+            className="btn-primary"
           >
-            Создать экскурсию
+            + Создать экскурсию
           </Link>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список экскурсий</h2>
-          </div>
+        <div className="table-container">
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : tours.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет экскурсий</div>
+            <div className="p-6 text-center text-white/70">Нет экскурсий</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Компания / Рейс
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Дата / Время
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Места
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Статус модерации
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Продажи
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
+                    <th>Компания / Рейс</th>
+                    <th>Дата / Время</th>
+                    <th>Места</th>
+                    <th>Статус модерации</th>
+                    <th>Продажи</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {tours.map((tour) => (
                     <tr key={tour.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td>
+                        <div className="text-sm font-medium text-white">
                           {tour.company}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-white/70">
                           {tour.flight_number}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                      <td>
+                        <div className="text-sm text-white">
                           {new Date(tour.date).toLocaleDateString('ru-RU')}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-white/70">
                           {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="text-sm text-white/70 whitespace-nowrap">
                         {tour.current_booked_places} / {tour.max_places}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          tour.moderation_status === 'approved' ? 'bg-green-100 text-green-800' :
-                          tour.moderation_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          tour.moderation_status === 'approved' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
+                          tour.moderation_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
+                          'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {tour.moderation_status === 'approved' ? 'Одобрена' :
                            tour.moderation_status === 'pending' ? 'На модерации' :
                            'Отклонена'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          tour.is_sale_stopped ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          tour.is_sale_stopped ? 'bg-red-300/30 text-red-200 border-red-400/30' : 'bg-green-300/30 text-green-200 border-green-400/30'
                         }`}>
                           {tour.is_sale_stopped ? 'Остановлены' : 'Активны'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <td className="whitespace-nowrap text-sm space-x-2">
                         {!tour.is_sale_stopped && (
                           <button
                             onClick={() => handleStopSales(tour.id)}
-                            className="text-orange-600 hover:text-orange-800"
+                            className="btn-warning text-xs px-3 py-1"
                           >
-                            Остановить продажи
+                            Остановить
                           </button>
                         )}
                         <button
                           onClick={() => handleDelete(tour.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="btn-danger text-xs px-3 py-1"
                         >
                           Удалить
                         </button>

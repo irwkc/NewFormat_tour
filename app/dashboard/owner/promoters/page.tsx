@@ -90,73 +90,63 @@ export default function OwnerPromotersPage() {
 
   return (
     <DashboardLayout title="Промоутеры" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список промоутеров</h2>
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Список промоутеров</h2>
+          <p className="text-white/70 text-sm mt-1">Управление промоутерами и их балансами</p>
+        </div>
+
+        <div className="table-container">
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : promoters.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет промоутеров</div>
+            <div className="p-6 text-center text-white/70">Нет промоутеров</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ФИО
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Баланс
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Статус
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
+                    <th>ID</th>
+                    <th>ФИО</th>
+                    <th>Email</th>
+                    <th>Баланс</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {promoters.map((promoter) => (
                     <tr key={promoter.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="text-sm font-medium text-white whitespace-nowrap">
                         {promoter.promoter_id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="text-sm text-white whitespace-nowrap">
                         {promoter.full_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="text-sm text-white/70 whitespace-nowrap">
                         {promoter.email || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      <td className="text-sm font-medium text-green-300 whitespace-nowrap">
                         {Number(promoter.balance).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          promoter.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          promoter.is_active ? 'bg-green-300/30 text-green-200 border-green-400/30' : 'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {promoter.is_active ? 'Активен' : 'Заблокирован'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <td className="whitespace-nowrap text-sm space-x-2">
                         <button
                           onClick={() => handleResetBalance(promoter.id)}
-                          className="text-indigo-600 hover:text-indigo-800"
+                          className="btn-secondary text-xs px-3 py-1"
                         >
                           Обнулить баланс
                         </button>
                         <button
                           onClick={() => handleToggleStatus(promoter.id, promoter.is_active)}
-                          className={`${
-                            promoter.is_active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'
+                          className={`text-xs px-3 py-1 rounded-xl ${
+                            promoter.is_active ? 'btn-danger text-xs px-3 py-1' : 'btn-success text-xs px-3 py-1'
                           }`}
                         >
                           {promoter.is_active ? 'Заблокировать' : 'Разблокировать'}

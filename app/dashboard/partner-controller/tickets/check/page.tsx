@@ -121,10 +121,10 @@ export default function TicketCheckPage() {
     <DashboardLayout title="Проверка билетов" navItems={navItems}>
       <div className="px-4 py-6 sm:px-0">
         <div className="glass-card max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gradient">Проверка билетов</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">Проверка билетов</h2>
 
           <div className="mb-6">
-            <div className="flex space-x-2 mb-4 bg-purple-50/50 p-1 rounded-xl">
+            <div className="flex space-x-2 mb-4">
               <button
                 onClick={() => {
                   setMethod('qr')
@@ -133,10 +133,10 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                   method === 'qr'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md shadow-purple-500/30'
-                    : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
+                    ? 'btn-primary'
+                    : 'btn-secondary'
                 }`}
               >
                 По QR коду
@@ -149,10 +149,10 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
                   method === 'number'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md shadow-purple-500/30'
-                    : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
+                    ? 'btn-primary'
+                    : 'btn-secondary'
                 }`}
               >
                 По номеру билета
@@ -162,7 +162,7 @@ export default function TicketCheckPage() {
             {method === 'qr' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Данные QR кода
                   </label>
                   <input
@@ -176,7 +176,7 @@ export default function TicketCheckPage() {
                 <button
                   onClick={checkByQR}
                   disabled={loading}
-                    className="btn-primary w-full"
+                  className="btn-primary w-full"
                 >
                   {loading ? 'Проверка...' : 'Проверить по QR'}
                 </button>
@@ -184,7 +184,7 @@ export default function TicketCheckPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Номер билета (формат: AA00000000)
                   </label>
                   <input
@@ -196,14 +196,14 @@ export default function TicketCheckPage() {
                     }}
                     placeholder="AB12345678"
                     maxLength={10}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 uppercase"
+                    className="input-glass uppercase"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Формат: 2 заглавные буквы + 8 цифр</p>
+                  <p className="text-xs text-white/60 mt-1">Формат: 2 заглавные буквы + 8 цифр</p>
                 </div>
                 <button
                   onClick={checkByNumber}
                   disabled={loading}
-                    className="btn-primary w-full"
+                  className="btn-primary w-full"
                 >
                   {loading ? 'Проверка...' : 'Проверить по номеру'}
                 </button>
@@ -218,8 +218,8 @@ export default function TicketCheckPage() {
           )}
 
           {ticketInfo && ticketInfo.ticket && (
-            <div className="mt-6 border-t border-purple-100/50 pt-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">Информация о билете</h3>
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-lg font-semibold mb-4 text-white">Информация о билете</h3>
               
               {!ticketInfo.is_valid && (
                 <div className="alert-error mb-4">
@@ -231,39 +231,39 @@ export default function TicketCheckPage() {
                 <>
                   <div className="glass p-4 rounded-xl mb-4 space-y-3">
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm">Экскурсия:</span>
-                      <span className="text-gray-900 font-medium text-right">{ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</span>
+                      <span className="text-white/70 text-sm">Экскурсия:</span>
+                      <span className="text-white font-medium text-right">{ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm">Дата:</span>
-                      <span className="text-gray-900 font-medium">{new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</span>
+                      <span className="text-white/70 text-sm">Дата:</span>
+                      <span className="text-white font-medium">{new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</span>
                     </div>
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm">Время отправления:</span>
-                      <span className="text-gray-900 font-medium">{new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-white/70 text-sm">Время отправления:</span>
+                      <span className="text-white font-medium">{new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     {ticketInfo.ticket.tour.category && (
                       <div className="flex justify-between items-start">
-                        <span className="text-gray-600 text-sm">Категория:</span>
-                        <span className="text-gray-900 font-medium">{ticketInfo.ticket.tour.category}</span>
+                        <span className="text-white/70 text-sm">Категория:</span>
+                        <span className="text-white font-medium">{ticketInfo.ticket.tour.category}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm">Взрослых мест:</span>
-                      <span className="text-gray-900 font-medium">{ticketInfo.ticket.adult_count}</span>
+                      <span className="text-white/70 text-sm">Взрослых мест:</span>
+                      <span className="text-white font-medium">{ticketInfo.ticket.adult_count}</span>
                     </div>
                     {ticketInfo.ticket.child_count > 0 && (
                       <div className="flex justify-between items-start">
-                        <span className="text-gray-600 text-sm">Детских мест:</span>
-                        <span className="text-gray-900 font-medium">{ticketInfo.ticket.child_count}</span>
+                        <span className="text-white/70 text-sm">Детских мест:</span>
+                        <span className="text-white font-medium">{ticketInfo.ticket.child_count}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-start">
-                      <span className="text-gray-600 text-sm">Статус:</span>
+                      <span className="text-white/70 text-sm">Статус:</span>
                       <span className={`font-medium px-3 py-1 rounded-full text-xs ${
-                        ticketInfo.ticket.ticket_status === 'sold' ? 'bg-blue-100 text-blue-700' :
-                        ticketInfo.ticket.ticket_status === 'used' ? 'bg-green-100 text-green-700' :
-                        'bg-gray-100 text-gray-700'
+                        ticketInfo.ticket.ticket_status === 'sold' ? 'bg-blue-300/30 text-blue-200' :
+                        ticketInfo.ticket.ticket_status === 'used' ? 'bg-green-300/30 text-green-200' :
+                        'bg-gray-300/30 text-gray-200'
                       }`}>
                         {ticketInfo.ticket.ticket_status === 'sold' ? 'Продано' :
                          ticketInfo.ticket.ticket_status === 'used' ? 'Использовано' :
@@ -272,20 +272,20 @@ export default function TicketCheckPage() {
                     </div>
                     {ticketInfo.ticket.used_at && (
                       <div className="flex justify-between items-start">
-                        <span className="text-gray-600 text-sm">Использовано:</span>
-                        <span className="text-gray-900 font-medium">{new Date(ticketInfo.ticket.used_at).toLocaleString('ru-RU')}</span>
+                        <span className="text-white/70 text-sm">Использовано:</span>
+                        <span className="text-white font-medium">{new Date(ticketInfo.ticket.used_at).toLocaleString('ru-RU')}</span>
                       </div>
                     )}
                     {ticketInfo.ticket.usedBy && (
                       <div className="flex justify-between items-start">
-                        <span className="text-gray-600 text-sm">Проверил:</span>
-                        <span className="text-gray-900 font-medium">{ticketInfo.ticket.usedBy.full_name}</span>
+                        <span className="text-white/70 text-sm">Проверил:</span>
+                        <span className="text-white font-medium">{ticketInfo.ticket.usedBy.full_name}</span>
                       </div>
                     )}
                     {ticketInfo.ticket.ticket_photo_url && (
                       <div className="mt-4">
-                        <p className="text-gray-600 text-sm mb-2">Фото билета:</p>
-                        <img src={ticketInfo.ticket.ticket_photo_url} alt="Ticket" className="max-w-full rounded-lg shadow-md" />
+                        <p className="text-white/70 text-sm mb-2">Фото билета:</p>
+                        <img src={ticketInfo.ticket.ticket_photo_url} alt="Ticket" className="max-w-full rounded-2xl shadow-md" />
                       </div>
                     )}
                   </div>

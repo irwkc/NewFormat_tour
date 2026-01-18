@@ -65,69 +65,63 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center relative">
         <div className="flex items-center space-x-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          <span className="text-gray-700 font-medium">Загрузка...</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <span className="text-white font-medium">Загрузка...</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300/30 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400/30 rounded-full blur-3xl"></div>
-      </div>
-      
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md mx-auto relative z-10">
-        <div className="glass-card shadow-glass-lg">
-          <h1 className="text-2xl font-bold mb-6 text-gradient">Оплата билетов</h1>
+        <div className="glass-card">
+          <h1 className="text-2xl font-bold mb-6 text-white">Оплата билетов</h1>
           
           {sale && (
             <div className="space-y-6">
-              <div className="glass p-4 rounded-xl border-b border-purple-100/50">
-                <h2 className="text-lg font-semibold mb-3 text-gray-800">Информация об экскурсии</h2>
+              <div className="glass p-4 rounded-xl">
+                <h2 className="text-lg font-semibold mb-3 text-white">Информация об экскурсии</h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Компания:</span>
-                    <span className="text-gray-900 font-medium">{sale.tour.company}</span>
+                    <span className="text-white/70">Компания:</span>
+                    <span className="text-white font-medium">{sale.tour.company}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Рейс:</span>
-                    <span className="text-gray-900 font-medium">{sale.tour.flight_number}</span>
+                    <span className="text-white/70">Рейс:</span>
+                    <span className="text-white font-medium">{sale.tour.flight_number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Дата:</span>
-                    <span className="text-gray-900 font-medium">{new Date(sale.tour.date).toLocaleDateString('ru-RU')}</span>
+                    <span className="text-white/70">Дата:</span>
+                    <span className="text-white font-medium">{new Date(sale.tour.date).toLocaleDateString('ru-RU')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Время отправления:</span>
-                    <span className="text-gray-900 font-medium">{new Date(sale.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-white/70">Время отправления:</span>
+                    <span className="text-white font-medium">{new Date(sale.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               </div>
               
-              <div className="glass p-4 rounded-xl border-b border-purple-100/50">
-                <h2 className="text-lg font-semibold mb-3 text-gray-800">Детали заказа</h2>
+              <div className="glass p-4 rounded-xl">
+                <h2 className="text-lg font-semibold mb-3 text-white">Детали заказа</h2>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Взрослых билетов:</span>
-                    <span className="text-gray-900 font-medium">{sale.adult_count} × {sale.adult_price}₽ = {sale.adult_count * sale.adult_price}₽</span>
+                    <span className="text-white/70">Взрослых билетов:</span>
+                    <span className="text-white font-medium">{sale.adult_count} × {sale.adult_price}₽ = {sale.adult_count * sale.adult_price}₽</span>
                   </div>
                   {sale.child_count > 0 && sale.child_price && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Детских билетов:</span>
-                      <span className="text-gray-900 font-medium">{sale.child_count} × {sale.child_price}₽ = {sale.child_count * sale.child_price}₽</span>
+                      <span className="text-white/70">Детских билетов:</span>
+                      <span className="text-white font-medium">{sale.child_count} × {sale.child_price}₽ = {sale.child_count * sale.child_price}₽</span>
                     </div>
                   )}
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Email для отправки билета
                 </label>
                 <input
@@ -141,8 +135,8 @@ export default function PaymentPage() {
 
               <div className="glass p-4 rounded-xl">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg text-gray-700 font-medium">Итого:</span>
-                  <span className="text-2xl font-bold text-purple-700">{sale.total_amount}₽</span>
+                  <span className="text-lg text-white/90 font-medium">Итого:</span>
+                  <span className="text-2xl font-bold text-white">{sale.total_amount}₽</span>
                 </div>
               </div>
 

@@ -114,9 +114,9 @@ export default function InvitationsPage() {
 
   return (
     <DashboardLayout title="Приглашения" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Создать приглашение для промоутера</h2>
+      <div className="space-y-6">
+        <div className="glass-card">
+          <h2 className="text-xl font-bold mb-4 text-white">Создать приглашение для промоутера</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <input
               type="hidden"
@@ -126,58 +126,58 @@ export default function InvitationsPage() {
 
             <button
               type="submit"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              className="btn-primary"
             >
               Создать приглашение
             </button>
           </form>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список приглашений</h2>
+        <div className="glass-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">Список приглашений</h2>
           </div>
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : invitations.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет приглашений</div>
+            <div className="p-6 text-center text-white/70">Нет приглашений</div>
           ) : (
             <div className="p-6">
               <div className="space-y-4">
                 {invitations.map((invitation) => (
-                  <div key={invitation.id} className="border rounded-lg p-4">
+                  <div key={invitation.id} className="glass rounded-2xl p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <div className="font-semibold">Промоутер</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="font-semibold text-white">Промоутер</div>
+                        <div className="text-sm text-white/70">
                           Создано: {new Date(invitation.created_at).toLocaleString('ru-RU')}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-white/70">
                           Действительно до: {new Date(invitation.expires_at).toLocaleString('ru-RU')}
                         </div>
                         {invitation.is_used && invitation.usedBy && (
-                          <div className="text-sm text-green-600 mt-1">
+                          <div className="text-sm text-green-300 mt-1">
                             Использовано: {invitation.usedBy.full_name} ({invitation.usedBy.email})
                           </div>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
                         {invitation.is_used ? (
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-green-300/30 text-green-200 rounded-full text-sm">
                             Использовано
                           </span>
                         ) : new Date(invitation.expires_at) < new Date() ? (
-                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-red-300/30 text-red-200 rounded-full text-sm">
                             Истекло
                           </span>
                         ) : (
                           <>
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                            <span className="px-3 py-1 bg-yellow-300/30 text-yellow-200 rounded-full text-sm">
                               Активно
                             </span>
                             <button
                               onClick={() => handleDelete(invitation.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              className="text-red-300 hover:text-red-200 text-sm transition-colors"
                             >
                               Отозвать
                             </button>
@@ -187,17 +187,17 @@ export default function InvitationsPage() {
                     </div>
                     {!invitation.is_used && new Date(invitation.expires_at) >= new Date() && (
                       <div className="mt-3">
-                        <div className="text-sm font-medium mb-1">Ссылка для регистрации:</div>
+                        <div className="text-sm font-medium mb-1 text-white/90">Ссылка для регистрации:</div>
                         <div className="flex items-center space-x-2">
                           <input
                             type="text"
                             readOnly
                             value={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
+                            className="flex-1 input-glass text-sm"
                           />
                           <button
                             onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`)}
-                            className="bg-gray-200 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-300 text-sm"
+                            className="btn-secondary text-sm px-3 py-2"
                           >
                             Копировать
                           </button>

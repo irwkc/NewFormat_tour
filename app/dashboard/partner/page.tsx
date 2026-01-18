@@ -44,40 +44,45 @@ export default function PartnerDashboard() {
 
   return (
     <DashboardLayout title="Панель партнера" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Мои экскурсии</h2>
+            <p className="text-white/70 text-sm mt-1">Обзор ваших экскурсий</p>
+          </div>
           <Link
             href="/dashboard/partner/tours/create"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+            className="btn-primary"
           >
-            Создать экскурсию
+            + Создать экскурсию
           </Link>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Мои экскурсии</h2>
+        <div className="glass-card">
           {loading ? (
-            <p>Загрузка...</p>
+            <p className="text-white/70 text-center py-4">Загрузка...</p>
+          ) : tours.length === 0 ? (
+            <p className="text-white/70 text-center py-4">Нет экскурсий</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {tours.map((tour) => (
                 <Link
                   key={tour.id}
                   href={`/dashboard/partner/tours/${tour.id}`}
-                  className="block p-4 border rounded hover:bg-gray-50"
+                  className="block glass rounded-2xl p-4 hover:bg-white/10 transition-all"
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-semibold">{tour.company} - {tour.flight_number}</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-semibold text-white">{tour.company} - {tour.flight_number}</div>
+                      <div className="text-sm text-white/70">
                         {new Date(tour.date).toLocaleDateString('ru-RU')} {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      <div className="text-sm">
+                      <div className="text-sm mt-2 text-white/70">
                         Статус модерации: 
-                        <span className={`ml-2 px-2 py-1 rounded ${
-                          tour.moderation_status === 'approved' ? 'bg-green-100 text-green-800' :
-                          tour.moderation_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                        <span className={`ml-2 px-2 py-1 rounded border ${
+                          tour.moderation_status === 'approved' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
+                          tour.moderation_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
+                          'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {tour.moderation_status === 'approved' ? 'Одобрена' :
                            tour.moderation_status === 'pending' ? 'На модерации' :

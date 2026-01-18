@@ -94,18 +94,18 @@ export default function CreateTourPage() {
 
   return (
     <DashboardLayout title="Создание экскурсии" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Создать экскурсию</h2>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Создать экскурсию</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Категория *
               </label>
               <select
                 {...register('category_id')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               >
                 <option value="">Выберите категорию</option>
                 {categories.map((category) => (
@@ -115,88 +115,88 @@ export default function CreateTourPage() {
                 ))}
               </select>
               {errors.category_id && (
-                <p className="text-red-500 text-xs mt-1">{errors.category_id.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.category_id.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Компания *
               </label>
               <input
                 {...register('company')}
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
                 placeholder="Название компании"
               />
               {errors.company && (
-                <p className="text-red-500 text-xs mt-1">{errors.company.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.company.message}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Рейс *
               </label>
               <input
                 {...register('flight_number')}
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
                 placeholder="Номер рейса"
               />
               {errors.flight_number && (
-                <p className="text-red-500 text-xs mt-1">{errors.flight_number.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.flight_number.message}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Дата *
                 </label>
                 <input
                   {...register('date')}
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.date && (
-                  <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.date.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Время отправления *
                 </label>
                 <input
                   {...register('departure_time')}
                   type="time"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.departure_time && (
-                  <p className="text-red-500 text-xs mt-1">{errors.departure_time.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.departure_time.message}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Максимальное количество мест *
               </label>
               <input
                 {...register('max_places', { valueAsNumber: true })}
                 type="number"
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               />
               {errors.max_places && (
-                <p className="text-red-500 text-xs mt-1">{errors.max_places.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.max_places.message}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена взрослого билета (₽) *
                 </label>
                 <input
@@ -204,15 +204,15 @@ export default function CreateTourPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.partner_min_adult_price && (
-                  <p className="text-red-500 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена детского билета (₽) *
                 </label>
                 <input
@@ -220,17 +220,17 @@ export default function CreateTourPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.partner_min_child_price && (
-                  <p className="text-red-500 text-xs mt-1">{errors.partner_min_child_price.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
                 )}
               </div>
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
@@ -238,14 +238,14 @@ export default function CreateTourPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                className="btn-primary flex-1"
               >
                 {loading ? 'Создание...' : 'Создать экскурсию'}
               </button>
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                className="btn-secondary flex-1"
               >
                 Отмена
               </button>

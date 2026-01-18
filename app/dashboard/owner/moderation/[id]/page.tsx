@@ -143,26 +143,28 @@ export default function ModerateTourPage() {
 
   return (
     <DashboardLayout title="Модерация экскурсии" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Модерация экскурсии</h2>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Модерация экскурсии</h2>
 
-          <div className="mb-6 p-4 bg-gray-50 rounded">
-            <h3 className="font-semibold mb-2">Информация об экскурсии</h3>
-            <p><strong>Компания:</strong> {tour.company}</p>
-            <p><strong>Рейс:</strong> {tour.flight_number}</p>
-            <p><strong>Категория:</strong> {tour.category?.name}</p>
-            <p><strong>Дата:</strong> {new Date(tour.date).toLocaleDateString('ru-RU')}</p>
-            <p><strong>Время отправления:</strong> {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
-            <p><strong>Мест:</strong> {tour.max_places}</p>
-            <p><strong>Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽</p>
-            <p><strong>Партнер:</strong> {tour.createdBy?.full_name}</p>
+          <div className="mb-6 p-4 glass rounded-xl">
+            <h3 className="font-semibold mb-2 text-white">Информация об экскурсии</h3>
+            <div className="space-y-1 text-sm text-white/70">
+              <p><strong className="text-white/90">Компания:</strong> {tour.company}</p>
+              <p><strong className="text-white/90">Рейс:</strong> {tour.flight_number}</p>
+              <p><strong className="text-white/90">Категория:</strong> {tour.category?.name}</p>
+              <p><strong className="text-white/90">Дата:</strong> {new Date(tour.date).toLocaleDateString('ru-RU')}</p>
+              <p><strong className="text-white/90">Время отправления:</strong> {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p><strong className="text-white/90">Мест:</strong> {tour.max_places}</p>
+              <p><strong className="text-white/90">Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽</p>
+              <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена взрослого билета (₽) *
                 </label>
                 <input
@@ -171,15 +173,15 @@ export default function ModerateTourPage() {
                   step="0.01"
                   min="0"
                   defaultValue={Number(tour.owner_min_adult_price) || Number(tour.partner_min_adult_price)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.owner_min_adult_price && (
-                  <p className="text-red-500 text-xs mt-1">{errors.owner_min_adult_price.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.owner_min_adult_price.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена детского билета (₽) *
                 </label>
                 <input
@@ -188,33 +190,33 @@ export default function ModerateTourPage() {
                   step="0.01"
                   min="0"
                   defaultValue={Number(tour.owner_min_child_price) || Number(tour.partner_min_child_price)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.owner_min_child_price && (
-                  <p className="text-red-500 text-xs mt-1">{errors.owner_min_child_price.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.owner_min_child_price.message}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Тип комиссии *
               </label>
               <select
                 {...register('commission_type')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               >
                 <option value="percentage">Процент</option>
                 <option value="fixed">Фиксированная сумма</option>
               </select>
               {errors.commission_type && (
-                <p className="text-red-500 text-xs mt-1">{errors.commission_type.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.commission_type.message}</p>
               )}
             </div>
 
             {commissionType === 'percentage' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Процент комиссии (%) *
                 </label>
                 <input
@@ -224,15 +226,15 @@ export default function ModerateTourPage() {
                   min="0"
                   max="100"
                   defaultValue={Number(tour.commission_percentage) || 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.commission_percentage && (
-                  <p className="text-red-500 text-xs mt-1">{errors.commission_percentage.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.commission_percentage.message}</p>
                 )}
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Фиксированная сумма комиссии (₽) *
                 </label>
                 <input
@@ -241,47 +243,47 @@ export default function ModerateTourPage() {
                   step="0.01"
                   min="0"
                   defaultValue={Number(tour.commission_fixed_amount) || 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.commission_fixed_amount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.commission_fixed_amount.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.commission_fixed_amount.message}</p>
                 )}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Решение *
               </label>
               <select
                 {...register('moderation_status')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               >
                 <option value="approved">Одобрить</option>
                 <option value="rejected">Отклонить</option>
               </select>
               {errors.moderation_status && (
-                <p className="text-red-500 text-xs mt-1">{errors.moderation_status.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.moderation_status.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
             <div className="flex space-x-4">
               <button
                 type="submit"
-                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+                className="btn-primary flex-1"
               >
                 Сохранить решение
               </button>
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                className="btn-secondary flex-1"
               >
                 Отмена
               </button>

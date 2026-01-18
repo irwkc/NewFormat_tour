@@ -43,72 +43,63 @@ export default function PromoterSalesPage() {
 
   return (
     <DashboardLayout title="Мои продажи" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Мои продажи</h2>
+            <p className="text-white/70 text-sm mt-1">История всех ваших продаж</p>
+          </div>
           <Link
             href="/dashboard/promoter/sales/create"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+            className="btn-primary"
           >
-            Создать продажу
+            + Создать продажу
           </Link>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список продаж</h2>
-          </div>
+        <div className="table-container">
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : sales.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет продаж</div>
+            <div className="p-6 text-center text-white/70">Нет продаж</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Экскурсия
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Дата
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Билеты
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Сумма
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Статус
-                    </th>
+                    <th>Экскурсия</th>
+                    <th>Дата</th>
+                    <th>Билеты</th>
+                    <th>Сумма</th>
+                    <th>Статус</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {sales.map((sale) => (
                     <tr key={sale.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td>
+                        <div className="text-sm font-medium text-white">
                           {sale.tour.company} - {sale.tour.flight_number}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-white/70">
                           {new Date(sale.tour.date).toLocaleDateString('ru-RU')}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="text-sm text-white/70 whitespace-nowrap">
                         {new Date(sale.created_at).toLocaleDateString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="text-sm text-white whitespace-nowrap">
                         {sale.adult_count} взр.
                         {sale.child_count > 0 && `, ${sale.child_count} дет.`}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="text-sm font-medium text-white whitespace-nowrap">
                         {Number(sale.total_amount).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          sale.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                          sale.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          sale.payment_status === 'completed' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
+                          sale.payment_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
+                          'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {sale.payment_status === 'completed' ? 'Оплачено' :
                            sale.payment_status === 'pending' ? 'Ожидание' : 'Ошибка'}

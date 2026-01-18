@@ -42,32 +42,32 @@ export default function PartnerStatisticsPage() {
 
   return (
     <DashboardLayout title="Статистика по моим экскурсиям" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
+      <div className="space-y-6">
         {loading ? (
-          <div className="bg-white p-6 rounded-lg shadow text-center">Загрузка...</div>
+          <div className="glass-card text-center text-white/70">Загрузка...</div>
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Всего продаж</h3>
-              <div className="text-3xl font-bold text-indigo-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего продаж</h3>
+              <div className="text-3xl font-bold text-purple-300">
                 {stats.total_sales || 0}
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Общая сумма</h3>
-              <div className="text-3xl font-bold text-green-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Общая сумма</h3>
+              <div className="text-3xl font-bold text-green-300">
                 {Number(stats.total_amount || 0).toFixed(2)}₽
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Всего билетов</h3>
-              <div className="text-3xl font-bold text-blue-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего билетов</h3>
+              <div className="text-3xl font-bold text-blue-300">
                 {stats.total_tickets || 0}
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
+          <div className="glass-card text-center text-white/70">
             Нет данных для отображения
           </div>
         )}

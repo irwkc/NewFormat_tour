@@ -122,9 +122,9 @@ export default function TicketCheckPage() {
 
   return (
     <DashboardLayout title="Проверка билетов" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Проверка билетов</h2>
+      <div className="space-y-6 max-w-3xl mx-auto">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Проверка билетов</h2>
 
           <div className="mb-6">
             <div className="flex space-x-4 mb-4">
@@ -136,10 +136,10 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`px-4 py-2 rounded-md ${
+                className={`px-4 py-2 rounded-xl transition-all ${
                   method === 'qr'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'btn-primary'
+                    : 'btn-secondary'
                 }`}
               >
                 По QR коду
@@ -152,10 +152,10 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`px-4 py-2 rounded-md ${
+                className={`px-4 py-2 rounded-xl transition-all ${
                   method === 'number'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'btn-primary'
+                    : 'btn-secondary'
                 }`}
               >
                 По номеру билета
@@ -165,7 +165,7 @@ export default function TicketCheckPage() {
             {method === 'qr' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Данные QR кода
                   </label>
                   <input
@@ -173,13 +173,13 @@ export default function TicketCheckPage() {
                     value={qrData}
                     onChange={(e) => setQrData(e.target.value)}
                     placeholder="Введите данные QR кода или отсканируйте"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="input-glass"
                   />
                 </div>
                 <button
                   onClick={checkByQR}
                   disabled={loading}
-                  className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="btn-primary w-full"
                 >
                   {loading ? 'Проверка...' : 'Проверить по QR'}
                 </button>
@@ -187,7 +187,7 @@ export default function TicketCheckPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Номер билета (формат: AA00000000)
                   </label>
                   <input
@@ -199,14 +199,14 @@ export default function TicketCheckPage() {
                     }}
                     placeholder="AB12345678"
                     maxLength={10}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 uppercase"
+                    className="input-glass uppercase"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Формат: 2 заглавные буквы + 8 цифр</p>
+                  <p className="text-xs text-white/60 mt-1">Формат: 2 заглавные буквы + 8 цифр</p>
                 </div>
                 <button
                   onClick={checkByNumber}
                   disabled={loading}
-                  className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="btn-primary w-full"
                 >
                   {loading ? 'Проверка...' : 'Проверить по номеру'}
                 </button>
@@ -215,47 +215,47 @@ export default function TicketCheckPage() {
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4 mb-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="alert-error mb-4">
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
           {ticketInfo && ticketInfo.ticket && (
-            <div className="mt-6 border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Информация о билете</h3>
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-lg font-semibold mb-4 text-white">Информация о билете</h3>
               
               {!ticketInfo.is_valid && (
-                <div className="rounded-md bg-red-50 p-4 mb-4">
-                  <p className="text-sm text-red-800">{ticketInfo.message}</p>
+                <div className="alert-error mb-4">
+                  <p className="text-sm font-medium">{ticketInfo.message}</p>
                 </div>
               )}
 
               {ticketInfo.is_valid && (
                 <>
-                  <div className="space-y-2 mb-4">
-                    <p><strong>Экскурсия:</strong> {ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</p>
-                    <p><strong>Дата:</strong> {new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</p>
-                    <p><strong>Время отправления:</strong> {new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
-                    <p><strong>Категория:</strong> {ticketInfo.ticket.tour.category}</p>
-                    <p><strong>Взрослых мест:</strong> {ticketInfo.ticket.adult_count}</p>
+                  <div className="space-y-2 mb-4 text-white/90">
+                    <p><strong className="text-white">Экскурсия:</strong> {ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</p>
+                    <p><strong className="text-white">Дата:</strong> {new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</p>
+                    <p><strong className="text-white">Время отправления:</strong> {new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p><strong className="text-white">Категория:</strong> {ticketInfo.ticket.tour.category}</p>
+                    <p><strong className="text-white">Взрослых мест:</strong> {ticketInfo.ticket.adult_count}</p>
                     {ticketInfo.ticket.child_count > 0 && (
-                      <p><strong>Детских мест:</strong> {ticketInfo.ticket.child_count}</p>
+                      <p><strong className="text-white">Детских мест:</strong> {ticketInfo.ticket.child_count}</p>
                     )}
-                    <p><strong>Статус:</strong> {
+                    <p><strong className="text-white">Статус:</strong> {
                       ticketInfo.ticket.ticket_status === 'sold' ? 'Продано' :
                       ticketInfo.ticket.ticket_status === 'used' ? 'Использовано' :
                       'Отменено'
                     }</p>
                     {ticketInfo.ticket.used_at && (
-                      <p><strong>Использовано:</strong> {new Date(ticketInfo.ticket.used_at).toLocaleString('ru-RU')}</p>
+                      <p><strong className="text-white">Использовано:</strong> {new Date(ticketInfo.ticket.used_at).toLocaleString('ru-RU')}</p>
                     )}
                     {ticketInfo.ticket.usedBy && (
-                      <p><strong>Проверил:</strong> {ticketInfo.ticket.usedBy.full_name}</p>
+                      <p><strong className="text-white">Проверил:</strong> {ticketInfo.ticket.usedBy.full_name}</p>
                     )}
                     {ticketInfo.ticket.ticket_photo_url && (
                       <div>
-                        <p><strong>Фото билета:</strong></p>
-                        <img src={ticketInfo.ticket.ticket_photo_url} alt="Ticket" className="max-w-xs mt-2 rounded" />
+                        <p><strong className="text-white">Фото билета:</strong></p>
+                        <img src={ticketInfo.ticket.ticket_photo_url} alt="Ticket" className="max-w-xs mt-2 rounded-2xl" />
                       </div>
                     )}
                   </div>
@@ -265,7 +265,7 @@ export default function TicketCheckPage() {
                       <button
                         onClick={confirmTicket}
                         disabled={loading}
-                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
+                        className="btn-success flex-1"
                       >
                         {loading ? 'Подтверждение...' : 'Подтвердить'}
                       </button>
@@ -274,7 +274,7 @@ export default function TicketCheckPage() {
                           setTicketInfo(null)
                           setError(null)
                         }}
-                        className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                        className="btn-secondary flex-1"
                       >
                         Отмена
                       </button>
@@ -282,8 +282,8 @@ export default function TicketCheckPage() {
                   )}
 
                   {!ticketInfo.can_confirm && ticketInfo.message && (
-                    <div className="rounded-md bg-yellow-50 p-4">
-                      <p className="text-sm text-yellow-800">{ticketInfo.message}</p>
+                    <div className="alert-warning">
+                      <p className="text-sm font-medium">{ticketInfo.message}</p>
                     </div>
                   )}
                 </>

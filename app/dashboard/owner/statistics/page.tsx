@@ -84,55 +84,55 @@ export default function OwnerStatisticsPage() {
 
   return (
     <DashboardLayout title="Статистика" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Статистика продаж</h2>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white">Статистика продаж</h2>
           <button
             onClick={handleExport}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+            className="btn-success"
           >
             Экспорт в Excel
           </button>
         </div>
 
-        <div className="mb-6">
-          <div className="flex space-x-4 border-b">
+        <div className="glass-card">
+          <div className="flex space-x-4 border-b border-white/10 pb-4">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2 ${
+              className={`px-4 py-2 rounded-xl transition-all ${
                 activeTab === 'overview'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-500'
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               Общая статистика
             </button>
             <button
               onClick={() => setActiveTab('by-tour')}
-              className={`px-4 py-2 ${
+              className={`px-4 py-2 rounded-xl transition-all ${
                 activeTab === 'by-tour'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-500'
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               По экскурсиям
             </button>
             <button
               onClick={() => setActiveTab('by-seller')}
-              className={`px-4 py-2 ${
+              className={`px-4 py-2 rounded-xl transition-all ${
                 activeTab === 'by-seller'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-500'
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               По продавцам
             </button>
             <button
               onClick={() => setActiveTab('by-payment')}
-              className={`px-4 py-2 ${
+              className={`px-4 py-2 rounded-xl transition-all ${
                 activeTab === 'by-payment'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-500'
+                  ? 'bg-white/20 text-white border border-white/30'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               По способам оплаты
@@ -141,96 +141,96 @@ export default function OwnerStatisticsPage() {
         </div>
 
         {loading ? (
-          <div className="bg-white p-6 rounded-lg shadow text-center">Загрузка...</div>
+          <div className="glass-card text-center text-white/70">Загрузка...</div>
         ) : activeTab === 'overview' && overview ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Всего продаж</h3>
-              <div className="text-3xl font-bold text-indigo-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего продаж</h3>
+              <div className="text-3xl font-bold text-purple-300">
                 {overview.total_sales || 0}
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Общая сумма</h3>
-              <div className="text-3xl font-bold text-green-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Общая сумма</h3>
+              <div className="text-3xl font-bold text-green-300">
                 {Number(overview.total_amount || 0).toFixed(2)}₽
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Всего билетов</h3>
-              <div className="text-3xl font-bold text-blue-600">
+            <div className="glass-card">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего билетов</h3>
+              <div className="text-3xl font-bold text-blue-300">
                 {overview.total_tickets || 0}
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="table-container">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
                     {activeTab === 'by-tour' && (
                       <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Экскурсия</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Продаж</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма</th>
+                        <th>Экскурсия</th>
+                        <th>Продаж</th>
+                        <th>Сумма</th>
                       </>
                     )}
                     {activeTab === 'by-seller' && (
                       <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Продавец</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Продаж</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма</th>
+                        <th>Продавец</th>
+                        <th>Продаж</th>
+                        <th>Сумма</th>
                       </>
                     )}
                     {activeTab === 'by-payment' && (
                       <>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Способ оплаты</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Продаж</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма</th>
+                        <th>Способ оплаты</th>
+                        <th>Продаж</th>
+                        <th>Сумма</th>
                       </>
                     )}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {stats.map((stat, index) => (
                     <tr key={index}>
                       {activeTab === 'by-tour' && (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="text-sm text-white whitespace-nowrap">
                             {stat.tour?.company} - {stat.tour?.flight_number}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="text-sm text-white/70 whitespace-nowrap">
                             {stat.count || 0}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="text-sm font-medium text-white whitespace-nowrap">
                             {Number(stat.total || 0).toFixed(2)}₽
                           </td>
                         </>
                       )}
                       {activeTab === 'by-seller' && (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="text-sm text-white whitespace-nowrap">
                             {stat.seller?.full_name || stat.promoter?.full_name || '-'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="text-sm text-white/70 whitespace-nowrap">
                             {stat.count || 0}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="text-sm font-medium text-white whitespace-nowrap">
                             {Number(stat.total || 0).toFixed(2)}₽
                           </td>
                         </>
                       )}
                       {activeTab === 'by-payment' && (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="text-sm text-white whitespace-nowrap">
                             {stat.payment_method === 'online_yookassa' ? 'Онлайн' :
                              stat.payment_method === 'cash' ? 'Наличные' : 'Эквайринг'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="text-sm text-white/70 whitespace-nowrap">
                             {stat.count || 0}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="text-sm font-medium text-white whitespace-nowrap">
                             {Number(stat.total || 0).toFixed(2)}₽
                           </td>
                         </>

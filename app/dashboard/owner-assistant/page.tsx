@@ -127,32 +127,36 @@ export default function OwnerAssistantDashboard() {
 
   return (
     <DashboardLayout title="Панель помощника владельца" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Выдача вещей</h2>
+            <p className="text-white/70 text-sm mt-1">Управление выданными вещами</p>
+          </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+            className="btn-primary"
           >
-            {showForm ? 'Отмена' : 'Выдать вещь'}
+            {showForm ? 'Отмена' : '+ Выдать вещь'}
           </button>
         </div>
 
         {showForm && (
-          <div className="mb-6 bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Выдать вещь</h3>
+          <div className="glass-card">
+            <h3 className="text-lg font-semibold mb-4 text-white">Выдать вещь</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Тип пользователя
                 </label>
                 <div className="flex space-x-4 mb-4">
                   <button
                     type="button"
                     onClick={() => setUserType('promoter')}
-                    className={`px-4 py-2 rounded-md ${
+                    className={`px-4 py-2 rounded-xl transition-all ${
                       userType === 'promoter'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        ? 'btn-primary'
+                        : 'btn-secondary'
                     }`}
                   >
                     Промоутер
@@ -160,10 +164,10 @@ export default function OwnerAssistantDashboard() {
                   <button
                     type="button"
                     onClick={() => setUserType('manager')}
-                    className={`px-4 py-2 rounded-md ${
+                    className={`px-4 py-2 rounded-xl transition-all ${
                       userType === 'manager'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        ? 'btn-primary'
+                        : 'btn-secondary'
                     }`}
                   >
                     Менеджер
@@ -172,58 +176,58 @@ export default function OwnerAssistantDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   {userType === 'promoter' ? 'ID промоутера' : 'Email менеджера'}
                 </label>
                 <input
                   {...register('user_identifier')}
                   type={userType === 'promoter' ? 'number' : 'email'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                   placeholder={userType === 'promoter' ? '12345' : 'manager@example.com'}
                 />
                 {errors.user_identifier && (
-                  <p className="text-red-500 text-xs mt-1">{errors.user_identifier.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.user_identifier.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Название вещи *
                 </label>
                 <input
                   {...register('item_name')}
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                   placeholder="Например: кофта, эквайринг"
                 />
                 {errors.item_name && (
-                  <p className="text-red-500 text-xs mt-1">{errors.item_name.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.item_name.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Описание (опционально)
                 </label>
                 <textarea
                   {...register('item_description')}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Фото вещи *
                 </label>
                 <input
                   {...register('photo')}
                   type="file"
                   accept="image/*"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 />
                 {errors.photo && (
-                  <p className="text-red-500 text-xs mt-1">
+                  <p className="text-red-300 text-xs mt-1">
                     {typeof errors.photo === 'object' && 'message' in errors.photo 
                       ? String(errors.photo.message) 
                       : 'Ошибка загрузки фото'}
@@ -233,7 +237,7 @@ export default function OwnerAssistantDashboard() {
 
               <button
                 type="submit"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                className="btn-primary"
               >
                 Выдать вещь
               </button>
@@ -241,44 +245,44 @@ export default function OwnerAssistantDashboard() {
           </div>
         )}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">История выданных вещей</h2>
+        <div className="glass-card">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">История выданных вещей</h2>
           </div>
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : items.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет выданных вещей</div>
+            <div className="p-6 text-center text-white/70">Нет выданных вещей</div>
           ) : (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {items.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-4">
+                  <div key={item.id} className="glass rounded-2xl p-4 border border-white/20">
                     {item.item_photo_url && (
                       <img
                         src={item.item_photo_url}
                         alt={item.item_name}
-                        className="w-full h-48 object-cover rounded mb-4"
+                        className="w-full h-48 object-cover rounded-xl mb-4"
                       />
                     )}
-                    <h3 className="text-lg font-semibold mb-2">{item.item_name}</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-white">{item.item_name}</h3>
                     {item.item_description && (
-                      <p className="text-sm text-gray-600 mb-2">{item.item_description}</p>
+                      <p className="text-sm text-white/70 mb-2">{item.item_description}</p>
                     )}
-                    <p className="text-sm text-gray-500 mb-2">
+                    <p className="text-sm text-white/70 mb-2">
                       Выдано: {item.issuedTo.full_name} ({item.issuedTo.promoter_id ? `ID: ${item.issuedTo.promoter_id}` : item.issuedTo.email})
                     </p>
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-xs text-white/60 mb-2">
                       Дата: {new Date(item.created_at).toLocaleDateString('ru-RU')}
                     </p>
                     {item.is_returned ? (
-                      <p className="text-xs text-red-500">
+                      <p className="text-xs text-red-300">
                         Возвращено: {new Date(item.returned_at!).toLocaleDateString('ru-RU')}
                       </p>
                     ) : (
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
+                        className="btn-danger text-xs px-3 py-1"
                       >
                         Вернуть вещь
                       </button>

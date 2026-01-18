@@ -47,36 +47,36 @@ export default function ManagerBalanceHistoryPage() {
 
   return (
     <DashboardLayout title="История баланса" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Текущие балансы</h2>
+      <div className="space-y-6">
+        <div className="glass-card">
+          <h2 className="text-xl font-bold mb-4 text-white">Текущие балансы</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-600">Баланс</div>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-sm text-white/70">Баланс</div>
+              <div className="text-2xl font-bold text-green-300">
                 {Number(user?.balance || 0).toFixed(2)}₽
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-600">Долг компании</div>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-sm text-white/70">Долг компании</div>
+              <div className="text-2xl font-bold text-red-300">
                 {Number(user?.debt_to_company || 0).toFixed(2)}₽
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mb-4 bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Фильтры</h3>
+        <div className="glass-card">
+          <h3 className="text-lg font-semibold mb-4 text-white">Фильтры</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Тип баланса
               </label>
               <select
                 value={filter.balance_type || ''}
                 onChange={(e) => setFilter({ ...filter, balance_type: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="input-glass"
               >
                 <option value="">Все</option>
                 <option value="balance">Баланс</option>
@@ -84,13 +84,13 @@ export default function ManagerBalanceHistoryPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Тип операции
               </label>
               <select
                 value={filter.transaction_type || ''}
                 onChange={(e) => setFilter({ ...filter, transaction_type: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="input-glass"
               >
                 <option value="">Все</option>
                 <option value="credit">Пополнение</option>
@@ -100,70 +100,56 @@ export default function ManagerBalanceHistoryPage() {
           </div>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">История операций</h2>
+        <div className="table-container">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">История операций</h2>
           </div>
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : history.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет операций</div>
+            <div className="p-6 text-center text-white/70">Нет операций</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Дата
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Тип баланса
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Операция
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Сумма
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Баланс до
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Баланс после
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Описание
-                    </th>
+                    <th>Дата</th>
+                    <th>Тип баланса</th>
+                    <th>Операция</th>
+                    <th>Сумма</th>
+                    <th>Баланс до</th>
+                    <th>Баланс после</th>
+                    <th>Описание</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {history.map((item) => (
                     <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="text-sm text-white/70 whitespace-nowrap">
                         {new Date(item.created_at).toLocaleString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="text-sm text-white whitespace-nowrap">
                         {item.balance_type === 'balance' ? 'Баланс' : 'Долг компании'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          item.transaction_type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          item.transaction_type === 'credit' ? 'bg-green-300/30 text-green-200 border-green-400/30' : 'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {item.transaction_type === 'credit' ? 'Пополнение' : 'Выплата'}
                         </span>
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                        item.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
+                      <td className={`text-sm font-medium whitespace-nowrap ${
+                        item.transaction_type === 'credit' ? 'text-green-300' : 'text-red-300'
                       }`}>
                         {item.transaction_type === 'credit' ? '+' : '-'}{Number(item.amount).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="text-sm text-white/70 whitespace-nowrap">
                         {Number(item.balance_before).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="text-sm font-medium text-white whitespace-nowrap">
                         {Number(item.balance_after).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="text-sm text-white/70">
                         {item.description}
                       </td>
                     </tr>

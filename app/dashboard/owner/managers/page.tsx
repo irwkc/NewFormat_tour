@@ -113,81 +113,71 @@ export default function OwnerManagersPage() {
 
   return (
     <DashboardLayout title="Менеджеры" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список менеджеров</h2>
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Список менеджеров</h2>
+          <p className="text-white/70 text-sm mt-1">Управление менеджерами и их балансами</p>
+        </div>
+
+        <div className="table-container">
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center text-white/70">Загрузка...</div>
           ) : managers.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет менеджеров</div>
+            <div className="p-6 text-center text-white/70">Нет менеджеров</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ФИО
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Баланс
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Долг компании
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Статус
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Действия
-                    </th>
+                    <th>Email</th>
+                    <th>ФИО</th>
+                    <th>Баланс</th>
+                    <th>Долг компании</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {managers.map((manager) => (
                     <tr key={manager.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="text-sm text-white whitespace-nowrap">
                         {manager.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="text-sm text-white whitespace-nowrap">
                         {manager.full_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      <td className="text-sm font-medium text-green-300 whitespace-nowrap">
                         {Number(manager.balance).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                      <td className="text-sm font-medium text-red-300 whitespace-nowrap">
                         {Number(manager.debt_to_company).toFixed(2)}₽
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          manager.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      <td className="whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${
+                          manager.is_active ? 'bg-green-300/30 text-green-200 border-green-400/30' : 'bg-red-300/30 text-red-200 border-red-400/30'
                         }`}>
                           {manager.is_active ? 'Активен' : 'Заблокирован'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                      <td className="whitespace-nowrap text-sm space-x-2">
                         <button
                           onClick={() => handleResetBalance(manager.id)}
-                          className="text-indigo-600 hover:text-indigo-800"
+                          className="btn-secondary text-xs px-3 py-1"
                         >
                           Обнулить баланс
                         </button>
                         {Number(manager.debt_to_company) > 0 && (
                           <button
                             onClick={() => handleResetDebt(manager.id)}
-                            className="text-orange-600 hover:text-orange-800"
+                            className="btn-warning text-xs px-3 py-1"
                           >
                             Обнулить долг
                           </button>
                         )}
                         <button
                           onClick={() => handleToggleStatus(manager.id, manager.is_active)}
-                          className={`${
-                            manager.is_active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'
+                          className={`text-xs px-3 py-1 rounded-xl ${
+                            manager.is_active ? 'btn-danger text-xs px-3 py-1' : 'btn-success text-xs px-3 py-1'
                           }`}
                         >
                           {manager.is_active ? 'Заблокировать' : 'Разблокировать'}
