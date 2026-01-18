@@ -55,7 +55,7 @@ jobs:
             rm -rf node_modules package-lock.json || true
             
             echo "📦 Установка зависимостей..."
-            npm ci --production=false
+            npm ci
             
             echo "🔧 Генерация Prisma Client..."
             npx prisma generate
