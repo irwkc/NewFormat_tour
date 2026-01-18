@@ -58,31 +58,34 @@ jobs:
             npx prisma generate
             
             echo "🗄️ Проверка и удаление старых ограничений..."
+            # Получаем параметры БД из DATABASE_URL или .env
+            if [ -f .env ]; then
+              source .env
+            fi
+            
             # Удаляем старое ограничение уникальности на email, если оно существует
-            npx prisma db execute --stdin << 'SQL' || true
-DO $$ 
-BEGIN
-    -- Удаляем уникальное ограничение на email, если оно существует
-    IF EXISTS (
-        SELECT 1 FROM pg_constraint 
-        WHERE conname = 'users_email_key' 
-        AND conrelid = 'users'::regclass
-    ) THEN
-        ALTER TABLE users DROP CONSTRAINT users_email_key;
-        RAISE NOTICE 'Удалено ограничение users_email_key';
-    END IF;
-    
-    -- Удаляем индекс, если он существует как уникальный
-    IF EXISTS (
-        SELECT 1 FROM pg_indexes 
-        WHERE indexname = 'users_email_key' 
-        AND tablename = 'users'
-    ) THEN
-        DROP INDEX IF EXISTS users_email_key;
-        RAISE NOTICE 'Удален индекс users_email_key';
-    END IF;
-END $$;
-SQL
+            # Используем prisma db execute или прямой SQL через psql
+            export PGPASSWORD=$(echo $DATABASE_URL | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
+            export PGHOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):.*/\1/p')
+            export PGPORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+            export PGDATABASE=$(echo $DATABASE_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
+            export PGUSER=$(echo $DATABASE_URL | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+            
+            psql -h $PGHOST -p ${PGPORT:-5432} -U $PGUSER -d $PGDATABASE -c "
+            DO \$\$ 
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM pg_constraint 
+                    WHERE conname = 'users_email_key' 
+                    AND conrelid = 'users'::regclass
+                ) THEN
+                    ALTER TABLE users DROP CONSTRAINT users_email_key;
+                    RAISE NOTICE 'Удалено ограничение users_email_key';
+                END IF;
+                
+                DROP INDEX IF EXISTS users_email_key;
+            END \$\$;
+            " || echo "Ограничение уже удалено или не существует"
             
             echo "🗄️ Применение миграций..."
             npx prisma db push --accept-data-loss --skip-generate
