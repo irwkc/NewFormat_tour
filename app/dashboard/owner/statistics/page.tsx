@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { customAlert } from '@/utils/modals'
 
 export default function OwnerStatisticsPage() {
   const { token } = useAuthStore()
@@ -66,10 +67,10 @@ export default function OwnerStatisticsPage() {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       } else {
-        alert('Ошибка экспорта статистики')
+        await customAlert('Ошибка экспорта статистики')
       }
     } catch (error) {
-      alert('Ошибка экспорта статистики')
+      await customAlert('Ошибка экспорта статистики')
     }
   }
 

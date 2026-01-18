@@ -23,6 +23,7 @@ export default function LoginForm() {
   const router = useRouter()
   const { setAuth } = useAuthStore()
   const [inputValue, setInputValue] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
 
   const {
     register,
@@ -74,7 +75,7 @@ export default function LoginForm() {
         return
       }
 
-      setAuth(result.data.user, result.data.token)
+      setAuth(result.data.user, result.data.token, rememberMe)
       
       // Редирект в зависимости от роли
       const role = result.data.user.role
@@ -155,6 +156,20 @@ export default function LoginForm() {
                 {errors.password && (
                   <p className="text-red-300 text-xs mt-1.5">{errors.password.message}</p>
                 )}
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-purple-500 focus:ring-offset-purple-200"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-white/90">
+                  Запомнить вход на данном устройстве
+                </label>
               </div>
             </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { customAlert, customConfirm } from '@/utils/modals'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -71,15 +72,16 @@ export default function InvitationsPage() {
         reset()
         fetchInvitations()
       } else {
-        alert(result.error || 'Ошибка создания приглашения')
+        await customAlert(result.error || 'Ошибка создания приглашения')
       }
     } catch (error) {
-      alert('Ошибка создания приглашения')
+      await customAlert('Ошибка создания приглашения')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Отозвать приглашение?')) return
+    const confirmed = await customConfirm('Отозвать приглашение?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/invitations/${id}`, {
@@ -93,16 +95,16 @@ export default function InvitationsPage() {
       if (result.success) {
         fetchInvitations()
       } else {
-        alert(result.error || 'Ошибка отзыва приглашения')
+        await customAlert(result.error || 'Ошибка отзыва приглашения')
       }
     } catch (error) {
-      alert('Ошибка отзыва приглашения')
+      await customAlert('Ошибка отзыва приглашения')
     }
   }
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = async (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('Ссылка скопирована в буфер обмена')
+    await customAlert('Ссылка скопирована в буфер обмена')
   }
 
   const navItems = [

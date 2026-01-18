@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
+import { customAlert, customConfirm } from '@/utils/modals'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
@@ -70,15 +71,16 @@ export default function OwnerCategoriesPage() {
         reset()
         fetchCategories()
       } else {
-        alert(result.error || 'Ошибка создания категории')
+        await customAlert(result.error || 'Ошибка создания категории')
       }
     } catch (error) {
-      alert('Ошибка создания категории')
+      await customAlert('Ошибка создания категории')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Удалить категорию?')) return
+    const confirmed = await customConfirm('Удалить категорию?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/categories/${id}`, {
@@ -92,10 +94,10 @@ export default function OwnerCategoriesPage() {
       if (result.success) {
         fetchCategories()
       } else {
-        alert(result.error || 'Ошибка удаления категории')
+        await customAlert(result.error || 'Ошибка удаления категории')
       }
     } catch (error) {
-      alert('Ошибка удаления категории')
+      await customAlert('Ошибка удаления категории')
     }
   }
 

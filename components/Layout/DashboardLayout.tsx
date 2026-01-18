@@ -19,9 +19,43 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login')
+    // Проверяем токен при загрузке
+    const checkAuth = async () => {
+      if (!isAuthenticated) {
+        // Проверяем токены в storage
+        if (typeof window !== 'undefined') {
+          const localStorageToken = localStorage.getItem('auth-token')
+          const sessionStorageToken = sessionStorage.getItem('auth-token')
+          const token = localStorageToken || sessionStorageToken
+          
+          if (token) {
+            // Проверяем токен на сервере
+            try {
+              const response = await fetch('/api/auth/me', {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              })
+              
+              if (response.ok) {
+                const data = await response.json()
+                if (data.success) {
+                  // Токен валиден, пользователь авторизован
+                  return
+                }
+              }
+            } catch (error) {
+              console.error('Auth check error:', error)
+            }
+          }
+        }
+        
+        // Если токена нет или он невалиден - перенаправляем на логин
+        router.push('/auth/login')
+      }
     }
+    
+    checkAuth()
   }, [isAuthenticated, router])
 
   useEffect(() => {

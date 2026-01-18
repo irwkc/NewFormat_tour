@@ -8,6 +8,7 @@ import { z } from 'zod'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import QRCode from 'qrcode'
+import { customAlert } from '@/utils/modals'
 
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
@@ -242,7 +243,7 @@ export default function CreateSalePage() {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(paymentLink || '')
-                      alert('Ссылка скопирована!')
+                      await customAlert('Ссылка скопирована!')
                     }}
                     className="mt-2 text-sm text-white/80 hover:text-white transition-colors"
                   >

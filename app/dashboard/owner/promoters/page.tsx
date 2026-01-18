@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { customConfirm, customAlert } from '@/utils/modals'
 
 export default function OwnerPromotersPage() {
   const { token } = useAuthStore()
@@ -35,7 +36,8 @@ export default function OwnerPromotersPage() {
   }
 
   const handleResetBalance = async (userId: string) => {
-    if (!confirm('Обнулить баланс этого промоутера?')) return
+    const confirmed = await customConfirm('Обнулить баланс этого промоутера?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/users/${userId}/reset-balance`, {
@@ -48,12 +50,12 @@ export default function OwnerPromotersPage() {
       const result = await response.json()
       if (result.success) {
         fetchPromoters()
-        alert('Баланс обнулен')
+        await customAlert('Баланс обнулен')
       } else {
-        alert(result.error || 'Ошибка обнуления баланса')
+        await customAlert(result.error || 'Ошибка обнуления баланса')
       }
     } catch (error) {
-      alert('Ошибка обнуления баланса')
+      await customAlert('Ошибка обнуления баланса')
     }
   }
 
@@ -72,10 +74,10 @@ export default function OwnerPromotersPage() {
       if (result.success) {
         fetchPromoters()
       } else {
-        alert(result.error || 'Ошибка изменения статуса')
+        await customAlert(result.error || 'Ошибка изменения статуса')
       }
     } catch (error) {
-      alert('Ошибка изменения статуса')
+      await customAlert('Ошибка изменения статуса')
     }
   }
 

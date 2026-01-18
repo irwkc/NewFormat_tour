@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
+import { customConfirm, customAlert } from '@/utils/modals'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
@@ -61,7 +62,7 @@ export default function OwnerAssistantDashboard() {
     try {
       const file = (data.photo as FileList)[0]
       if (!file) {
-        alert('Фото обязательно')
+        await customAlert('Фото обязательно')
         return
       }
 
@@ -92,15 +93,16 @@ export default function OwnerAssistantDashboard() {
         reset()
         fetchItems()
       } else {
-        alert(result.error || 'Ошибка выдачи вещи')
+        await customAlert(result.error || 'Ошибка выдачи вещи')
       }
     } catch (error) {
-      alert('Ошибка выдачи вещи')
+      await customAlert('Ошибка выдачи вещи')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Вернуть вещь?')) return
+    const confirmed = await customConfirm('Вернуть вещь?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/issued-items/${id}`, {
@@ -114,10 +116,10 @@ export default function OwnerAssistantDashboard() {
       if (result.success) {
         fetchItems()
       } else {
-        alert(result.error || 'Ошибка возврата вещи')
+        await customAlert(result.error || 'Ошибка возврата вещи')
       }
     } catch (error) {
-      alert('Ошибка возврата вещи')
+      await customAlert('Ошибка возврата вещи')
     }
   }
 

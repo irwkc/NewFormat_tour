@@ -4,6 +4,7 @@ import { useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'next/navigation'
+import { customAlert } from '@/utils/modals'
 
 export default function TicketCheckPage() {
   const router = useRouter()
@@ -104,7 +105,7 @@ export default function TicketCheckPage() {
         } else {
           await checkByNumber()
         }
-        alert('Билет подтвержден!')
+        await customAlert('Билет подтвержден!')
       } else {
         setError(result.message || result.error || 'Ошибка подтверждения билета')
       }

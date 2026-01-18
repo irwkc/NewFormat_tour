@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { customConfirm, customAlert } from '@/utils/modals'
 
 export default function OwnerManagersPage() {
   const { token } = useAuthStore()
@@ -35,7 +36,8 @@ export default function OwnerManagersPage() {
   }
 
   const handleResetBalance = async (userId: string) => {
-    if (!confirm('Обнулить баланс этого менеджера?')) return
+    const confirmed = await customConfirm('Обнулить баланс этого менеджера?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/users/${userId}/reset-balance`, {
@@ -48,17 +50,18 @@ export default function OwnerManagersPage() {
       const result = await response.json()
       if (result.success) {
         fetchManagers()
-        alert('Баланс обнулен')
+        await customAlert('Баланс обнулен')
       } else {
-        alert(result.error || 'Ошибка обнуления баланса')
+        await customAlert(result.error || 'Ошибка обнуления баланса')
       }
     } catch (error) {
-      alert('Ошибка обнуления баланса')
+      await customAlert('Ошибка обнуления баланса')
     }
   }
 
   const handleResetDebt = async (userId: string) => {
-    if (!confirm('Обнулить долг компании этого менеджера?')) return
+    const confirmed = await customConfirm('Обнулить долг компании этого менеджера?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/users/${userId}/reset-debt`, {
@@ -71,12 +74,12 @@ export default function OwnerManagersPage() {
       const result = await response.json()
       if (result.success) {
         fetchManagers()
-        alert('Долг обнулен')
+        await customAlert('Долг обнулен')
       } else {
-        alert(result.error || 'Ошибка обнуления долга')
+        await customAlert(result.error || 'Ошибка обнуления долга')
       }
     } catch (error) {
-      alert('Ошибка обнуления долга')
+      await customAlert('Ошибка обнуления долга')
     }
   }
 
@@ -95,10 +98,10 @@ export default function OwnerManagersPage() {
       if (result.success) {
         fetchManagers()
       } else {
-        alert(result.error || 'Ошибка изменения статуса')
+        await customAlert(result.error || 'Ошибка изменения статуса')
       }
     } catch (error) {
-      alert('Ошибка изменения статуса')
+      await customAlert('Ошибка изменения статуса')
     }
   }
 

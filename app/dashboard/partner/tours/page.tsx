@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
+import { customConfirm, customAlert } from '@/utils/modals'
 
 export default function PartnerToursPage() {
   const { token } = useAuthStore()
@@ -36,7 +37,8 @@ export default function PartnerToursPage() {
   }
 
   const handleStopSales = async (tourId: string) => {
-    if (!confirm('Остановить продажи на эту экскурсию?')) return
+    const confirmed = await customConfirm('Остановить продажи на эту экскурсию?')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/tours/${tourId}/stop-sales`, {
@@ -50,15 +52,16 @@ export default function PartnerToursPage() {
       if (result.success) {
         fetchTours()
       } else {
-        alert(result.error || 'Ошибка остановки продаж')
+        await customAlert(result.error || 'Ошибка остановки продаж')
       }
     } catch (error) {
-      alert('Ошибка остановки продаж')
+      await customAlert('Ошибка остановки продаж')
     }
   }
 
   const handleDelete = async (tourId: string) => {
-    if (!confirm('Удалить экскурсию? Это действие нельзя отменить.')) return
+    const confirmed = await customConfirm('Удалить экскурсию? Это действие нельзя отменить.')
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/tours/${tourId}`, {
@@ -72,10 +75,10 @@ export default function PartnerToursPage() {
       if (result.success) {
         fetchTours()
       } else {
-        alert(result.error || 'Ошибка удаления экскурсии')
+        await customAlert(result.error || 'Ошибка удаления экскурсии')
       }
     } catch (error) {
-      alert('Ошибка удаления экскурсии')
+      await customAlert('Ошибка удаления экскурсии')
     }
   }
 

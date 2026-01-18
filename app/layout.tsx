@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
+import { ModalProvider } from '@/components/Providers/ModalProvider'
 
 const inter = Inter({ 
   subsets: ['latin', 'cyrillic'],
@@ -41,7 +42,9 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${inter.variable} ${poppins.variable}`} style={{ height: '100%', margin: 0, padding: 0 }}>
       <body className="font-sans antialiased" style={{ height: '100%', margin: 0, padding: 0, overflowX: 'hidden' }}>
-        {children}
+        <ModalProvider>
+          {children}
+        </ModalProvider>
       </body>
     </html>
   )
