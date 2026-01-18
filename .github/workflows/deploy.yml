@@ -57,8 +57,35 @@ jobs:
             echo "🔧 Генерация Prisma Client..."
             npx prisma generate
             
+            echo "🗄️ Проверка и удаление старых ограничений..."
+            # Удаляем старое ограничение уникальности на email, если оно существует
+            npx prisma db execute --stdin << 'SQL' || true
+DO $$ 
+BEGIN
+    -- Удаляем уникальное ограничение на email, если оно существует
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'users_email_key' 
+        AND conrelid = 'users'::regclass
+    ) THEN
+        ALTER TABLE users DROP CONSTRAINT users_email_key;
+        RAISE NOTICE 'Удалено ограничение users_email_key';
+    END IF;
+    
+    -- Удаляем индекс, если он существует как уникальный
+    IF EXISTS (
+        SELECT 1 FROM pg_indexes 
+        WHERE indexname = 'users_email_key' 
+        AND tablename = 'users'
+    ) THEN
+        DROP INDEX IF EXISTS users_email_key;
+        RAISE NOTICE 'Удален индекс users_email_key';
+    END IF;
+END $$;
+SQL
+            
             echo "🗄️ Применение миграций..."
-            npx prisma db push --accept-data-loss
+            npx prisma db push --accept-data-loss --skip-generate
             
             echo "🏗️ Сборка проекта..."
             NODE_OPTIONS="--max-old-space-size=1536" npm run build
