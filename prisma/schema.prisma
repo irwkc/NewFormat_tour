@@ -60,7 +60,7 @@ enum TransactionType {
 
 model User {
   id                      String   @id @default(uuid())
-  email                   String?  @unique
+  email                   String?
   promoter_id             Int?     @unique
   full_name               String?
   phone                   String?
