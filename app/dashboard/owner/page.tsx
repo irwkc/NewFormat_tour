@@ -63,7 +63,7 @@ export default function OwnerDashboard() {
     <DashboardLayout title="Панель владельца" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать, Владелец!</h2>
+          <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать, Никита!</h2>
           <p className="text-white/70">Обзор системы управления экскурсиями</p>
         </div>
         

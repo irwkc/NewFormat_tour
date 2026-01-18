@@ -14,7 +14,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Доступ запрещен' }, { status: 403 });
     }
 
-    const { password } = await request.json();
+    const { email, password } = await request.json();
+
+    if (!email || !email.includes('@')) {
+      return NextResponse.json(
+        { error: 'Некорректный email' },
+        { status: 400 }
+      );
+    }
 
     if (!password || password.length < 6) {
       return NextResponse.json(
@@ -38,15 +45,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Получаем email владельца
-    const owner = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { email: true },
+    // Проверяем, не занят ли email
+    const emailExists = await prisma.user.findUnique({
+      where: { email },
     });
 
-    if (!owner || !owner.email) {
+    if (emailExists) {
       return NextResponse.json(
-        { error: 'У владельца должен быть email' },
+        { error: 'Email уже используется' },
         { status: 400 }
       );
     }
@@ -57,11 +63,11 @@ export async function POST(request: NextRequest) {
     // Создаем помощника
     const assistant = await prisma.user.create({
       data: {
-        email: owner.email, // Тот же email
+        email,
         password_hash,
         role: 'owner_assistant',
         main_owner_id: payload.userId,
-        email_confirmed: true, // Помощник наследует подтвержденный email
+        email_confirmed: true,
       },
     });
 
