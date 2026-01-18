@@ -42,7 +42,11 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
   return (
     <div className="min-h-screen relative">
       {/* Header */}
-      <header className="sticky top-0 z-40 glass border-b border-white/20">
+      <header className="sticky top-0 z-40 border-b border-white/20" style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(60px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(60px) saturate(180%)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo/Title */}
