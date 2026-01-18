@@ -1,0 +1,15 @@
+=== SSH ПРИВАТНЫЙ КЛЮЧ ДЛЯ GITHUB ACTIONS ===
+
+Скопируйте содержимое ниже и добавьте в GitHub Secrets:
+
+Название секрета: SSH_PRIVATE_KEY
+
+Содержимое:-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACB/cx6DdN05u9R+eYDlaon1l69jCzhp+Y7hvO6DX+OLogAAAJiAOJn+gDiZ
+/gAAAAtzc2gtZWQyNTUxOQAAACB/cx6DdN05u9R+eYDlaon1l69jCzhp+Y7hvO6DX+OLog
+AAAEBYL9N7ndiIwSr+9GQwBesP5IjfjKzLnGlau2iFpamvNn9zHoN03Tm71H55gOVqifWX
+r2MLOGn5juG87oNf44uiAAAAFWdpdGh1Yi1hY3Rpb25zLWRlcGxveQ==
+-----END OPENSSH PRIVATE KEY-----
+
+=== КОНЕЦ КЛЮЧА ===

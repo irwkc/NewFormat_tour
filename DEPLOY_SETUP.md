@@ -9,39 +9,23 @@
 
 ### 1. Добавить SSH ключ в Secrets
 
-1. Перейдите на страницу репозитория: https://github.com/irwkc/NewFormat_tour
-2. Перейдите в **Settings** → **Secrets and variables** → **Actions**
-3. Нажмите **New repository secret**
-4. Добавьте:
+✅ **SSH ключ уже создан и добавлен на сервер!**
+
+1. Откройте файл `GITHUB_SSH_KEY.txt` в корне проекта - там находится приватный ключ
+2. Перейдите на страницу репозитория: https://github.com/irwkc/NewFormat_tour
+3. Перейдите в **Settings** → **Secrets and variables** → **Actions**
+4. Нажмите **New repository secret**
+5. Добавьте:
    - **Name**: `SSH_PRIVATE_KEY`
-   - **Value**: приватный SSH ключ для доступа к серверу 91.210.171.176
+   - **Value**: скопируйте весь текст из файла `GITHUB_SSH_KEY.txt` (включая строки `-----BEGIN OPENSSH PRIVATE KEY-----` и `-----END OPENSSH PRIVATE KEY-----`)
 
-### 2. Как получить SSH ключ:
-
-Если у вас нет SSH ключа для сервера, создайте его:
-
-```bash
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_deploy
-```
-
-Затем добавьте публичный ключ на сервер:
-
-```bash
-ssh-copy-id -i ~/.ssh/github_deploy.pub root@91.210.171.176
-```
-
-И добавьте приватный ключ (`~/.ssh/github_deploy`) в GitHub Secrets.
+**ВАЖНО**: После добавления ключа удалите файл `GITHUB_SSH_KEY.txt` для безопасности!
 
 ### 3. Настройка сервера для Git:
 
-На сервере нужно инициализировать git репозиторий (если еще не сделано):
+✅ **Git уже настроен на сервере!**
 
-```bash
-ssh root@91.210.171.176
-cd /var/www/newformat_tour
-git init
-git remote add origin git@github.com:irwkc/NewFormat_tour.git
-```
+Сервер готов к получению обновлений из GitHub.
 
 ### 4. Автоматический деплой:
 

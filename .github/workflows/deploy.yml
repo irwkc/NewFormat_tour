@@ -28,17 +28,24 @@ jobs:
       
       - name: Deploy to server
         run: |
-          ssh -o StrictHostKeyChecking=no root@91.210.171.176 << 'EOF'
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@91.210.171.176 << 'ENDSSH'
             set -e
             echo "🚀 Начало деплоя..."
             
             cd /var/www/newformat_tour
             
-            # Получить последние изменения
-            git fetch origin main
-            git reset --hard origin/main
+            # Обновить код из Git
+            if [ -d .git ]; then
+              git fetch origin main || true
+              git reset --hard origin/main || true
+            else
+              git init
+              git remote add origin https://github.com/irwkc/NewFormat_tour.git || git remote set-url origin https://github.com/irwkc/NewFormat_tour.git
+              git fetch origin main
+              git reset --hard origin/main
+            fi
             
-            # Установить зависимости если нужно
+            # Установить зависимости
             npm ci --production=false
             
             # Сгенерировать Prisma Client
@@ -56,7 +63,7 @@ jobs:
             pm2 save
             
             echo "✅ Деплой завершен!"
-          EOF
+          ENDSSH
       
       - name: Health check
         run: |
