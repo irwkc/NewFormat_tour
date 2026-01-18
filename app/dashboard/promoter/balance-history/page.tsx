@@ -43,6 +43,7 @@ export default function PromoterBalanceHistoryPage() {
     { label: 'Продажи', href: '/dashboard/promoter/sales' },
     { label: 'История баланса', href: '/dashboard/promoter/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/promoter/issued-items' },
+    { label: 'Реферальная программа', href: '/dashboard/promoter/invitations' },
   ]
 
   return (
