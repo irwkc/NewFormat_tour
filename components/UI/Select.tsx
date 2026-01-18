@@ -94,7 +94,16 @@ export default function Select({
             WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             backdropFilter: 'blur(24px) saturate(180%)',
           }}>
-            <div className="py-2 max-h-60 overflow-y-auto scrollbar-hide">
+            <div 
+              className="py-2 max-h-60 overflow-y-auto scrollbar-hide"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                maskImage: 'none',
+                WebkitMaskImage: 'none',
+                background: 'rgba(255, 255, 255, 0.5)',
+              }}
+            >
               {options.map((option) => (
                 <button
                   key={option.value}
@@ -105,6 +114,11 @@ export default function Select({
                       ? 'bg-white/30 text-white font-medium'
                       : 'text-white hover:bg-white/20 hover:text-white'
                   }`}
+                  style={{
+                    background: value === option.value 
+                      ? 'rgba(255, 255, 255, 0.3)' 
+                      : 'transparent',
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <span>{option.label}</span>
