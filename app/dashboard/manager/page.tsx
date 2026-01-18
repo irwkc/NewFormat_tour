@@ -61,36 +61,38 @@ export default function ManagerDashboard() {
 
   return (
     <DashboardLayout title="Панель менеджера" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="mb-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Ваш баланс</h2>
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {Number(user?.balance || 0).toFixed(2)}₽
-            </div>
-            {Number(user?.debt_to_company || 0) > 0 && (
-              <div className="text-lg text-red-600">
-                Долг компании: {Number(user?.debt_to_company || 0).toFixed(2)}₽
-              </div>
-            )}
+      <div className="space-y-6">
+        <div className="glass-card">
+          <h2 className="text-xl font-bold mb-2 text-white">Ваш баланс</h2>
+          <div className="text-4xl font-bold text-white mb-2">
+            {Number(user?.balance || 0).toFixed(2)}₽
           </div>
+          {Number(user?.debt_to_company || 0) > 0 && (
+            <div className="text-lg text-red-300 font-medium">
+              Долг компании: {Number(user?.debt_to_company || 0).toFixed(2)}₽
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Доступные экскурсии</h3>
+          <div className="glass-card">
+            <h3 className="text-lg font-semibold mb-4 text-white">Доступные экскурсии</h3>
             {loading ? (
-              <p>Загрузка...</p>
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              </div>
+            ) : tours.length === 0 ? (
+              <p className="text-white/60 text-center py-4">Нет доступных экскурсий</p>
             ) : (
               <div className="space-y-2">
                 {tours.slice(0, 5).map((tour) => (
                   <Link
                     key={tour.id}
-                    href={`/dashboard/manager/tours/${tour.id}`}
-                    className="block p-3 border rounded hover:bg-gray-50"
+                    href={`/dashboard/manager/sales/create?tourId=${tour.id}`}
+                    className="block p-3 rounded-xl border border-white/20 hover:bg-white/10 transition-all duration-200"
                   >
-                    <div className="font-semibold">{tour.company} - {tour.flight_number}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="font-semibold text-white">{tour.company} - {tour.flight_number}</div>
+                    <div className="text-sm text-white/70">
                       {new Date(tour.date).toLocaleDateString('ru-RU')} {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </Link>
@@ -99,16 +101,20 @@ export default function ManagerDashboard() {
             )}
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Последние продажи</h3>
+          <div className="glass-card">
+            <h3 className="text-lg font-semibold mb-4 text-white">Последние продажи</h3>
             {loading ? (
-              <p>Загрузка...</p>
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              </div>
+            ) : sales.length === 0 ? (
+              <p className="text-white/60 text-center py-4">Нет продаж</p>
             ) : (
               <div className="space-y-2">
                 {sales.slice(0, 5).map((sale) => (
-                  <div key={sale.id} className="p-3 border rounded">
-                    <div className="font-semibold">{sale.tour.company}</div>
-                    <div className="text-sm text-gray-600">
+                  <div key={sale.id} className="p-3 rounded-xl border border-white/20">
+                    <div className="font-semibold text-white">{sale.tour?.company || 'Экскурсия'}</div>
+                    <div className="text-sm text-white/70">
                       {sale.adult_count} взр. {sale.child_count > 0 && `${sale.child_count} дет.`} - {Number(sale.total_amount).toFixed(2)}₽
                     </div>
                   </div>

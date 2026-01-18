@@ -76,20 +76,14 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300/30 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400/30 rounded-full blur-3xl"></div>
-      </div>
-      
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-md w-full space-y-8 relative z-10">
-        <div className="glass-card shadow-glass-lg">
+        <div className="glass-card">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gradient mb-2">
+            <h2 className="text-3xl font-bold text-white mb-2">
               Вход в систему
             </h2>
-            <p className="text-gray-600 text-sm">Добро пожаловать обратно</p>
+            <p className="text-white/70 text-sm">Добро пожаловать обратно</p>
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -99,16 +93,18 @@ export default function LoginForm() {
                   type="checkbox"
                   checked={isPromoter}
                   onChange={(e) => setIsPromoter(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer"
+                  className="w-4 h-4 text-purple-600 border-white/30 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer bg-white/10"
                 />
-                <span className="text-gray-700 text-sm group-hover:text-purple-700 transition-colors">Я промоутер (вход по ID)</span>
+                <span className="text-white/90 text-sm group-hover:text-white transition-colors">
+                  Я промоутер (вход по ID)
+                </span>
               </label>
             </div>
 
             <div className="space-y-4">
               {!isPromoter ? (
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
                     Email
                   </label>
                   <input
@@ -119,12 +115,12 @@ export default function LoginForm() {
                     placeholder="your@email.com"
                   />
                   {errors.email && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.email.message}</p>
+                    <p className="text-red-300 text-xs mt-1.5">{errors.email.message}</p>
                   )}
                 </div>
               ) : (
                 <div>
-                  <label htmlFor="promoter_id" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="promoter_id" className="block text-sm font-medium text-white/90 mb-2">
                     ID промоутера
                   </label>
                   <input
@@ -134,13 +130,13 @@ export default function LoginForm() {
                     placeholder="12345"
                   />
                   {errors.promoter_id && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.promoter_id.message}</p>
+                    <p className="text-red-300 text-xs mt-1.5">{errors.promoter_id.message}</p>
                   )}
                 </div>
               )}
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
                   Пароль
                 </label>
                 <input
@@ -151,14 +147,14 @@ export default function LoginForm() {
                   placeholder="••••••••"
                 />
                 {errors.password && (
-                  <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>
+                  <p className="text-red-300 text-xs mt-1.5">{errors.password.message}</p>
                 )}
               </div>
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50/80 backdrop-blur-sm border border-red-200/50 p-4">
-                <p className="text-sm text-red-700 font-medium">{error}</p>
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
@@ -166,7 +162,7 @@ export default function LoginForm() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
@@ -185,7 +181,7 @@ export default function LoginForm() {
             <div className="text-center">
               <a
                 href="/auth/forgot-password"
-                className="text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                className="text-sm font-medium text-white/80 hover:text-white transition-colors"
               >
                 Забыли пароль?
               </a>

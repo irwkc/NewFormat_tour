@@ -117,85 +117,90 @@ export default function InvitationsPage() {
 
   return (
     <DashboardLayout title="Приглашения" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Создать приглашение</h2>
+      <div className="space-y-6">
+        <div className="glass-card">
+          <h2 className="text-xl font-bold mb-4 text-white">Создать приглашение</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Роль приглашаемого
               </label>
               <select
                 {...register('target_role')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               >
                 <option value="manager">Менеджер</option>
                 <option value="promoter">Промоутер</option>
                 <option value="partner">Партнер</option>
               </select>
               {errors.target_role && (
-                <p className="text-red-500 text-xs mt-1">{errors.target_role.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.target_role.message}</p>
               )}
             </div>
 
             <button
               type="submit"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              className="btn-primary"
             >
               Создать приглашение
             </button>
           </form>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold">Список приглашений</h2>
+        <div className="glass-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">Список приглашений</h2>
           </div>
           {loading ? (
-            <div className="p-6 text-center">Загрузка...</div>
+            <div className="p-6 text-center">
+              <div className="inline-flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <span className="ml-3 text-white/70">Загрузка...</span>
+              </div>
+            </div>
           ) : invitations.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">Нет приглашений</div>
+            <div className="p-6 text-center text-white/60">Нет приглашений</div>
           ) : (
             <div className="p-6">
               <div className="space-y-4">
                 {invitations.map((invitation) => (
-                  <div key={invitation.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="font-semibold">
+                  <div key={invitation.id} className="glass-card-light border border-white/20 p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-start gap-4 mb-2">
+                      <div className="flex-1">
+                        <div className="font-semibold text-white">
                           Роль: {invitation.target_role === 'manager' ? 'Менеджер' : 
                                  invitation.target_role === 'promoter' ? 'Промоутер' : 
                                  'Партнер'}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-white/70 mt-1">
                           Создано: {new Date(invitation.created_at).toLocaleString('ru-RU')}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-white/70">
                           Действительно до: {new Date(invitation.expires_at).toLocaleString('ru-RU')}
                         </div>
                         {invitation.is_used && invitation.usedBy && (
-                          <div className="text-sm text-green-600 mt-1">
+                          <div className="text-sm text-green-300 mt-1">
                             Использовано: {invitation.usedBy.full_name} ({invitation.usedBy.email})
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         {invitation.is_used ? (
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-green-500/30 text-green-200 rounded-full text-sm border border-green-400/30">
                             Использовано
                           </span>
                         ) : new Date(invitation.expires_at) < new Date() ? (
-                          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-red-500/30 text-red-200 rounded-full text-sm border border-red-400/30">
                             Истекло
                           </span>
                         ) : (
                           <>
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                            <span className="px-3 py-1 bg-yellow-500/30 text-yellow-200 rounded-full text-sm border border-yellow-400/30">
                               Активно
                             </span>
                             <button
                               onClick={() => handleDelete(invitation.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              className="text-red-300 hover:text-red-200 text-sm font-medium transition-colors"
                             >
                               Отозвать
                             </button>
@@ -204,18 +209,18 @@ export default function InvitationsPage() {
                       </div>
                     </div>
                     {!invitation.is_used && new Date(invitation.expires_at) >= new Date() && (
-                      <div className="mt-3">
-                        <div className="text-sm font-medium mb-1">Ссылка для регистрации:</div>
-                        <div className="flex items-center space-x-2">
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <div className="text-sm font-medium mb-1 text-white/90">Ссылка для регистрации:</div>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <input
                             type="text"
                             readOnly
-                            value={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm"
+                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/register/${invitation.token}`}
+                            className="flex-1 input-glass text-sm"
                           />
                           <button
-                            onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`)}
-                            className="bg-gray-200 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-300 text-sm"
+                            onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/register/${invitation.token}`)}
+                            className="btn-secondary text-sm"
                           >
                             Копировать
                           </button>

@@ -4,110 +4,294 @@
 
 @layer base {
   * {
-    @apply border-gray-200/50;
+    @apply border-transparent;
+  }
+  
+  html {
+    @apply h-full;
   }
   
   body {
-    @apply bg-gradient-to-br from-purple-50 via-white to-purple-50 text-gray-900 antialiased;
+    @apply min-h-screen font-sans text-white antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.95) 0%,
+      rgba(147, 51, 234, 0.95) 50%,
+      rgba(168, 85, 247, 0.95) 100%
+    );
+    background-attachment: fixed;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #__next,
+  main {
+    position: relative;
+    z-index: 1;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply text-gray-900 font-semibold;
+    @apply text-white font-semibold;
   }
   
   input, textarea, select {
-    @apply text-gray-900;
+    @apply text-white;
   }
   
   input::placeholder, textarea::placeholder {
-    @apply text-gray-400;
+    @apply text-white/60;
   }
 }
 
 @layer components {
+  /* iOS-style Glass Cards */
   .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+    @apply backdrop-blur-xl border border-white/20;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
   }
   
   .glass-dark {
-    @apply bg-gray-900/70 backdrop-blur-xl border border-white/10;
+    @apply backdrop-blur-xl border border-white/10;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
   }
   
   .glass-card {
-    @apply glass rounded-2xl shadow-glass p-6;
+    @apply glass rounded-3xl shadow-2xl p-6;
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.2),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .glass-card-light {
+    @apply backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-6;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+  }
+
+  .glass-card-dark {
+    @apply backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
   }
   
+  /* iOS-style Buttons */
   .btn-primary {
-    @apply bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+    @apply px-6 py-3 rounded-2xl font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+      0 4px 16px rgba(99, 102, 241, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
-  
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 24px rgba(99, 102, 241, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
   .btn-secondary {
-    @apply bg-white/80 backdrop-blur-sm text-purple-700 font-medium px-6 py-2.5 rounded-xl border border-purple-200/50 hover:bg-white hover:border-purple-300 transition-all duration-200;
+    @apply px-6 py-3 rounded-2xl font-semibold text-white transition-all duration-200;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
   }
-  
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary:active {
+    transform: translateY(0);
+  }
+
   .btn-danger {
-    @apply bg-gradient-to-r from-red-600 to-red-700 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
+    @apply px-6 py-3 rounded-2xl font-semibold text-white transition-all duration-200;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+      0 4px 16px rgba(239, 68, 68, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
-  
+
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 24px rgba(239, 68, 68, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
   .btn-success {
-    @apply bg-gradient-to-r from-green-600 to-green-700 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
+    @apply px-6 py-3 rounded-2xl font-semibold text-white transition-all duration-200;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 
+      0 4px 16px rgba(34, 197, 94, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 24px rgba(34, 197, 94, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   
+  /* iOS-style Inputs */
   .input-glass {
-    @apply glass rounded-xl px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-400 transition-all duration-200 text-gray-900 placeholder:text-gray-400;
+    @apply w-full px-4 py-3 rounded-2xl border transition-all duration-200;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+
+  .input-glass::placeholder {
+    @apply text-white/60;
+  }
+
+  .input-glass:focus {
+    @apply outline-none;
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+  }
+
+  .input-glass-dark {
+    @apply w-full px-4 py-3 rounded-2xl border transition-all duration-200 bg-white/90 text-gray-900;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .input-glass-dark::placeholder {
+    @apply text-gray-400;
+  }
+
+  .input-glass-dark:focus {
+    @apply outline-none border-purple-500;
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
   }
   
+  /* Text Gradient */
   .text-gradient {
-    @apply bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+  }
+
+  .text-gradient-purple {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%);
   }
   
+  /* Cards */
   .card {
     @apply glass-card;
   }
   
+  /* Tables */
   .table-container {
     @apply glass-card overflow-hidden;
   }
   
   .table {
-    @apply min-w-full divide-y divide-purple-100/50;
+    @apply min-w-full divide-y divide-white/10;
   }
   
   .table thead {
-    @apply bg-purple-50/50;
+    @apply bg-white/5;
   }
   
   .table th {
-    @apply px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider;
+    @apply px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider;
   }
   
   .table tbody {
-    @apply divide-y divide-purple-100/50;
+    @apply divide-y divide-white/10;
   }
   
   .table tr {
-    @apply hover:bg-purple-50/30 transition-colors;
+    @apply hover:bg-white/5 transition-colors;
   }
   
   .table td {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+    @apply px-6 py-4 whitespace-nowrap text-sm text-white/90;
   }
   
+  /* Alerts */
   .alert-success {
-    @apply bg-green-50/80 backdrop-blur-sm border border-green-200/50 text-green-800 rounded-xl p-4;
+    @apply backdrop-blur-xl border border-green-200/50 text-green-100 rounded-2xl p-4;
+    background: rgba(34, 197, 94, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   
   .alert-error {
-    @apply bg-red-50/80 backdrop-blur-sm border border-red-200/50 text-red-800 rounded-xl p-4;
+    @apply backdrop-blur-xl border border-red-200/50 text-red-100 rounded-2xl p-4;
+    background: rgba(239, 68, 68, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   
   .alert-warning {
-    @apply bg-yellow-50/80 backdrop-blur-sm border border-yellow-200/50 text-yellow-800 rounded-xl p-4;
+    @apply backdrop-blur-xl border border-yellow-200/50 text-yellow-100 rounded-2xl p-4;
+    background: rgba(234, 179, 8, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   
   .alert-info {
-    @apply bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 text-blue-800 rounded-xl p-4;
+    @apply backdrop-blur-xl border border-blue-200/50 text-blue-100 rounded-2xl p-4;
+    background: rgba(59, 130, 246, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Mobile Menu */
+  .mobile-menu-overlay {
+    @apply fixed inset-0 z-50 lg:hidden;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .mobile-menu-content {
+    @apply w-80 max-w-[85vw] h-full;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -123,5 +307,29 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply rounded-2xl p-4;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-success {
+    @apply px-4 py-2.5 text-sm rounded-xl;
+  }
+  
+  .input-glass,
+  .input-glass-dark {
+    @apply px-3 py-2.5 text-sm rounded-xl;
+  }
+
+  .table th,
+  .table td {
+    @apply px-3 py-2 text-xs;
   }
 }

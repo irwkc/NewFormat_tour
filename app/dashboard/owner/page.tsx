@@ -63,31 +63,31 @@ export default function OwnerDashboard() {
     <DashboardLayout title="Панель владельца" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-2xl font-bold mb-2 text-gradient">Добро пожаловать, Владелец!</h2>
-          <p className="text-gray-600">Обзор системы управления экскурсиями</p>
+          <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать, Владелец!</h2>
+          <p className="text-white/70">Обзор системы управления экскурсиями</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="glass-card">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
-              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+            <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+              <span className="w-2 h-2 bg-white/60 rounded-full mr-2"></span>
               Промоутеры
             </h3>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
               </div>
             ) : promoters.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Промоутеры не найдены</p>
+              <p className="text-white/60 text-center py-4">Промоутеры не найдены</p>
             ) : (
               <div className="space-y-3">
                 {promoters.slice(0, 5).map((promoter) => (
-                  <div key={promoter.id} className="flex justify-between items-center py-2 border-b border-purple-100/50 last:border-0">
+                  <div key={promoter.id} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
                     <div>
-                      <span className="text-gray-800 font-medium">{promoter.full_name}</span>
-                      <span className="text-gray-500 text-sm ml-2">(ID: {promoter.promoter_id})</span>
+                      <span className="text-white font-medium">{promoter.full_name}</span>
+                      <span className="text-white/60 text-sm ml-2">(ID: {promoter.promoter_id})</span>
                     </div>
-                    <span className="font-bold text-purple-700">{Number(promoter.balance).toFixed(2)}₽</span>
+                    <span className="font-bold text-white">{Number(promoter.balance).toFixed(2)}₽</span>
                   </div>
                 ))}
               </div>
@@ -95,26 +95,26 @@ export default function OwnerDashboard() {
           </div>
 
           <div className="glass-card">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
-              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+            <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+              <span className="w-2 h-2 bg-white/60 rounded-full mr-2"></span>
               Менеджеры
             </h3>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
               </div>
             ) : managers.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Менеджеры не найдены</p>
+              <p className="text-white/60 text-center py-4">Менеджеры не найдены</p>
             ) : (
               <div className="space-y-3">
                 {managers.slice(0, 5).map((manager) => (
-                  <div key={manager.id} className="py-2 border-b border-purple-100/50 last:border-0">
+                  <div key={manager.id} className="py-2 border-b border-white/10 last:border-0">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-800 font-medium">{manager.full_name}</span>
+                      <span className="text-white font-medium">{manager.full_name}</span>
                       <div className="text-right">
-                        <div className="font-bold text-purple-700">{Number(manager.balance).toFixed(2)}₽</div>
+                        <div className="font-bold text-white">{Number(manager.balance).toFixed(2)}₽</div>
                         {Number(manager.debt_to_company) > 0 && (
-                          <div className="text-red-600 text-sm font-medium">
+                          <div className="text-red-300 text-sm font-medium">
                             Долг: {Number(manager.debt_to_company).toFixed(2)}₽
                           </div>
                         )}

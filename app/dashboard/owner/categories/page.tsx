@@ -111,10 +111,10 @@ export default function OwnerCategoriesPage() {
   return (
     <DashboardLayout title="Категории экскурсий" navItems={navItems}>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gradient">Категории экскурсий</h2>
-            <p className="text-gray-600 text-sm mt-1">Управление категориями для организации экскурсий</p>
+            <h2 className="text-2xl font-bold text-white">Категории экскурсий</h2>
+            <p className="text-white/70 text-sm mt-1">Управление категориями для организации экскурсий</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -126,10 +126,10 @@ export default function OwnerCategoriesPage() {
 
         {showForm && (
           <div className="glass-card">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Создать категорию</h3>
+            <h3 className="text-lg font-semibold mb-4 text-white">Создать категорию</h3>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Название категории
                 </label>
                 <input
@@ -139,7 +139,7 @@ export default function OwnerCategoriesPage() {
                   placeholder="Например: Теплоход, Катер"
                 />
                 {errors.name && (
-                  <p className="text-red-500 text-xs mt-1.5">{errors.name.message}</p>
+                  <p className="text-red-300 text-xs mt-1.5">{errors.name.message}</p>
                 )}
               </div>
               <button
@@ -153,50 +153,44 @@ export default function OwnerCategoriesPage() {
         )}
 
         <div className="glass-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-purple-100/50">
-            <h2 className="text-xl font-bold text-gray-800">Список категорий</h2>
+          <div className="px-6 py-4 border-b border-white/10">
+            <h2 className="text-xl font-bold text-white">Список категорий</h2>
           </div>
           {loading ? (
             <div className="p-12 text-center">
               <div className="inline-flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                <span className="ml-3 text-gray-600">Загрузка...</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <span className="ml-3 text-white/70">Загрузка...</span>
               </div>
             </div>
           ) : categories.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
+            <div className="p-12 text-center text-white/60">
               <p className="text-lg mb-2">Нет категорий</p>
               <p className="text-sm">Создайте первую категорию для начала работы</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-purple-100/50">
-                <thead className="bg-purple-50/50">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Название
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Создано
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Действия
-                    </th>
+                    <th>Название</th>
+                    <th>Создано</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-purple-100/50">
+                <tbody>
                   {categories.map((category) => (
-                    <tr key={category.id} className="hover:bg-purple-50/30 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={category.id}>
+                      <td className="font-medium">
                         {category.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="text-white/70">
                         {new Date(category.created_at).toLocaleDateString('ru-RU')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td>
                         <button
                           onClick={() => handleDelete(category.id)}
-                          className="text-red-600 hover:text-red-700 font-medium hover:underline transition-colors"
+                          className="text-red-300 hover:text-red-200 font-medium hover:underline transition-colors"
                         >
                           Удалить
                         </button>
