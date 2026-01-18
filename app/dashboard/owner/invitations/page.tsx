@@ -173,7 +173,7 @@ export default function InvitationsPage() {
             <div className="p-6">
               <div className="space-y-4">
                 {invitations.map((invitation) => (
-                  <div key={invitation.id} className="glass-card-light border border-white/20 p-4">
+                  <div key={invitation.id} className="bg-white/20 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-start gap-4 mb-2">
                       <div className="flex-1">
                         <div className="font-semibold text-white">
@@ -181,10 +181,10 @@ export default function InvitationsPage() {
                                  invitation.target_role === 'promoter' ? 'Промоутер' : 
                                  'Партнер'}
                         </div>
-                        <div className="text-sm text-white/70 mt-1">
+                        <div className="text-sm text-white/90 mt-1">
                           Создано: {new Date(invitation.created_at).toLocaleString('ru-RU')}
                         </div>
-                        <div className="text-sm text-white/70">
+                        <div className="text-sm text-white/90">
                           Действительно до: {new Date(invitation.expires_at).toLocaleString('ru-RU')}
                         </div>
                         {invitation.is_used && invitation.usedBy && (
@@ -195,21 +195,21 @@ export default function InvitationsPage() {
                       </div>
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         {invitation.is_used ? (
-                          <span className="px-3 py-1 bg-green-500/30 text-green-200 rounded-full text-sm border border-green-400/30">
+                          <span className="px-3 py-1 bg-green-500/50 text-green-100 rounded-full text-sm border border-green-400/50 font-medium">
                             Использовано
                           </span>
                         ) : new Date(invitation.expires_at) < new Date() ? (
-                          <span className="px-3 py-1 bg-red-500/30 text-red-200 rounded-full text-sm border border-red-400/30">
+                          <span className="px-3 py-1 bg-red-500/50 text-red-100 rounded-full text-sm border border-red-400/50 font-medium">
                             Истекло
                           </span>
                         ) : (
                           <>
-                            <span className="px-3 py-1 bg-yellow-500/30 text-yellow-200 rounded-full text-sm border border-yellow-400/30">
+                            <span className="px-3 py-1 bg-yellow-500/60 text-yellow-50 rounded-full text-sm border border-yellow-400/70 font-semibold">
                               Активно
                             </span>
                             <button
                               onClick={() => handleDelete(invitation.id)}
-                              className="text-red-300 hover:text-red-200 text-sm font-medium transition-colors"
+                              className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors"
                             >
                               Отозвать
                             </button>
@@ -218,8 +218,8 @@ export default function InvitationsPage() {
                       </div>
                     </div>
                     {!invitation.is_used && new Date(invitation.expires_at) >= new Date() && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
-                        <div className="text-sm font-medium mb-1 text-white/90">Ссылка для регистрации:</div>
+                      <div className="mt-3 pt-3 border-t border-white/20">
+                        <div className="text-sm font-medium mb-1 text-white">Ссылка для регистрации:</div>
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <input
                             type="text"
