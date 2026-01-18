@@ -59,42 +59,36 @@
 }
 
 @layer components {
-  /* iOS-style Glass Cards - полностью прозрачные */
+  /* iOS-style Glass Cards - как в Bruit_Noir */
   .glass {
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(80px) saturate(40%);
-    -webkit-backdrop-filter: blur(80px) saturate(40%);
+    @apply bg-white/30 backdrop-blur-xl border border-white/20;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
   }
   
   .glass-dark {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(80px) saturate(40%);
-    -webkit-backdrop-filter: blur(80px) saturate(40%);
+    @apply bg-black/20 backdrop-blur-xl border border-white/10;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
   }
   
   .glass-card {
     @apply glass rounded-3xl shadow-2xl p-6;
     box-shadow: 
-      0 8px 32px 0 rgba(31, 38, 135, 0.1),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+      0 8px 32px 0 rgba(31, 38, 135, 0.15),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
   }
 
   .glass-card-light {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(80px) saturate(40%);
-    -webkit-backdrop-filter: blur(80px) saturate(40%);
-    @apply rounded-3xl shadow-2xl p-6;
+    @apply bg-white/40 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-6;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
   }
 
   .glass-card-dark {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(80px) saturate(40%);
-    -webkit-backdrop-filter: blur(80px) saturate(40%);
-    @apply rounded-3xl shadow-2xl p-6;
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
   }
   
   /* iOS-style Buttons */
@@ -120,15 +114,13 @@
   }
 
   .btn-secondary {
-    @apply px-6 py-3 rounded-2xl font-semibold text-white transition-all duration-200;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(60px) saturate(40%);
-    -webkit-backdrop-filter: blur(60px) saturate(40%);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    @apply px-6 py-3 rounded-2xl font-semibold text-white border border-white/30 bg-white/25 backdrop-blur-lg transition-all duration-200;
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
   }
 
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
+    @apply bg-white/35;
     transform: translateY(-2px);
   }
 
@@ -172,12 +164,9 @@
   
   /* iOS-style Inputs */
   .input-glass {
-    @apply w-full px-4 py-3 rounded-2xl border transition-all duration-200;
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(60px) saturate(40%);
-    -webkit-backdrop-filter: blur(60px) saturate(40%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    @apply w-full px-4 py-3 rounded-2xl border border-white/30 bg-white/20 backdrop-blur-lg transition-all duration-200 text-white;
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
   }
 
   .input-glass::placeholder {
@@ -281,18 +270,15 @@
 
   /* Mobile Menu */
   .mobile-menu-overlay {
-    @apply fixed inset-0 z-50 lg:hidden;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    @apply fixed inset-0 z-50 lg:hidden bg-black/40 backdrop-blur-sm;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
   }
 
   .mobile-menu-content {
-    @apply w-80 max-w-[85vw] h-full;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(60px) saturate(40%);
-    -webkit-backdrop-filter: blur(60px) saturate(40%);
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    @apply w-80 max-w-[85vw] h-full bg-white/30 backdrop-blur-xl border-r border-white/20;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
     box-shadow: 4px 0 32px rgba(0, 0, 0, 0.15);
   }
 }
