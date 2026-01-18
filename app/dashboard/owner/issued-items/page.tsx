@@ -1,0 +1,301 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import DashboardLayout from '@/components/Layout/DashboardLayout'
+import { useAuthStore } from '@/store/auth'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const issueItemSchema = z.object({
+  user_identifier: z.string().min(1, 'ID обязателен'),
+  item_name: z.string().min(1, 'Название обязательно'),
+  item_description: z.string().optional(),
+  photo: z.any(),
+})
+
+type IssueItemFormData = z.infer<typeof issueItemSchema>
+
+export default function OwnerIssuedItemsPage() {
+  const { token } = useAuthStore()
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [userType, setUserType] = useState<'promoter' | 'manager'>('promoter')
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<IssueItemFormData>({
+    resolver: zodResolver(issueItemSchema),
+  })
+
+  useEffect(() => {
+    if (token) {
+      fetchItems()
+    }
+  }, [token])
+
+  const fetchItems = async () => {
+    try {
+      const response = await fetch('/api/issued-items', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setItems(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching issued items:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onSubmit = async (data: IssueItemFormData) => {
+    try {
+      // Конвертировать фото в base64
+      const file = (data.photo as FileList)[0]
+      if (!file) {
+        alert('Фото обязательно')
+        return
+      }
+
+      const photoBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const response = await fetch('/api/issued-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_identifier: data.user_identifier,
+          item_name: data.item_name,
+          item_description: data.item_description,
+          photo: photoBase64,
+        }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setShowForm(false)
+        reset()
+        fetchItems()
+      } else {
+        alert(result.error || 'Ошибка выдачи вещи')
+      }
+    } catch (error) {
+      alert('Ошибка выдачи вещи')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Вернуть вещь?')) return
+
+    try {
+      const response = await fetch(`/api/issued-items/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        fetchItems()
+      } else {
+        alert(result.error || 'Ошибка возврата вещи')
+      }
+    } catch (error) {
+      alert('Ошибка возврата вещи')
+    }
+  }
+
+  const navItems = [
+    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
+    { label: 'Категории', href: '/dashboard/owner/categories' },
+    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
+    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
+    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
+    { label: 'Статистика', href: '/dashboard/owner/statistics' },
+  ]
+
+  return (
+    <DashboardLayout title="Выдача вещей" navItems={navItems}>
+      <div className="px-4 py-6 sm:px-0">
+        <div className="mb-6">
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          >
+            {showForm ? 'Отмена' : 'Выдать вещь'}
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="mb-6 bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Выдать вещь</h3>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Тип пользователя
+                </label>
+                <div className="flex space-x-4 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setUserType('promoter')}
+                    className={`px-4 py-2 rounded-md ${
+                      userType === 'promoter'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    Промоутер
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserType('manager')}
+                    className={`px-4 py-2 rounded-md ${
+                      userType === 'manager'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    Менеджер
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {userType === 'promoter' ? 'ID промоутера' : 'Email менеджера'}
+                </label>
+                <input
+                  {...register('user_identifier')}
+                  type={userType === 'promoter' ? 'number' : 'email'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder={userType === 'promoter' ? '12345' : 'manager@example.com'}
+                />
+                {errors.user_identifier && (
+                  <p className="text-red-500 text-xs mt-1">{errors.user_identifier.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Название вещи *
+                </label>
+                <input
+                  {...register('item_name')}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Например: кофта, эквайринг"
+                />
+                {errors.item_name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.item_name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Описание (опционально)
+                </label>
+                <textarea
+                  {...register('item_description')}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Фото вещи *
+                </label>
+                <input
+                  {...register('photo')}
+                  type="file"
+                  accept="image/*"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                {errors.photo && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {typeof errors.photo === 'object' && 'message' in errors.photo 
+                      ? String(errors.photo.message) 
+                      : 'Ошибка загрузки фото'}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              >
+                Выдать вещь
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold">История выданных вещей</h2>
+          </div>
+          {loading ? (
+            <div className="p-6 text-center">Загрузка...</div>
+          ) : items.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">Нет выданных вещей</div>
+          ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {items.map((item) => (
+                  <div key={item.id} className="border rounded-lg p-4">
+                    {item.item_photo_url && (
+                      <img
+                        src={item.item_photo_url}
+                        alt={item.item_name}
+                        className="w-full h-48 object-cover rounded mb-4"
+                      />
+                    )}
+                    <h3 className="text-lg font-semibold mb-2">{item.item_name}</h3>
+                    {item.item_description && (
+                      <p className="text-sm text-gray-600 mb-2">{item.item_description}</p>
+                    )}
+                    <p className="text-sm text-gray-500 mb-2">
+                      Выдано: {item.issuedTo.full_name} ({item.issuedTo.promoter_id ? `ID: ${item.issuedTo.promoter_id}` : item.issuedTo.email})
+                    </p>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Дата: {new Date(item.created_at).toLocaleDateString('ru-RU')}
+                    </p>
+                    {item.is_returned ? (
+                      <p className="text-xs text-red-500">
+                        Возвращено: {new Date(item.returned_at!).toLocaleDateString('ru-RU')}
+                      </p>
+                    ) : (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Вернуть вещь
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardLayout>
+  )
+}
