@@ -34,30 +34,36 @@ jobs:
             
             cd /var/www/newformat_tour
             
+            # Настроить Git безопасность
+            git config --global --add safe.directory /var/www/newformat_tour || true
+            
             # Обновить код из Git
             if [ -d .git ]; then
-              git fetch origin main || true
-              git reset --hard origin/main || true
+              echo "📥 Обновление из GitHub..."
+              git fetch origin main
+              git reset --hard origin/main
             else
+              echo "📦 Инициализация Git репозитория..."
               git init
+              git config --global --add safe.directory /var/www/newformat_tour
               git remote add origin https://github.com/irwkc/NewFormat_tour.git || git remote set-url origin https://github.com/irwkc/NewFormat_tour.git
               git fetch origin main
               git reset --hard origin/main
             fi
             
-            # Установить зависимости
+            echo "📦 Установка зависимостей..."
             npm ci --production=false
             
-            # Сгенерировать Prisma Client
+            echo "🔧 Генерация Prisma Client..."
             npx prisma generate
             
-            # Применить миграции
+            echo "🗄️ Применение миграций..."
             npx prisma db push --accept-data-loss
             
-            # Пересобрать проект
+            echo "🏗️ Сборка проекта..."
             NODE_OPTIONS="--max-old-space-size=1536" npm run build
             
-            # Перезапустить приложение
+            echo "🔄 Перезапуск приложения..."
             pm2 restart newformat-tour || pm2 start npm --name "newformat-tour" -- start
             
             pm2 save
