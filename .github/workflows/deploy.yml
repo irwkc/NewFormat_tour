@@ -1,0 +1,62 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H 91.210.171.176 >> ~/.ssh/known_hosts
+      
+      - name: Deploy to server
+        run: |
+          ssh root@91.210.171.176 << 'EOF'
+            set -e
+            echo "🚀 Начало деплоя..."
+            
+            cd /var/www/newformat_tour
+            
+            # Получить последние изменения
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Установить зависимости если нужно
+            npm ci --production=false
+            
+            # Сгенерировать Prisma Client
+            npx prisma generate
+            
+            # Применить миграции
+            npx prisma db push --accept-data-loss
+            
+            # Пересобрать проект
+            NODE_OPTIONS="--max-old-space-size=1536" npm run build
+            
+            # Перезапустить приложение
+            pm2 restart newformat-tour || pm2 start npm --name "newformat-tour" -- start
+            
+            pm2 save
+            
+            echo "✅ Деплой завершен!"
+          EOF
+      
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f https://new-format-spb.ru || exit 1
+          echo "✅ Сайт работает!"
