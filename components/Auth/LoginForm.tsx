@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 
 const loginSchema = z.object({
@@ -103,9 +104,16 @@ export default function LoginForm() {
       <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="glass-card">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white">
-              Вход в систему
-            </h2>
+            <div className="flex justify-center mb-6">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={200}
+                height={200}
+                className="w-auto h-24 object-contain"
+                priority
+              />
+            </div>
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
