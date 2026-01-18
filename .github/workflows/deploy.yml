@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
@@ -23,69 +24,67 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H 91.210.171.176 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 91.210.171.176 >> ~/.ssh/known_hosts 2>/dev/null
           chmod 600 ~/.ssh/known_hosts
       
       - name: Deploy to server
         run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@91.210.171.176 << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 root@91.210.171.176 << 'ENDSSH'
             set -e
             echo "🚀 Начало деплоя..."
             
             cd /var/www/newformat_tour
             
             # Настроить Git безопасность
-            git config --global --add safe.directory /var/www/newformat_tour || true
+            git config --global --add safe.directory /var/www/newformat_tour 2>/dev/null || true
             
             # Обновить код из Git
-            if [ -d .git ]; then
-              echo "📥 Обновление из GitHub..."
-              git fetch origin main
-              git reset --hard origin/main
+            echo "📥 Обновление из GitHub..."
+            git fetch origin main --quiet
+            git reset --hard origin/main --quiet
+            
+            # Обновить зависимости только если изменились package.json или package-lock.json
+            echo "📦 Проверка зависимостей..."
+            if git diff --quiet HEAD@{1} HEAD -- package.json package-lock.json 2>/dev/null || [ ! -d node_modules ]; then
+              echo "📦 Установка зависимостей..."
+              rm -rf node_modules 2>/dev/null || true
+              npm ci --silent --no-audit --no-fund
             else
-              echo "📦 Инициализация Git репозитория..."
-              git init
-              git config --global --add safe.directory /var/www/newformat_tour
-              git remote add origin https://github.com/irwkc/NewFormat_tour.git || git remote set-url origin https://github.com/irwkc/NewFormat_tour.git
-              git fetch origin main
-              git reset --hard origin/main
+              echo "✅ Зависимости не изменились, пропускаем установку"
             fi
             
-            echo "📦 Очистка старых зависимостей..."
-            rm -rf node_modules || true
-            
-            echo "📦 Установка зависимостей..."
-            # npm ci требует package-lock.json, используем npm install если его нет
-            if [ -f package-lock.json ]; then
-              npm ci
+            # Генерация Prisma Client (только если изменилась схема)
+            echo "🔧 Проверка Prisma схемы..."
+            if git diff --quiet HEAD@{1} HEAD -- prisma/schema.prisma 2>/dev/null && [ -d node_modules/.prisma ]; then
+              echo "✅ Prisma схема не изменилась, пропускаем генерацию"
             else
-              npm install
+              echo "🔧 Генерация Prisma Client..."
+              npx prisma generate --silent
             fi
             
-            echo "🔧 Генерация Prisma Client..."
-            npx prisma generate
-            
-            echo "🗄️ Удаление старых автоматически созданных помощников и контролеров..."
-            # Удаляем старых помощников владельца и контролеров партнеров
-            # которые были созданы автоматически и имеют тот же email
-            echo "DELETE FROM users WHERE role = 'owner_assistant'; DELETE FROM users WHERE role = 'partner_controller';" | npx prisma db execute --stdin || echo "Ошибка при удалении (возможно уже удалены)"
-            
+            # Применение миграций (только если изменилась схема)
             echo "🗄️ Применение миграций..."
-            npx prisma db push --accept-data-loss --skip-generate
+            if git diff --quiet HEAD@{1} HEAD -- prisma/schema.prisma 2>/dev/null; then
+              echo "✅ Prisma схема не изменилась, пропускаем миграции"
+            else
+              npx prisma db push --accept-data-loss --skip-generate --silent
+            fi
             
+            # Сборка проекта
             echo "🏗️ Сборка проекта..."
-            NODE_OPTIONS="--max-old-space-size=1536" npm run build
+            NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent
             
+            # Перезапуск приложения
             echo "🔄 Перезапуск приложения..."
-            pm2 restart newformat-tour || pm2 start npm --name "newformat-tour" -- start
-            
-            pm2 save
+            pm2 restart newformat-tour --silent || pm2 start npm --name "newformat-tour" -- start --silent
+            pm2 save --silent
             
             echo "✅ Деплой завершен!"
           ENDSSH
       
       - name: Health check
+        timeout-minutes: 2
         run: |
-          sleep 10
-          curl -f https://new-format-spb.ru || exit 1
+          sleep 5
+          curl -f --max-time 10 https://new-format-spb.ru || exit 1
           echo "✅ Сайт работает!"
