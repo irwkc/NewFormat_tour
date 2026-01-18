@@ -85,9 +85,9 @@ jobs:
               echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
             
-                    # Сборка проекта
-                    echo "🏗️ Сборка проекта..."
-                    timeout 300 NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
+            # Сборка проекта
+            echo "🏗️ Сборка проекта..."
+            NODE_OPTIONS="--max-old-space-size=1536" timeout 300 npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
             
             # Перезапуск приложения
             echo "🔄 Перезапуск приложения..."
