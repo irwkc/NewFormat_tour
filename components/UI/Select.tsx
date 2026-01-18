@@ -89,29 +89,25 @@ export default function Select({
           />
           
           {/* Dropdown */}
-          <div className="absolute z-20 w-full mt-2 rounded-2xl overflow-hidden shadow-2xl border border-white/40 backdrop-blur-xl" style={{
-            background: 'rgba(255, 255, 255, 0.7)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-          }}>
+          <div className="absolute z-20 w-full mt-2 rounded-2xl overflow-hidden shadow-2xl border border-white/30 bg-white/30 backdrop-blur-xl"
+            style={{
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.3)',
+            }}
+          >
             <div 
               className="py-1 max-h-60 overflow-y-auto scrollbar-hide"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                maskImage: 'none',
-                WebkitMaskImage: 'none',
-              }}
             >
               {options.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full text-left px-4 py-2.5 text-base ${
+                  className={`w-full text-left px-4 py-3 text-base transition-all duration-150 ${
                     value === option.value
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-800 hover:bg-gray-100'
+                      ? 'bg-white/30 text-white font-medium'
+                      : 'text-white/90 hover:bg-white/20 hover:text-white'
                   }`}
                 >
                   {option.label}
