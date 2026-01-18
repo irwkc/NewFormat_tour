@@ -113,6 +113,7 @@ export default function OwnerManagersPage() {
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
     { label: 'Приглашения', href: '/dashboard/owner/invitations' },
+    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
     { label: 'Настройки', href: '/dashboard/owner/settings' },
   ]
 
