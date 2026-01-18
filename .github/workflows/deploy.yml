@@ -64,16 +64,21 @@ jobs:
             fi
             
             # Удаляем старое ограничение уникальности на email, если оно существует
-            # Используем prisma db execute или прямой SQL через psql
-            export PGPASSWORD=$(echo $DATABASE_URL | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
-            export PGHOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):.*/\1/p')
-            export PGPORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-            export PGDATABASE=$(echo $DATABASE_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
-            export PGUSER=$(echo $DATABASE_URL | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+            # Извлекаем параметры подключения из DATABASE_URL
+            DB_URL="${DATABASE_URL}"
+            export PGPASSWORD=$(echo "$DB_URL" | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
+            export PGHOST=$(echo "$DB_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p' | sed 's/localhost/127.0.0.1/')
+            export PGPORT=$(echo "$DB_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p' | sed 's/[^0-9]//')
+            if [ -z "$PGPORT" ]; then export PGPORT=5432; fi
+            export PGDATABASE=$(echo "$DB_URL" | sed -n 's/.*\/\([^?]*\).*/\1/p')
+            export PGUSER=$(echo "$DB_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
             
-            psql -h $PGHOST -p ${PGPORT:-5432} -U $PGUSER -d $PGDATABASE -c "
+            # Удаляем все возможные ограничения и индексы на email
+            psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" << 'EOSQL' || echo "Ошибка при удалении ограничений (возможно уже удалены)"
+            -- Удаляем constraint если существует
             DO \$\$ 
             BEGIN
+                -- Удаляем уникальное ограничение
                 IF EXISTS (
                     SELECT 1 FROM pg_constraint 
                     WHERE conname = 'users_email_key' 
@@ -83,9 +88,44 @@ jobs:
                     RAISE NOTICE 'Удалено ограничение users_email_key';
                 END IF;
                 
-                DROP INDEX IF EXISTS users_email_key;
+                -- Удаляем индекс если существует
+                IF EXISTS (
+                    SELECT 1 FROM pg_indexes 
+                    WHERE indexname = 'users_email_key' 
+                    AND tablename = 'users'
+                ) THEN
+                    DROP INDEX users_email_key;
+                    RAISE NOTICE 'Удален индекс users_email_key';
+                END IF;
+                
+                -- Удаляем любой уникальный индекс на email
+                IF EXISTS (
+                    SELECT 1 FROM pg_indexes 
+                    WHERE indexname LIKE '%email%' 
+                    AND tablename = 'users'
+                ) THEN
+                    DROP INDEX IF EXISTS users_email_key;
+                    DROP INDEX IF EXISTS users_email_idx;
+                    RAISE NOTICE 'Удалены все индексы на email';
+                END IF;
             END \$\$;
-            " || echo "Ограничение уже удалено или не существует"
+            
+            -- Проверяем и удаляем constraint через pg_constraint
+            SELECT conname FROM pg_constraint WHERE conrelid = 'users'::regclass AND conname LIKE '%email%';
+            DO \$\$
+            DECLARE
+                constraint_name text;
+            BEGIN
+                FOR constraint_name IN 
+                    SELECT conname FROM pg_constraint 
+                    WHERE conrelid = 'users'::regclass 
+                    AND conname LIKE '%email%'
+                LOOP
+                    EXECUTE 'ALTER TABLE users DROP CONSTRAINT IF EXISTS ' || constraint_name;
+                    RAISE NOTICE 'Удалено ограничение: %', constraint_name;
+                END LOOP;
+            END \$\$;
+EOSQL
             
             echo "🗄️ Применение миграций..."
             npx prisma db push --accept-data-loss --skip-generate
