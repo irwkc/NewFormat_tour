@@ -9,6 +9,49 @@ const updatePasswordSchema = z.object({
   new_password: z.string().min(6),
 })
 
+// GET /api/owner/assistant-password - проверка наличия помощника
+export async function GET(request: NextRequest) {
+  return withAuth(
+    request,
+    async (req) => {
+      try {
+        if (req.user!.role !== UserRole.owner) {
+          return NextResponse.json(
+            { success: false, error: 'Only owner can access this' },
+            { status: 403 }
+          )
+        }
+
+        const assistant = await prisma.user.findFirst({
+          where: {
+            main_owner_id: req.user!.userId,
+            role: UserRole.owner_assistant,
+          },
+        })
+
+        if (!assistant) {
+          return NextResponse.json(
+            { success: false, error: 'Assistant not found' },
+            { status: 404 }
+          )
+        }
+
+        return NextResponse.json({
+          success: true,
+          hasAssistant: true,
+        })
+      } catch (error) {
+        console.error('Check assistant error:', error)
+        return NextResponse.json(
+          { success: false, error: 'Internal server error' },
+          { status: 500 }
+        )
+      }
+    },
+    [UserRole.owner]
+  )
+}
+
 // POST /api/owner/assistant-password - изменение пароля помощника владельца
 export async function POST(request: NextRequest) {
   return withAuth(

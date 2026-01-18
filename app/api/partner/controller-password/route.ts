@@ -9,6 +9,49 @@ const updatePasswordSchema = z.object({
   new_password: z.string().min(6),
 })
 
+// GET /api/partner/controller-password - проверка наличия контролера
+export async function GET(request: NextRequest) {
+  return withAuth(
+    request,
+    async (req) => {
+      try {
+        if (req.user!.role !== UserRole.partner) {
+          return NextResponse.json(
+            { success: false, error: 'Only partners can access this' },
+            { status: 403 }
+          )
+        }
+
+        const controller = await prisma.user.findFirst({
+          where: {
+            main_partner_id: req.user!.userId,
+            role: UserRole.partner_controller,
+          },
+        })
+
+        if (!controller) {
+          return NextResponse.json(
+            { success: false, error: 'Controller not found' },
+            { status: 404 }
+          )
+        }
+
+        return NextResponse.json({
+          success: true,
+          hasController: true,
+        })
+      } catch (error) {
+        console.error('Check controller error:', error)
+        return NextResponse.json(
+          { success: false, error: 'Internal server error' },
+          { status: 500 }
+        )
+      }
+    },
+    [UserRole.partner]
+  )
+}
+
 // POST /api/partner/controller-password - изменение пароля альтернативного профиля контролера
 export async function POST(request: NextRequest) {
   return withAuth(

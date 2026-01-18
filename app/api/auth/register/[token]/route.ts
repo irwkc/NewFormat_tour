@@ -14,7 +14,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   photo: z.string().optional(), // base64 encoded image
-  controller_password: z.string().min(6).optional(), // пароль для альтернативного профиля контролера (для партнеров)
+  // controller_password удален - контролер создается через ЛК партнера
 })
 
 export async function POST(
@@ -24,7 +24,7 @@ export async function POST(
   try {
     const { token } = params
     const body = await request.json()
-    const { full_name, phone, email, password, photo, controller_password } = registerSchema.parse(body)
+    const { full_name, phone, email, password, photo } = registerSchema.parse(body)
 
     // Проверить токен приглашения
     const invitation = await prisma.invitationToken.findUnique({
@@ -130,21 +130,7 @@ export async function POST(
       },
     })
 
-    // Если это партнер, создать альтернативный профиль контролера
-    if (userRole === 'partner') {
-      // Пароль для контролера - из формы или сгенерированный
-      const controllerPassword = controller_password || generateRandomToken().substring(0, 12)
-      await prisma.user.create({
-        data: {
-          email,
-          full_name: `${full_name} (Контролер)`,
-          phone,
-          password_hash: await hashPassword(controllerPassword),
-          role: 'partner_controller',
-          main_partner_id: user.id,
-        },
-      })
-    }
+    // Контролер создается партнером самостоятельно через ЛК в разделе Настройки
 
     // Отметить токен как использованный
     await prisma.invitationToken.update({

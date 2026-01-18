@@ -22,7 +22,8 @@ async function main() {
 
     const email = await question('Email владельца: ')
     const password = await question('Пароль владельца: ')
-    const assistantPassword = await question('Пароль помощника владельца: ')
+    // Помощник создается через ЛК владельца
+    // const assistantPassword = await question('Пароль помощника владельца: ')
 
     // Проверить, существует ли уже владелец
     const existingOwner = await prisma.user.findFirst({
@@ -36,7 +37,8 @@ async function main() {
 
     // Хэшировать пароли
     const ownerPasswordHash = await bcrypt.hash(password, 10)
-    const assistantPasswordHash = await bcrypt.hash(assistantPassword, 10)
+    // Помощник создается через ЛК владельца
+    // const assistantPasswordHash = await bcrypt.hash(assistantPassword, 10)
 
     // Создать владельца
     const owner = await prisma.user.create({
@@ -49,25 +51,14 @@ async function main() {
       },
     })
 
-    // Создать помощника владельца
-    const assistant = await prisma.user.create({
-      data: {
-        email,
-        password_hash: assistantPasswordHash,
-        role: 'owner_assistant',
-        main_owner_id: owner.id,
-        email_confirmed: true,
-        is_active: true,
-      },
-    })
+    // Помощник создается через ЛК владельца в разделе Настройки
 
     console.log('\n✅ Владелец создан успешно!')
     console.log(`Owner ID: ${owner.id}`)
-    console.log(`Assistant ID: ${assistant.id}`)
     console.log('\nВы можете войти в систему используя:')
     console.log(`Email: ${email}`)
     console.log(`Пароль владельца: ${password}`)
-    console.log(`Пароль помощника: ${assistantPassword}`)
+    console.log('\n💡 Помощник можно создать через ЛК владельца в разделе Настройки')
   } catch (error) {
     console.error('Ошибка при создании владельца:', error)
     process.exit(1)
