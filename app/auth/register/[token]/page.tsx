@@ -8,7 +8,7 @@ import { z } from 'zod'
 
 const registerSchema = z.object({
   full_name: z.string().min(2),
-  phone: z.string().min(10),
+  phone: z.string().regex(/^\+7\d{10}$/, 'Телефон должен быть в формате +7XXXXXXXXXX'),
   email: z.string().email(),
   password: z.string().min(6),
   confirm_password: z.string().min(6),
@@ -36,12 +36,46 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      phone: '+7',
+    },
   })
 
   const photo = watch('photo')
+  const phoneValue = watch('phone')
+
+  // Форматирование и валидация телефона с автозаполнением +7
+  const formatPhone = (value: string): string => {
+    // Удаляем все нецифровые символы кроме +
+    let cleaned = value.replace(/[^\d+]/g, '')
+    
+    // Если начинается не с +7, добавляем +7
+    if (!cleaned.startsWith('+7')) {
+      // Если начинается с 8, заменяем на +7
+      if (cleaned.startsWith('8')) {
+        cleaned = '+7' + cleaned.slice(1)
+      } else if (cleaned.startsWith('7')) {
+        cleaned = '+7' + cleaned.slice(1)
+      } else {
+        // Добавляем +7 если пусто или начинается с чего-то другого
+        cleaned = '+7' + cleaned.replace(/^\+/, '')
+      }
+    }
+    
+    // Ограничиваем длину до 12 символов (+7 + 10 цифр)
+    cleaned = cleaned.slice(0, 12)
+    
+    return cleaned
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value)
+    setValue('phone', formatted)
+  }
 
   useEffect(() => {
     if (photo && photo.length > 0) {
@@ -170,6 +204,13 @@ export default function RegisterPage() {
                   type="tel"
                   className="input-glass"
                   placeholder="+7 (999) 123-45-67"
+                  value={phoneValue || '+7'}
+                  onChange={handlePhoneChange}
+                  onFocus={(e) => {
+                    if (!e.target.value || e.target.value === '') {
+                      setValue('phone', '+7')
+                    }
+                  }}
                 />
                 {errors.phone && (
                   <p className="text-red-300 text-xs mt-1">{errors.phone.message}</p>

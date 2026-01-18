@@ -10,7 +10,7 @@ import path from 'path'
 
 const registerSchema = z.object({
   full_name: z.string().min(2),
-  phone: z.string().min(10),
+  phone: z.string().regex(/^\+7\d{10}$/, 'Телефон должен быть в формате +7XXXXXXXXXX'),
   email: z.string().email(),
   password: z.string().min(6),
   photo: z.string().optional(), // base64 encoded image
