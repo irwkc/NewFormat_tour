@@ -51,6 +51,9 @@ jobs:
               git reset --hard origin/main
             fi
             
+            echo "📦 Очистка старых зависимостей..."
+            rm -rf node_modules package-lock.json || true
+            
             echo "📦 Установка зависимостей..."
             npm ci --production=false
             
