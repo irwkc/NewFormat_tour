@@ -89,8 +89,8 @@ export default function Select({
           />
           
           {/* Dropdown */}
-          <div className="absolute z-20 w-full mt-2 rounded-2xl overflow-hidden shadow-2xl border border-white/30 backdrop-blur-xl" style={{
-            background: 'rgba(255, 255, 255, 0.5)',
+          <div className="absolute z-20 w-full mt-2 rounded-2xl overflow-hidden shadow-2xl border border-white/40 backdrop-blur-xl" style={{
+            background: 'rgba(255, 255, 255, 0.7)',
             WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             backdropFilter: 'blur(24px) saturate(180%)',
           }}>
@@ -101,7 +101,6 @@ export default function Select({
                 msOverflowStyle: 'none',
                 maskImage: 'none',
                 WebkitMaskImage: 'none',
-                background: 'rgba(255, 255, 255, 0.5)',
               }}
             >
               {options.map((option) => (
@@ -109,30 +108,43 @@ export default function Select({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full text-left px-4 py-3 transition-all duration-200 ${
-                    value === option.value
-                      ? 'bg-white/30 text-white font-medium'
-                      : 'text-white hover:bg-white/20 hover:text-white'
-                  }`}
+                  className="w-full text-left px-5 py-4 transition-all duration-200"
                   style={{
                     background: value === option.value 
-                      ? 'rgba(255, 255, 255, 0.3)' 
+                      ? 'rgba(99, 102, 241, 0.6)' 
                       : 'transparent',
+                    color: '#ffffff',
+                    fontWeight: value === option.value ? '600' : '400',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (value !== option.value) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (value !== option.value) {
+                      e.currentTarget.style.background = 'transparent'
+                    }
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span>{option.label}</span>
+                    <span className="text-white font-medium" style={{
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                    }}>{option.label}</span>
                     {value === option.value && (
                       <svg
                         className="w-5 h-5 text-white"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
+                        style={{
+                          filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
+                        }}
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={2.5}
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
