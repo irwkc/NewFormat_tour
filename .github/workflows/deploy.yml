@@ -35,49 +35,64 @@ jobs:
             
             cd /var/www/newformat_tour
             
+            # Сохранить текущий коммит для сравнения
+            PREV_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+            
             # Настроить Git безопасность
             git config --global --add safe.directory /var/www/newformat_tour 2>/dev/null || true
             
             # Обновить код из Git
             echo "📥 Обновление из GitHub..."
             git fetch origin main --quiet
+            NEW_COMMIT=$(git rev-parse origin/main)
             git reset --hard origin/main --quiet
             
-            # Обновить зависимости только если изменились package.json или package-lock.json
-            echo "📦 Проверка зависимостей..."
-            if git diff --quiet HEAD@{1} HEAD -- package.json package-lock.json 2>/dev/null || [ ! -d node_modules ]; then
+            # Проверка изменений файлов
+            PACKAGE_CHANGED=true
+            SCHEMA_CHANGED=true
+            
+            if [ -n "$PREV_COMMIT" ] && [ "$PREV_COMMIT" != "$NEW_COMMIT" ]; then
+              if git diff --quiet "$PREV_COMMIT" "$NEW_COMMIT" -- package.json package-lock.json 2>/dev/null; then
+                PACKAGE_CHANGED=false
+              fi
+              if git diff --quiet "$PREV_COMMIT" "$NEW_COMMIT" -- prisma/schema.prisma 2>/dev/null; then
+                SCHEMA_CHANGED=false
+              fi
+            fi
+            
+            # Обновить зависимости только если изменились
+            if [ "$PACKAGE_CHANGED" = true ] || [ ! -d node_modules ]; then
               echo "📦 Установка зависимостей..."
               rm -rf node_modules 2>/dev/null || true
-              npm ci --silent --no-audit --no-fund
+              npm ci --silent --no-audit --no-fund 2>&1 | grep -v "^npm WARN" || true
             else
               echo "✅ Зависимости не изменились, пропускаем установку"
             fi
             
             # Генерация Prisma Client (только если изменилась схема)
-            echo "🔧 Проверка Prisma схемы..."
-            if git diff --quiet HEAD@{1} HEAD -- prisma/schema.prisma 2>/dev/null && [ -d node_modules/.prisma ]; then
-              echo "✅ Prisma схема не изменилась, пропускаем генерацию"
-            else
+            if [ "$SCHEMA_CHANGED" = true ] || [ ! -d node_modules/.prisma ]; then
               echo "🔧 Генерация Prisma Client..."
-              npx prisma generate --silent
+              npx prisma generate --silent 2>&1 | grep -v "^Start by importing" || true
+            else
+              echo "✅ Prisma схема не изменилась, пропускаем генерацию"
             fi
             
             # Применение миграций (только если изменилась схема)
-            echo "🗄️ Применение миграций..."
-            if git diff --quiet HEAD@{1} HEAD -- prisma/schema.prisma 2>/dev/null; then
-              echo "✅ Prisma схема не изменилась, пропускаем миграции"
+            if [ "$SCHEMA_CHANGED" = true ]; then
+              echo "🗄️ Применение миграций..."
+              npx prisma db push --accept-data-loss --skip-generate --silent 2>&1 | grep -v "^Environment\|^Prisma schema\|^Datasource\|^Tip:" || true
             else
-              npx prisma db push --accept-data-loss --skip-generate --silent
+              echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
             
             # Сборка проекта
             echo "🏗️ Сборка проекта..."
-            NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent
+            NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
             
             # Перезапуск приложения
             echo "🔄 Перезапуск приложения..."
-            pm2 restart newformat-tour --silent || pm2 start npm --name "newformat-tour" -- start --silent
-            pm2 save --silent
+            pm2 restart newformat-tour --silent 2>/dev/null || pm2 start npm --name "newformat-tour" -- start --silent 2>/dev/null
+            pm2 save --silent 2>/dev/null
             
             echo "✅ Деплой завершен!"
           ENDSSH
