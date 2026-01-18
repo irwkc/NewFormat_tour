@@ -138,15 +138,13 @@ export default function PartnerSettingsPage() {
                     placeholder="Введите пароль для контролера"
                   />
                   {createErrors.password && (
-                    <p className="text-red-500 text-xs mt-1">{createErrors.password.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{createErrors.password.message}</p>
                   )}
                 </div>
 
                 {message && (
-                  <div className={`rounded-md p-4 ${
-                    message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                  }`}>
-                    <p className="text-sm">{message.text}</p>
+                  <div className={message.type === 'success' ? 'alert-success' : 'alert-error'}>
+                    <p className="text-sm font-medium">{message.text}</p>
                   </div>
                 )}
 
@@ -174,15 +172,13 @@ export default function PartnerSettingsPage() {
                     placeholder="Введите новый пароль"
                   />
                   {passwordErrors.new_password && (
-                    <p className="text-red-500 text-xs mt-1">{passwordErrors.new_password.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{passwordErrors.new_password.message}</p>
                   )}
                 </div>
 
                 {message && (
-                  <div className={`rounded-md p-4 ${
-                    message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                  }`}>
-                    <p className="text-sm">{message.text}</p>
+                  <div className={message.type === 'success' ? 'alert-success' : 'alert-error'}>
+                    <p className="text-sm font-medium">{message.text}</p>
                   </div>
                 )}
 

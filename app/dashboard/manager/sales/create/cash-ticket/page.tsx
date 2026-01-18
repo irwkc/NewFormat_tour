@@ -104,13 +104,13 @@ function CashTicketPageContent() {
 
   return (
     <DashboardLayout title="Ввод билета (наличные)" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Ввод номера билета и фото</h2>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Ввод номера билета и фото</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Номер билета (формат: AA00000000) *
               </label>
               <input
@@ -118,33 +118,33 @@ function CashTicketPageContent() {
                 type="text"
                 pattern="[A-Z]{2}\d{8}"
                 maxLength={10}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 uppercase"
+                className="input-glass uppercase"
                 placeholder="AB12345678"
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase()
                 }}
               />
               {errors.ticket_number && (
-                <p className="text-red-500 text-xs mt-1">{errors.ticket_number.message}</p>
+                <p className="text-red-300 text-xs mt-1">{errors.ticket_number.message}</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">Формат: 2 заглавные английские буквы + 8 цифр</p>
+              <p className="text-xs text-white/60 mt-1">Формат: 2 заглавные английские буквы + 8 цифр</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Фото билета *
               </label>
               <input
                 {...register('ticket_photo')}
                 type="file"
                 accept="image/*"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="input-glass"
               />
               {photoPreview && (
-                <img src={photoPreview} alt="Preview" className="mt-2 max-w-xs rounded" />
+                <img src={photoPreview} alt="Preview" className="mt-2 max-w-xs rounded-2xl" />
               )}
               {errors.ticket_photo && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-300 text-xs mt-1">
                   {typeof errors.ticket_photo === 'object' && 'message' in errors.ticket_photo 
                     ? String(errors.ticket_photo.message) 
                     : 'Ошибка загрузки фото'}
@@ -153,8 +153,8 @@ function CashTicketPageContent() {
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{error}</p>
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
@@ -162,14 +162,14 @@ function CashTicketPageContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                className="btn-primary flex-1"
               >
                 {loading ? 'Создание...' : 'Создать билет'}
               </button>
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                className="btn-secondary flex-1"
               >
                 Отмена
               </button>

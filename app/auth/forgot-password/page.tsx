@@ -51,66 +51,68 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Восстановление пароля
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Введите ваш email, и мы отправим ссылку для восстановления пароля
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              {...register('email')}
-              type="email"
-              autoComplete="email"
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="example@mail.ru"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        <div className="glass-card">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold text-white">
+              Восстановление пароля
+            </h2>
+            <p className="mt-2 text-sm text-white/70">
+              Введите ваш email, и мы отправим ссылку для восстановления пароля
+            </p>
+          </div>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
+                Email
+              </label>
+              <input
+                {...register('email')}
+                type="email"
+                autoComplete="email"
+                className="input-glass"
+                placeholder="example@mail.ru"
+              />
+              {errors.email && (
+                <p className="text-red-300 text-xs mt-1">{errors.email.message}</p>
+              )}
+            </div>
+
+            {success && (
+              <div className="alert-success">
+                <p className="text-sm font-medium">
+                  Если такой email существует, на него отправлено письмо с инструкциями по восстановлению пароля.
+                </p>
+              </div>
             )}
-          </div>
 
-          {success && (
-            <div className="rounded-md bg-green-50 p-4">
-              <p className="text-sm text-green-800">
-                Если такой email существует, на него отправлено письмо с инструкциями по восстановлению пароля.
-              </p>
+            {error && (
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary w-full"
+              >
+                {isSubmitting ? 'Отправка...' : 'Отправить'}
+              </button>
             </div>
-          )}
 
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="text-center">
+              <a
+                href="/auth/login"
+                className="font-medium text-white/80 hover:text-white transition-colors"
+              >
+                Вернуться на страницу входа
+              </a>
             </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Отправка...' : 'Отправить'}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <a
-              href="/auth/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Вернуться на страницу входа
-            </a>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -135,147 +135,149 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Регистрация
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
-                ФИО
-              </label>
-              <input
-                {...register('full_name')}
-                type="text"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Иванов Иван Иванович"
-              />
-              {errors.full_name && (
-                <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Номер телефона
-              </label>
-              <input
-                {...register('phone')}
-                type="tel"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="+7 (999) 123-45-67"
-              />
-              {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                {...register('email')}
-                type="email"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="example@mail.ru"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Пароль
-              </label>
-              <input
-                {...register('password')}
-                type="password"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
-                Подтвердите пароль
-              </label>
-              <input
-                {...register('confirm_password')}
-                type="password"
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-              {errors.confirm_password && (
-                <p className="text-red-500 text-xs mt-1">{errors.confirm_password.message}</p>
-              )}
-            </div>
-
-            {/* Фото для промоутеров и менеджеров */}
-            {(invitation?.target_role === 'promoter' || invitation?.target_role === 'manager') && (
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        <div className="glass-card">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold text-white">
+              Регистрация
+            </h2>
+          </div>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-4">
               <div>
-                <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
-                  Фото лица (обязательно) *
+                <label htmlFor="full_name" className="block text-sm font-medium text-white/90 mb-2">
+                  ФИО
                 </label>
                 <input
-                  {...register('photo')}
-                  type="file"
-                  accept="image/*"
-                  className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  {...register('full_name')}
+                  type="text"
+                  className="input-glass"
+                  placeholder="Иванов Иван Иванович"
                 />
-                {photoPreview && (
-                  <img src={photoPreview} alt="Preview" className="mt-2 max-w-xs rounded" />
-                )}
-                {errors.photo && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {typeof errors.photo === 'object' && 'message' in errors.photo 
-                      ? String(errors.photo.message) 
-                      : 'Ошибка загрузки фото'}
-                  </p>
+                {errors.full_name && (
+                  <p className="text-red-300 text-xs mt-1">{errors.full_name.message}</p>
                 )}
               </div>
-            )}
 
-            {/* Пароль контролера для партнеров */}
-            {invitation?.target_role === 'partner' && (
               <div>
-                <label htmlFor="controller_password" className="block text-sm font-medium text-gray-700">
-                  Пароль для альтернативного профиля контролера
+                <label htmlFor="phone" className="block text-sm font-medium text-white/90 mb-2">
+                  Номер телефона
                 </label>
                 <input
-                  {...register('controller_password')}
+                  {...register('phone')}
+                  type="tel"
+                  className="input-glass"
+                  placeholder="+7 (999) 123-45-67"
+                />
+                {errors.phone && (
+                  <p className="text-red-300 text-xs mt-1">{errors.phone.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
+                  Email
+                </label>
+                <input
+                  {...register('email')}
+                  type="email"
+                  className="input-glass"
+                  placeholder="example@mail.ru"
+                />
+                {errors.email && (
+                  <p className="text-red-300 text-xs mt-1">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
+                  Пароль
+                </label>
+                <input
+                  {...register('password')}
                   type="password"
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="input-glass"
                 />
-                {errors.controller_password && (
-                  <p className="text-red-500 text-xs mt-1">{errors.controller_password.message}</p>
+                {errors.password && (
+                  <p className="text-red-300 text-xs mt-1">{errors.password.message}</p>
                 )}
               </div>
-            )}
-          </div>
 
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+              <div>
+                <label htmlFor="confirm_password" className="block text-sm font-medium text-white/90 mb-2">
+                  Подтвердите пароль
+                </label>
+                <input
+                  {...register('confirm_password')}
+                  type="password"
+                  className="input-glass"
+                />
+                {errors.confirm_password && (
+                  <p className="text-red-300 text-xs mt-1">{errors.confirm_password.message}</p>
+                )}
+              </div>
+
+              {/* Фото для промоутеров и менеджеров */}
+              {(invitation?.target_role === 'promoter' || invitation?.target_role === 'manager') && (
+                <div>
+                  <label htmlFor="photo" className="block text-sm font-medium text-white/90 mb-2">
+                    Фото лица (обязательно) *
+                  </label>
+                  <input
+                    {...register('photo')}
+                    type="file"
+                    accept="image/*"
+                    className="input-glass"
+                  />
+                  {photoPreview && (
+                    <img src={photoPreview} alt="Preview" className="mt-2 max-w-xs rounded-2xl" />
+                  )}
+                  {errors.photo && (
+                    <p className="text-red-300 text-xs mt-1">
+                      {typeof errors.photo === 'object' && 'message' in errors.photo 
+                        ? String(errors.photo.message) 
+                        : 'Ошибка загрузки фото'}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Пароль контролера для партнеров */}
+              {invitation?.target_role === 'partner' && (
+                <div>
+                  <label htmlFor="controller_password" className="block text-sm font-medium text-white/90 mb-2">
+                    Пароль для альтернативного профиля контролера
+                  </label>
+                  <input
+                    {...register('controller_password')}
+                    type="password"
+                    className="input-glass"
+                  />
+                  {errors.controller_password && (
+                    <p className="text-red-300 text-xs mt-1">{errors.controller_password.message}</p>
+                  )}
+                </div>
+              )}
             </div>
-          )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
-            </button>
-          </div>
-        </form>
+            {error && (
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary w-full"
+              >
+                {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

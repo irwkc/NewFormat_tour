@@ -115,19 +115,19 @@ export default function CreateSalePage() {
 
   return (
     <DashboardLayout title="Создание продажи" navItems={navItems}>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6">Создать продажу (Онлайн)</h2>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold mb-6 text-white">Создать продажу (Онлайн)</h2>
 
           {!qrCode ? (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-white/90 mb-2">
                   Экскурсия *
                 </label>
                 <select
                   {...register('tour_id')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="input-glass"
                 >
                   <option value="">Выберите экскурсию</option>
                   {tours.map((tour) => (
@@ -137,45 +137,45 @@ export default function CreateSalePage() {
                   ))}
                 </select>
                 {errors.tour_id && (
-                  <p className="text-red-500 text-xs mt-1">{errors.tour_id.message}</p>
+                  <p className="text-red-300 text-xs mt-1">{errors.tour_id.message}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Количество взрослых *
                   </label>
                   <input
                     {...register('adult_count', { valueAsNumber: true })}
                     type="number"
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="input-glass"
                   />
                   {errors.adult_count && (
-                    <p className="text-red-500 text-xs mt-1">{errors.adult_count.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{errors.adult_count.message}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Количество детских
                   </label>
                   <input
                     {...register('child_count', { valueAsNumber: true })}
                     type="number"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="input-glass"
                   />
                   {errors.child_count && (
-                    <p className="text-red-500 text-xs mt-1">{errors.child_count.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{errors.child_count.message}</p>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Цена взрослого билета (₽) *
                   </label>
                   <input
@@ -183,15 +183,15 @@ export default function CreateSalePage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="input-glass"
                   />
                   {errors.adult_price && (
-                    <p className="text-red-500 text-xs mt-1">{errors.adult_price.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{errors.adult_price.message}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Цена детского билета (₽)
                   </label>
                   <input
@@ -199,24 +199,24 @@ export default function CreateSalePage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="input-glass"
                   />
                   {errors.child_price && (
-                    <p className="text-red-500 text-xs mt-1">{errors.child_price.message}</p>
+                    <p className="text-red-300 text-xs mt-1">{errors.child_price.message}</p>
                   )}
                 </div>
               </div>
 
               {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="alert-error">
+                  <p className="text-sm font-medium">{error}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                className="btn-primary w-full"
               >
                 {loading ? 'Создание...' : 'Создать продажу'}
               </button>
@@ -224,34 +224,34 @@ export default function CreateSalePage() {
           ) : (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-xl font-bold mb-4">Продажа создана!</h3>
-                <p className="mb-4">Покажите клиенту QR код или отправьте ссылку:</p>
+                <h3 className="text-xl font-bold mb-4 text-white">Продажа создана!</h3>
+                <p className="mb-4 text-white/70">Покажите клиенту QR код или отправьте ссылку:</p>
                 <div className="mb-4">
-                  <img src={qrCode} alt="QR Code" className="mx-auto max-w-xs" />
+                  <img src={qrCode} alt="QR Code" className="mx-auto max-w-xs rounded-2xl" />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-white/90 mb-2">
                     Ссылка для оплаты:
                   </label>
                   <input
                     type="text"
                     value={paymentLink || ''}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    className="input-glass"
                   />
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(paymentLink || '')
                       alert('Ссылка скопирована!')
                     }}
-                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-700"
+                    className="mt-2 text-sm text-white/80 hover:text-white transition-colors"
                   >
                     Копировать ссылку
                   </button>
                 </div>
                 <button
                   onClick={() => router.push('/dashboard/promoter/sales')}
-                  className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+                  className="btn-primary w-full"
                 >
                   Вернуться к продажам
                 </button>

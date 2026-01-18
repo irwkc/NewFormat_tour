@@ -73,10 +73,10 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-red-600">Недействительная ссылка для сброса пароля</p>
-          <a href="/auth/login" className="text-indigo-600 hover:text-indigo-500 mt-4 inline-block">
+      <div className="min-h-screen flex items-center justify-center relative">
+        <div className="max-w-md w-full glass-card text-center">
+          <p className="text-red-300">Недействительная ссылка для сброса пароля</p>
+          <a href="/auth/login" className="text-white/80 hover:text-white mt-4 inline-block transition-colors">
             Вернуться на страницу входа
           </a>
         </div>
@@ -85,68 +85,70 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Сброс пароля
-          </h2>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        <div className="glass-card">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold text-white">
+              Сброс пароля
+            </h2>
+          </div>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <input type="hidden" {...register('token')} />
+
+            <div>
+              <label htmlFor="new_password" className="block text-sm font-medium text-white/90 mb-2">
+                Новый пароль
+              </label>
+              <input
+                {...register('new_password')}
+                type="password"
+                className="input-glass"
+              />
+              {errors.new_password && (
+                <p className="text-red-300 text-xs mt-1">{errors.new_password.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="confirm_password" className="block text-sm font-medium text-white/90 mb-2">
+                Подтвердите пароль
+              </label>
+              <input
+                {...register('confirm_password')}
+                type="password"
+                className="input-glass"
+              />
+              {errors.confirm_password && (
+                <p className="text-red-300 text-xs mt-1">{errors.confirm_password.message}</p>
+              )}
+            </div>
+
+            {success && (
+              <div className="alert-success">
+                <p className="text-sm font-medium">
+                  Пароль успешно изменен! Перенаправление на страницу входа...
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary w-full"
+              >
+                {isSubmitting ? 'Сброс...' : 'Сбросить пароль'}
+              </button>
+            </div>
+          </form>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <input type="hidden" {...register('token')} />
-
-          <div>
-            <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
-              Новый пароль
-            </label>
-            <input
-              {...register('new_password')}
-              type="password"
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-            {errors.new_password && (
-              <p className="text-red-500 text-xs mt-1">{errors.new_password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
-              Подтвердите пароль
-            </label>
-            <input
-              {...register('confirm_password')}
-              type="password"
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-            {errors.confirm_password && (
-              <p className="text-red-500 text-xs mt-1">{errors.confirm_password.message}</p>
-            )}
-          </div>
-
-          {success && (
-            <div className="rounded-md bg-green-50 p-4">
-              <p className="text-sm text-green-800">
-                Пароль успешно изменен! Перенаправление на страницу входа...
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Сброс...' : 'Сбросить пароль'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   )
