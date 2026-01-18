@@ -5,7 +5,9 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
+    const token = request.headers.get('authorization')?.replace('Bearer ', '') ||
+                  request.cookies.get('token')?.value;
+    
     if (!token) {
       return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
     }
