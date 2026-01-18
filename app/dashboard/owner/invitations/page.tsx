@@ -7,6 +7,7 @@ import { customAlert, customConfirm } from '@/utils/modals'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import Select from '@/components/UI/Select'
 
 const createInvitationSchema = z.object({
   target_role: z.enum(['manager', 'promoter', 'partner']),
@@ -23,6 +24,8 @@ export default function InvitationsPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateInvitationFormData>({
     resolver: zodResolver(createInvitationSchema),
@@ -128,14 +131,17 @@ export default function InvitationsPage() {
               <label className="block text-sm font-medium text-white/90 mb-2">
                 Роль приглашаемого
               </label>
-              <select
-                {...register('target_role')}
-                className="input-glass"
-              >
-                <option value="manager">Менеджер</option>
-                <option value="promoter">Промоутер</option>
-                <option value="partner">Партнер</option>
-              </select>
+              <Select
+                options={[
+                  { value: 'manager', label: 'Менеджер' },
+                  { value: 'promoter', label: 'Промоутер' },
+                  { value: 'partner', label: 'Партнер' },
+                ]}
+                value={watch('target_role') || 'manager'}
+                onChange={(value) => setValue('target_role', value as 'manager' | 'promoter' | 'partner')}
+                placeholder="Выберите роль"
+                className="w-full"
+              />
               {errors.target_role && (
                 <p className="text-red-300 text-xs mt-1">{errors.target_role.message}</p>
               )}
