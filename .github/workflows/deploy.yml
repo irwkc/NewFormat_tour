@@ -52,10 +52,15 @@ jobs:
             fi
             
             echo "📦 Очистка старых зависимостей..."
-            rm -rf node_modules package-lock.json || true
+            rm -rf node_modules || true
             
             echo "📦 Установка зависимостей..."
-            npm ci
+            # npm ci требует package-lock.json, используем npm install если его нет
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
             
             echo "🔧 Генерация Prisma Client..."
             npx prisma generate
