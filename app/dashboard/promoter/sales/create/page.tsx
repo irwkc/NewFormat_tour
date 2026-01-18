@@ -241,7 +241,7 @@ export default function CreateSalePage() {
                     className="input-glass"
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       navigator.clipboard.writeText(paymentLink || '')
                       await customAlert('Ссылка скопирована!')
                     }}
