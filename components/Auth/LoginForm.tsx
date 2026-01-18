@@ -103,10 +103,9 @@ export default function LoginForm() {
       <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="glass-card">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-3xl font-bold text-white">
               Вход в систему
             </h2>
-            <p className="text-white/70 text-sm">Добро пожаловать обратно</p>
           </div>
           
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
