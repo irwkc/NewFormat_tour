@@ -82,7 +82,9 @@ export async function POST(
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'photos')
       await mkdir(uploadDir, { recursive: true })
       
-      const buffer = Buffer.from(photo, 'base64')
+      // Убрать префикс data:image/...;base64, если есть
+      const base64Data = photo.includes(',') ? photo.split(',')[1] : photo
+      const buffer = Buffer.from(base64Data, 'base64')
       const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
       const filepath = path.join(uploadDir, filename)
 
@@ -171,15 +173,26 @@ export async function POST(
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const errorMessages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
       return NextResponse.json(
-        { success: false, error: 'Invalid input', details: error.errors },
+        { 
+          success: false, 
+          error: 'Неверные данные для регистрации', 
+          details: error.errors,
+          message: errorMessages 
+        },
         { status: 400 }
       )
     }
     
     console.error('Registration error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Внутренняя ошибка сервера'
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { 
+        success: false, 
+        error: errorMessage,
+        message: errorMessage 
+      },
       { status: 500 }
     )
   }

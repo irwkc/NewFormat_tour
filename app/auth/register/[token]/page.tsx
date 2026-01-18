@@ -103,9 +103,7 @@ export default function RegisterPage() {
         photo: photoBase64,
       }
 
-      if (isPartner && data.controller_password) {
-        body.controller_password = data.controller_password
-      }
+      // controller_password больше не используется - контролер создается через ЛК партнера
 
       const response = await fetch(`/api/auth/register/${token}`, {
         method: 'POST',
@@ -117,8 +115,11 @@ export default function RegisterPage() {
 
       const result = await response.json()
 
-      if (!result.success) {
-        setError(result.error || 'Registration failed')
+      if (!response.ok || !result.success) {
+        const errorMessage = result.error || result.message || 'Ошибка регистрации'
+        const errorDetails = result.details ? ` (${JSON.stringify(result.details)})` : ''
+        setError(errorMessage + errorDetails)
+        console.error('Registration error:', result)
         return
       }
 
