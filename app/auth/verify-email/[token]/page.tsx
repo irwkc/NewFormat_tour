@@ -29,26 +29,6 @@ export default function VerifyEmailPage() {
         // Автоматически войти, если есть токен
         if (result.data?.token) {
           setAuth(result.data.user, result.data.token)
-          
-          // Редирект в зависимости от роли
-          setTimeout(() => {
-            const role = result.data.user.role
-            if (role === 'owner') {
-              router.push('/dashboard/owner')
-            } else if (role === 'partner') {
-              router.push('/dashboard/partner')
-            } else if (role === 'manager') {
-              router.push('/dashboard/manager')
-            } else if (role === 'promoter') {
-              router.push('/dashboard/promoter')
-            } else {
-              router.push('/dashboard')
-            }
-          }, 2000)
-        } else {
-          setTimeout(() => {
-            router.push('/auth/login')
-          }, 2000)
         }
       } else {
         setStatus('error')
@@ -61,34 +41,39 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-md w-full space-y-8 relative z-10">
         {status === 'loading' && (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Подтверждение email...</p>
+          <div className="glass-card text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            <p className="mt-4 text-white/90">Подтверждение email...</p>
           </div>
         )}
         
         {status === 'success' && (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-green-500 text-5xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold mb-2">Успешно!</h2>
-            <p className="text-gray-600">{message}</p>
-            <p className="text-sm text-gray-500 mt-4">Перенаправление...</p>
+          <div className="glass-card text-center">
+            <div className="text-green-400 text-6xl mb-6">✓</div>
+            <h2 className="text-2xl font-bold text-white mb-4">Успешно!</h2>
+            <p className="text-white/90 mb-6">{message}</p>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="btn-primary w-full"
+            >
+              Перейти ко входу
+            </button>
           </div>
         )}
         
         {status === 'error' && (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="text-red-500 text-5xl mb-4">✗</div>
-            <h2 className="text-2xl font-bold mb-2">Ошибка</h2>
-            <p className="text-gray-600">{message}</p>
+          <div className="glass-card text-center">
+            <div className="text-red-400 text-6xl mb-6">✗</div>
+            <h2 className="text-2xl font-bold text-white mb-4">Ошибка</h2>
+            <p className="text-white/90 mb-6">{message}</p>
             <button
               onClick={() => router.push('/auth/login')}
-              className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              className="btn-primary w-full"
             >
-              Перейти на страницу входа
+              Перейти ко входу
             </button>
           </div>
         )}

@@ -31,6 +31,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isPartner, setIsPartner] = useState(false)
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
 
   const {
     register,
@@ -157,8 +158,8 @@ export default function RegisterPage() {
         return
       }
 
-      // Перенаправить на страницу подтверждения email или на логин
-      router.push('/auth/login?registered=true')
+      // Показать сообщение о необходимости подтвердить email
+      setRegistrationSuccess(true)
     } catch (err) {
       setError('An error occurred. Please try again.')
       console.error('Registration error:', err)
@@ -167,6 +168,32 @@ export default function RegisterPage() {
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Загрузка...</div>
+  }
+
+  // Показать сообщение о необходимости подтвердить email
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-md w-full space-y-8 relative z-10">
+          <div className="glass-card text-center">
+            <div className="text-green-400 text-6xl mb-6">✓</div>
+            <h2 className="text-2xl font-bold text-white mb-4">Регистрация завершена!</h2>
+            <p className="text-white/90 mb-6">
+              Мы отправили письмо с подтверждением на ваш email адрес.
+            </p>
+            <p className="text-white/80 mb-6">
+              Пожалуйста, проверьте почту и перейдите по ссылке для подтверждения регистрации.
+            </p>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="btn-primary w-full"
+            >
+              Перейти ко входу
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
