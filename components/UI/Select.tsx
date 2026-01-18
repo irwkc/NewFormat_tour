@@ -89,7 +89,11 @@ export default function Select({
           />
           
           {/* Dropdown */}
-          <div className="absolute z-20 w-full mt-2 glass-card rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+          <div className="absolute z-20 w-full mt-2 rounded-2xl overflow-hidden shadow-2xl border border-white/30 backdrop-blur-xl" style={{
+            background: 'rgba(255, 255, 255, 0.5)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+          }}>
             <div className="py-2 max-h-60 overflow-y-auto scrollbar-hide">
               {options.map((option) => (
                 <button
@@ -98,8 +102,8 @@ export default function Select({
                   onClick={() => handleSelect(option.value)}
                   className={`w-full text-left px-4 py-3 transition-all duration-200 ${
                     value === option.value
-                      ? 'bg-white/20 text-white font-medium'
-                      : 'text-white/90 hover:bg-white/10 hover:text-white'
+                      ? 'bg-white/30 text-white font-medium'
+                      : 'text-white hover:bg-white/20 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center justify-between">
