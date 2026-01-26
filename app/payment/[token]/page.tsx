@@ -89,30 +89,34 @@ export default function PaymentPage() {
                     <span className="text-white/70">Компания:</span>
                     <span className="text-white font-medium">{sale.tour.company}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/70">Рейс:</span>
-                    <span className="text-white font-medium">{sale.tour.flight_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/70">Дата:</span>
-                    <span className="text-white font-medium">{new Date(sale.tour.date).toLocaleDateString('ru-RU')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/70">Время отправления:</span>
-                    <span className="text-white font-medium">{new Date(sale.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  {sale.tour.boarding_location_url && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-white/70">Точка посадки:</span>
-                      <a 
-                        href={sale.tour.boarding_location_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline text-sm"
-                      >
-                        Открыть на Яндекс.Картах
-                      </a>
-                    </div>
+                  {sale.flight && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-white/70">Рейс:</span>
+                        <span className="text-white font-medium">{sale.flight.flight_number}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/70">Дата:</span>
+                        <span className="text-white font-medium">{new Date(sale.flight.date).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/70">Время отправления:</span>
+                        <span className="text-white font-medium">{new Date(sale.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      {sale.flight.boarding_location_url && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Точка посадки:</span>
+                          <a 
+                            href={sale.flight.boarding_location_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline text-sm"
+                          >
+                            Открыть на Яндекс.Картах
+                          </a>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

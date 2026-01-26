@@ -39,25 +39,28 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
 
       const sale = ticketData.sale || ticketData
       const tour = sale.tour || ticketData.tour
+      const flight = sale.flight || ticketData.flight
 
       // Информация об экскурсии
       let yPos = 250
       doc.fontSize(16).text(`Компания: ${tour.company}`, 50, yPos)
       yPos += 30
-      doc.text(`Рейс: ${tour.flight_number}`, 50, yPos)
-      yPos += 30
-      doc.text(`Дата: ${new Date(tour.date).toLocaleDateString('ru-RU')}`, 50, yPos)
-      yPos += 30
-      doc.text(`Время отправления: ${new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, yPos)
-      
-      // Ссылка на Яндекс.Карты (если есть)
-      if (tour.boarding_location_url) {
+      if (flight) {
+        doc.text(`Рейс: ${flight.flight_number}`, 50, yPos)
         yPos += 30
-        doc.fontSize(12).fillColor('blue').text('Точка посадки: Яндекс.Карты', 50, yPos, {
-          link: tour.boarding_location_url,
-          underline: true
-        })
-        doc.fillColor('black')
+        doc.text(`Дата: ${new Date(flight.date).toLocaleDateString('ru-RU')}`, 50, yPos)
+        yPos += 30
+        doc.text(`Время отправления: ${new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, yPos)
+        
+        // Ссылка на Яндекс.Карты (если есть)
+        if (flight.boarding_location_url) {
+          yPos += 30
+          doc.fontSize(12).fillColor('blue').text('Точка посадки: Яндекс.Карты', 50, yPos, {
+            link: flight.boarding_location_url,
+            underline: true
+          })
+          doc.fillColor('black')
+        }
       }
 
       // Информация о билете

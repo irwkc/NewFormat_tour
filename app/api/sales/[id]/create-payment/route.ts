@@ -32,6 +32,7 @@ export async function POST(
                 category: true,
               },
             },
+            flight: true,
           },
         })
 
@@ -58,7 +59,8 @@ export async function POST(
 
         // Создать платеж в ЮКассе
         const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/${sale.payment_link_token}`
-        const description = `Билеты на экскурсию: ${sale.tour.company} - ${sale.tour.flight_number}`
+        const flightInfo = sale.flight ? ` - ${sale.flight.flight_number}` : ''
+        const description = `Билеты на экскурсию: ${sale.tour.company}${flightInfo}`
 
         const payment = await createYooKassaPayment(
           Number(sale.total_amount),

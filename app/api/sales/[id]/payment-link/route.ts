@@ -20,6 +20,7 @@ export async function GET(
             category: true,
           },
         },
+        flight: true,
       },
     })
 
@@ -45,11 +46,15 @@ export async function GET(
           total_amount: sale.total_amount,
           tour: {
             company: sale.tour.company,
-            flight_number: sale.tour.flight_number,
-            date: sale.tour.date,
-            departure_time: sale.tour.departure_time,
             category: sale.tour.category.name,
           },
+          flight: sale.flight ? {
+            id: sale.flight.id,
+            flight_number: sale.flight.flight_number,
+            date: sale.flight.date,
+            departure_time: sale.flight.departure_time,
+            boarding_location_url: sale.flight.boarding_location_url,
+          } : null,
         },
       },
     })
