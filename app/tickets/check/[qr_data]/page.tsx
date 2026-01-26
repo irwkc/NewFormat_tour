@@ -77,9 +77,13 @@ export default function TicketCheckPublicPage() {
                 <h2 className="text-lg font-semibold mb-2 text-white">Экскурсия</h2>
                 <div className="space-y-1 text-white/90">
                   <p><strong className="text-white">Компания:</strong> {ticketInfo.tour.company}</p>
-                  <p><strong className="text-white">Рейс:</strong> {ticketInfo.tour.flight_number}</p>
-                  <p><strong className="text-white">Дата:</strong> {new Date(ticketInfo.tour.date).toLocaleDateString('ru-RU')}</p>
-                  <p><strong className="text-white">Время отправления:</strong> {new Date(ticketInfo.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                  {ticketInfo.flight && (
+                    <>
+                      <p><strong className="text-white">Рейс:</strong> {ticketInfo.flight.flight_number}</p>
+                      <p><strong className="text-white">Дата:</strong> {new Date(ticketInfo.flight.date).toLocaleDateString('ru-RU')}</p>
+                      <p><strong className="text-white">Время отправления:</strong> {new Date(ticketInfo.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </>
+                  )}
                   <p><strong className="text-white">Категория:</strong> {ticketInfo.tour.category}</p>
                 </div>
               </div>
