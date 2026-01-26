@@ -259,6 +259,12 @@ export default function TicketCheckPage() {
                         <span className="text-white font-medium">{ticketInfo.ticket.child_count}</span>
                       </div>
                     )}
+                    {ticketInfo.ticket.concession_count > 0 && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-white/70 text-sm">Льготных мест:</span>
+                        <span className="text-white font-medium">{ticketInfo.ticket.concession_count}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-start">
                       <span className="text-white/70 text-sm">Статус:</span>
                       <span className={`font-medium px-3 py-1 rounded-full text-xs ${

@@ -16,6 +16,7 @@ const createTourSchema = z.object({
   max_places: z.number().int().positive(),
   partner_min_adult_price: z.number().positive(),
   partner_min_child_price: z.number().positive(),
+  partner_min_concession_price: z.number().positive().optional(),
   flight_number: z.string().min(1),
 })
 
@@ -194,7 +195,7 @@ export default function CreateTourPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена взрослого билета (₽) *
@@ -224,6 +225,22 @@ export default function CreateTourPage() {
                 />
                 {errors.partner_min_child_price && (
                   <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/90 mb-2">
+                  Минимальная цена льготного билета (₽)
+                </label>
+                <input
+                  {...register('partner_min_concession_price', { valueAsNumber: true })}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="input-glass"
+                />
+                {errors.partner_min_concession_price && (
+                  <p className="text-red-300 text-xs mt-1">{errors.partner_min_concession_price.message}</p>
                 )}
               </div>
             </div>

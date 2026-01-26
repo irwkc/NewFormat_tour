@@ -115,7 +115,7 @@ export default function PromoterDashboard() {
                   <div key={sale.id} className="p-3 rounded-xl border border-white/20">
                     <div className="font-semibold text-white">{sale.tour?.company || 'Экскурсия'}</div>
                     <div className="text-sm text-white/70">
-                      {sale.adult_count} взр. {sale.child_count > 0 && `${sale.child_count} дет.`} - {Number(sale.total_amount).toFixed(2)}₽
+                      {sale.adult_count} взр. {sale.child_count > 0 && `${sale.child_count} дет.`} {sale.concession_count > 0 && `${sale.concession_count} льг.`} - {Number(sale.total_amount).toFixed(2)}₽
                     </div>
                   </div>
                 ))}

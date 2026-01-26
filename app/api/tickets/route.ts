@@ -229,6 +229,7 @@ export async function POST(request: NextRequest) {
             ticket_photo_url: photoUrl,
             adult_count: sale.adult_count,
             child_count: sale.child_count,
+            concession_count: sale.concession_count || 0,
             ticket_status: 'sold',
             qr_code_data: null, // Для налички/эквайринга QR не генерируется
           },
@@ -252,7 +253,7 @@ export async function POST(request: NextRequest) {
           where: { id: sale.tour_id },
           data: {
             current_booked_places: {
-              increment: sale.adult_count + sale.child_count,
+              increment: sale.adult_count + sale.child_count + (sale.concession_count || 0),
             },
           },
         })

@@ -12,6 +12,7 @@ const moderateSchema = z.object({
   moderation_status: z.enum(['approved', 'rejected']),
   owner_min_adult_price: z.number().positive(),
   owner_min_child_price: z.number().positive(),
+  owner_min_concession_price: z.number().positive().optional(),
   commission_type: z.enum(['percentage', 'fixed']),
   commission_percentage: z.number().positive().optional(),
   commission_fixed_amount: z.number().positive().optional(),
@@ -159,13 +160,13 @@ export default function ModerateTourPage() {
               <p><strong className="text-white/90">Дата:</strong> {new Date(tour.date).toLocaleDateString('ru-RU')}</p>
               <p><strong className="text-white/90">Время отправления:</strong> {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
               <p><strong className="text-white/90">Мест:</strong> {tour.max_places}</p>
-              <p><strong className="text-white/90">Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽</p>
+              <p><strong className="text-white/90">Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽{tour.partner_min_concession_price && `, Льготный: ${Number(tour.partner_min_concession_price).toFixed(2)}₽`}</p>
               <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-2">
                   Минимальная цена взрослого билета (₽) *
@@ -197,6 +198,23 @@ export default function ModerateTourPage() {
                 />
                 {errors.owner_min_child_price && (
                   <p className="text-red-300 text-xs mt-1">{errors.owner_min_child_price.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/90 mb-2">
+                  Минимальная цена льготного билета (₽)
+                </label>
+                <input
+                  {...register('owner_min_concession_price', { valueAsNumber: true })}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={Number(tour.owner_min_concession_price) || Number(tour.partner_min_concession_price) || ''}
+                  className="input-glass"
+                />
+                {errors.owner_min_concession_price && (
+                  <p className="text-red-300 text-xs mt-1">{errors.owner_min_concession_price.message}</p>
                 )}
               </div>
             </div>

@@ -12,6 +12,7 @@ const createTourSchema = z.object({
   max_places: z.number().int().positive(),
   partner_min_adult_price: z.number().positive(),
   partner_min_child_price: z.number().positive(),
+  partner_min_concession_price: z.number().positive().optional(),
   flight_number: z.string().min(1),
 })
 
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
             max_places: data.max_places,
             partner_min_adult_price: data.partner_min_adult_price,
             partner_min_child_price: data.partner_min_child_price,
+            partner_min_concession_price: data.partner_min_concession_price || null,
             flight_number: data.flight_number,
             moderation_status: ModerationStatus.pending,
           },

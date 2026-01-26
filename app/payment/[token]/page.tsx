@@ -117,6 +117,12 @@ export default function PaymentPage() {
                       <span className="text-white font-medium">{sale.child_count} × {sale.child_price}₽ = {sale.child_count * sale.child_price}₽</span>
                     </div>
                   )}
+                  {sale.concession_count > 0 && sale.concession_price && (
+                    <div className="flex justify-between">
+                      <span className="text-white/70">Льготных билетов:</span>
+                      <span className="text-white font-medium">{sale.concession_count} × {sale.concession_price}₽ = {sale.concession_count * sale.concession_price}₽</span>
+                    </div>
+                  )}
                 </div>
               </div>
               

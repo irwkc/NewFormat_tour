@@ -242,6 +242,9 @@ export default function TicketCheckPage() {
                     {ticketInfo.ticket.child_count > 0 && (
                       <p><strong className="text-white">Детских мест:</strong> {ticketInfo.ticket.child_count}</p>
                     )}
+                    {ticketInfo.ticket.concession_count > 0 && (
+                      <p><strong className="text-white">Льготных мест:</strong> {ticketInfo.ticket.concession_count}</p>
+                    )}
                     <p><strong className="text-white">Статус:</strong> {
                       ticketInfo.ticket.ticket_status === 'sold' ? 'Продано' :
                       ticketInfo.ticket.ticket_status === 'used' ? 'Использовано' :

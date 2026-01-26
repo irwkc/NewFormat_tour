@@ -7,6 +7,7 @@ import { z } from 'zod'
 const updateMinPricesSchema = z.object({
   owner_min_adult_price: z.number().positive(),
   owner_min_child_price: z.number().positive(),
+  owner_min_concession_price: z.number().positive().optional(),
 })
 
 // PATCH /api/tours/:id/min-prices - изменение минимальных цен (только владелец)
@@ -34,6 +35,7 @@ export async function PATCH(
           data: {
             owner_min_adult_price: data.owner_min_adult_price,
             owner_min_child_price: data.owner_min_child_price,
+            owner_min_concession_price: data.owner_min_concession_price || null,
           },
           include: {
             category: true,

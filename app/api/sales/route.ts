@@ -9,8 +9,10 @@ const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   adult_count: z.number().int().positive(),
   child_count: z.number().int().min(0).default(0),
+  concession_count: z.number().int().min(0).default(0),
   adult_price: z.number().positive(),
   child_price: z.number().positive().optional(),
+  concession_price: z.number().positive().optional(),
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
 })
@@ -156,6 +158,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        if (data.concession_count > 0 && data.concession_price) {
+          if (tour.owner_min_concession_price && data.concession_price < Number(tour.owner_min_concession_price)) {
+            return NextResponse.json(
+              { success: false, error: `Concession price must be at least ${tour.owner_min_concession_price}` },
+              { status: 400 }
+            )
+          }
+        }
+
         // Проверить промоутера, если указан
         if (data.promoter_user_id) {
           if (req.user!.role !== UserRole.manager) {
@@ -179,7 +190,8 @@ export async function POST(request: NextRequest) {
 
         // Вычислить общую сумму
         const childPrice = data.child_price || 0
-        const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice)
+        const concessionPrice = data.concession_price || 0
+        const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice) + (data.concession_count * concessionPrice)
 
         // Создать продажу
         const sale = await prisma.sale.create({
@@ -189,8 +201,10 @@ export async function POST(request: NextRequest) {
             promoter_user_id: data.promoter_user_id || null,
             adult_count: data.adult_count,
             child_count: data.child_count,
+            concession_count: data.concession_count,
             adult_price: data.adult_price,
             child_price: data.child_price || null,
+            concession_price: data.concession_price || null,
             total_amount: totalAmount,
             payment_method: data.payment_method as PaymentMethod,
             payment_status: 'pending',

@@ -92,6 +92,7 @@ export default function PromoterSalesPage() {
                       <td className="text-sm text-white whitespace-nowrap">
                         {sale.adult_count} взр.
                         {sale.child_count > 0 && `, ${sale.child_count} дет.`}
+                        {sale.concession_count > 0 && `, ${sale.concession_count} льг.`}
                       </td>
                       <td className="text-sm font-medium text-white whitespace-nowrap">
                         {Number(sale.total_amount).toFixed(2)}₽

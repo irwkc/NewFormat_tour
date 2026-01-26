@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
           { header: 'Промоутер', key: 'promoter', width: 25 },
           { header: 'Взрослых', key: 'adults', width: 10 },
           { header: 'Детских', key: 'children', width: 10 },
+          { header: 'Льготных', key: 'concessions', width: 10 },
           { header: 'Сумма', key: 'amount', width: 15 },
           { header: 'Способ оплаты', key: 'method', width: 15 },
           { header: 'Дата', key: 'date', width: 20 },
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
             promoter: sale.promoter?.full_name || '',
             adults: sale.adult_count,
             children: sale.child_count,
+            concessions: sale.concession_count || 0,
             amount: Number(sale.total_amount),
             method: sale.payment_method,
             date: sale.created_at.toISOString(),
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest) {
           { header: 'Экскурсия', key: 'tour', width: 30 },
           { header: 'Взрослых', key: 'adults', width: 10 },
           { header: 'Детских', key: 'children', width: 10 },
+          { header: 'Льготных', key: 'concessions', width: 10 },
           { header: 'Статус', key: 'status', width: 15 },
           { header: 'Дата создания', key: 'created', width: 20 },
         ]
@@ -109,6 +112,7 @@ export async function GET(request: NextRequest) {
             tour: `${ticket.tour.company} - ${ticket.tour.flight_number}`,
             adults: ticket.adult_count,
             children: ticket.child_count,
+            concessions: ticket.concession_count || 0,
             status: ticket.ticket_status,
             created: ticket.created_at.toISOString(),
           }))

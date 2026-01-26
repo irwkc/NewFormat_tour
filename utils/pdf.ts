@@ -3,14 +3,14 @@ import fs from 'fs'
 import path from 'path'
 import { generateQRCode } from './qr'
 
-export async function generateTicketPDF(ticket: any): Promise<string> {
+export async function generateTicketPDF(ticketData: any): Promise<string> {
   return new Promise(async (resolve, reject) => {
     try {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'tickets-pdf')
       await fs.promises.mkdir(uploadDir, { recursive: true })
       
       // Использовать правильный ID билета для имени файла
-      const ticketId = ticket.id.replace('temp-', '')
+      const ticketId = ticketData.id.replace('temp-', '')
       const filename = `ticket-${ticketId}.pdf`
       const filepath = path.join(uploadDir, filename)
       
@@ -37,38 +37,57 @@ export async function generateTicketPDF(ticket: any): Promise<string> {
       // Заголовок
       doc.fontSize(24).text('БИЛЕТ НА ЭКСКУРСИЮ', 50, 170, { align: 'center' })
 
+      const sale = ticketData.sale || ticketData
+      const tour = sale.tour || ticketData.tour
+
       // Информация об экскурсии
-      doc.fontSize(16).text(`Компания: ${ticket.sale.tour.company}`, 50, 250)
-      doc.text(`Рейс: ${ticket.sale.tour.flight_number}`, 50, 280)
-      doc.text(`Дата: ${new Date(ticket.sale.tour.date).toLocaleDateString('ru-RU')}`, 50, 310)
-      doc.text(`Время отправления: ${new Date(ticket.sale.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, 340)
+      doc.fontSize(16).text(`Компания: ${tour.company}`, 50, 250)
+      doc.text(`Рейс: ${tour.flight_number}`, 50, 280)
+      doc.text(`Дата: ${new Date(tour.date).toLocaleDateString('ru-RU')}`, 50, 310)
+      doc.text(`Время отправления: ${new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, 340)
 
       // Информация о билете
       doc.fontSize(14).text('Детали билета:', 50, 390)
-      doc.text(`Взрослых мест: ${ticket.adult_count}`, 70, 420)
-      if (ticket.child_count > 0) {
-        doc.text(`Детских мест: ${ticket.child_count}`, 70, 450)
+      let yPos = 420
+      doc.text(`Взрослых мест: ${ticketData.adult_count}`, 70, yPos)
+      
+      if (ticketData.child_count > 0) {
+        yPos += 30
+        doc.text(`Детских мест: ${ticketData.child_count}`, 70, yPos)
+      }
+      
+      if (ticketData.concession_count > 0) {
+        yPos += 30
+        doc.text(`Льготных мест: ${ticketData.concession_count}`, 70, yPos)
       }
 
       // Цены
-      doc.text(`Цена взрослого билета: ${ticket.sale.adult_price}₽`, 70, ticket.child_count > 0 ? 480 : 450)
-      if (ticket.child_count > 0 && ticket.sale.child_price) {
-        doc.text(`Цена детского билета: ${ticket.sale.child_price}₽`, 70, 510)
-        doc.text(`Общая сумма: ${ticket.sale.total_amount}₽`, 70, 540)
-      } else {
-        doc.text(`Общая сумма: ${ticket.sale.total_amount}₽`, 70, ticket.child_count > 0 ? 540 : 480)
+      yPos += 30
+      doc.text(`Цена взрослого билета: ${sale.adult_price}₽`, 70, yPos)
+      
+      if (ticketData.child_count > 0 && sale.child_price) {
+        yPos += 30
+        doc.text(`Цена детского билета: ${sale.child_price}₽`, 70, yPos)
       }
+      
+      if (ticketData.concession_count > 0 && sale.concession_price) {
+        yPos += 30
+        doc.text(`Цена льготного билета: ${sale.concession_price}₽`, 70, yPos)
+      }
+      
+      yPos += 30
+      doc.text(`Общая сумма: ${sale.total_amount}₽`, 70, yPos)
 
       // QR код
-      if (ticket.qr_code_data) {
-        const qrDataURL = await generateQRCode(ticket.qr_code_data)
+      if (ticketData.qr_code_data) {
+        const qrDataURL = await generateQRCode(ticketData.qr_code_data)
         const qrBuffer = Buffer.from(qrDataURL.split(',')[1], 'base64')
         doc.image(qrBuffer, 400, 250, { width: 150, height: 150 })
         doc.fontSize(10).text('QR код для контроля', 400, 410, { align: 'center', width: 150 })
       }
 
       // Номер билета
-      doc.fontSize(12).text(`Номер билета: ${ticket.id}`, 50, 600)
+      doc.fontSize(12).text(`Номер билета: ${ticketData.id}`, 50, 600)
 
       doc.end()
 

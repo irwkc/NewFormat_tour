@@ -133,11 +133,13 @@ model Tour {
   max_places            Int
   partner_min_adult_price Decimal       @map("partner_min_adult_price") @db.Decimal(10, 2)
   partner_min_child_price Decimal       @map("partner_min_child_price") @db.Decimal(10, 2)
+  partner_min_concession_price Decimal? @map("partner_min_concession_price") @db.Decimal(10, 2)
   moderation_status     ModerationStatus @default(pending)
   moderated_by_user_id  String?         @map("moderated_by_user_id")
   moderated_at          DateTime?
   owner_min_adult_price Decimal?        @map("owner_min_adult_price") @db.Decimal(10, 2)
   owner_min_child_price Decimal?        @map("owner_min_child_price") @db.Decimal(10, 2)
+  owner_min_concession_price Decimal?   @map("owner_min_concession_price") @db.Decimal(10, 2)
   commission_type       CommissionType?
   commission_percentage Decimal?        @db.Decimal(5, 2)
   commission_fixed_amount Decimal?      @db.Decimal(10, 2)
@@ -167,8 +169,10 @@ model Sale {
   promoter_user_id    String?       @map("promoter_user_id")
   adult_count         Int
   child_count         Int           @default(0)
+  concession_count    Int           @default(0)
   adult_price         Decimal       @db.Decimal(10, 2)
   child_price         Decimal?      @db.Decimal(10, 2)
+  concession_price    Decimal?      @db.Decimal(10, 2)
   total_amount        Decimal       @db.Decimal(10, 2)
   payment_method      PaymentMethod
   payment_status      PaymentStatus @default(pending)

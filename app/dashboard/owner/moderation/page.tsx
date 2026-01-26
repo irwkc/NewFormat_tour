@@ -78,7 +78,7 @@ export default function ModerationPage() {
                         Мест: {tour.max_places}
                       </div>
                       <div className="text-sm mt-2 text-white/70">
-                        <span className="font-medium text-white">Цены партнера:</span> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽
+                        <span className="font-medium text-white">Цены партнера:</span> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽{tour.partner_min_concession_price && `, Льготный: ${Number(tour.partner_min_concession_price).toFixed(2)}₽`}
                       </div>
                     </div>
                     <span className="px-3 py-1 bg-yellow-300/30 text-yellow-200 rounded-full text-sm border border-yellow-400/30">

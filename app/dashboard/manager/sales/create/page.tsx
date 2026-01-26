@@ -14,8 +14,10 @@ const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   adult_count: z.number().int().positive(),
   child_count: z.number().int().min(0).default(0),
+  concession_count: z.number().int().min(0).default(0),
   adult_price: z.number().positive(),
   child_price: z.number().positive().optional(),
+  concession_price: z.number().positive().optional(),
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
   promoter_id: z.number().optional(),
@@ -48,6 +50,7 @@ export default function CreateSalePage() {
     resolver: zodResolver(createSaleSchema),
     defaultValues: {
       child_count: 0,
+      concession_count: 0,
       payment_method: 'online_yookassa',
     },
   })
@@ -210,7 +213,7 @@ export default function CreateSalePage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
                     Количество взрослых *
@@ -240,9 +243,24 @@ export default function CreateSalePage() {
                     <p className="text-red-300 text-xs mt-1">{errors.child_count.message}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Количество льготных
+                  </label>
+                  <input
+                    {...register('concession_count', { valueAsNumber: true })}
+                    type="number"
+                    min="0"
+                    className="input-glass"
+                  />
+                  {errors.concession_count && (
+                    <p className="text-red-300 text-xs mt-1">{errors.concession_count.message}</p>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
                     Цена взрослого билета (₽) *
@@ -272,6 +290,22 @@ export default function CreateSalePage() {
                   />
                   {errors.child_price && (
                     <p className="text-red-300 text-xs mt-1">{errors.child_price.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Цена льготного билета (₽)
+                  </label>
+                  <input
+                    {...register('concession_price', { valueAsNumber: true })}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input-glass"
+                  />
+                  {errors.concession_price && (
+                    <p className="text-red-300 text-xs mt-1">{errors.concession_price.message}</p>
                   )}
                 </div>
               </div>
