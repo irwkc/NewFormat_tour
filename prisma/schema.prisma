@@ -206,6 +206,7 @@ model Ticket {
   tour_id             String      @map("tour_id")
   adult_count         Int
   child_count         Int         @default(0)
+  concession_count    Int         @default(0)
   ticket_number       String?     @unique
   ticket_photo_url    String?
   ticket_status       TicketStatus @default(sold)

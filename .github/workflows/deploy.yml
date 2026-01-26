@@ -69,11 +69,6 @@ jobs:
               echo "✅ Зависимости не изменились, пропускаем установку"
             fi
             
-            # Генерация Prisma Client (всегда после обновления кода)
-            echo "🔧 Генерация Prisma Client..."
-            rm -rf node_modules/.prisma 2>/dev/null || true
-            npx prisma generate --silent 2>&1 | grep -v "^Start by importing\|^Tip:" || true
-            
             # Применение миграций (только если изменилась схема)
             if [ "$SCHEMA_CHANGED" = true ]; then
               echo "🗄️ Применение миграций..."
@@ -81,6 +76,11 @@ jobs:
             else
               echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
+            
+            # Генерация Prisma Client (всегда после обновления кода и миграций)
+            echo "🔧 Генерация Prisma Client..."
+            rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true
+            npx prisma generate --silent 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
             # Сборка проекта
             echo "🏗️ Сборка проекта..."
