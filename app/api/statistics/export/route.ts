@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
             tour: `${ticket.tour.company} - ${ticket.tour.flight_number}`,
             adults: ticket.adult_count,
             children: ticket.child_count,
-            concessions: ticket.concession_count || 0,
+            concessions: (ticket as any).concession_count || 0,
             status: ticket.ticket_status,
             created: ticket.created_at.toISOString(),
           }))
