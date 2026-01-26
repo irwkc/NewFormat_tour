@@ -33,6 +33,7 @@ export async function GET(
             },
             sale: {
               include: {
+                flight: true,
                 seller: {
                   select: {
                     id: true,

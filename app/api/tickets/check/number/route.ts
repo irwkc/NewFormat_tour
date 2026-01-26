@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
             },
             sale: {
               include: {
+                flight: true,
                 seller: {
                   select: {
                     id: true,
