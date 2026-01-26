@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
 
         const tours = await prisma.tour.findMany({
           include: {
+            flights: true,
             sales: {
               where: {
                 payment_status: PaymentStatus.completed,
@@ -37,14 +38,16 @@ export async function GET(request: NextRequest) {
           const totalTickets = tour.tickets.length
           const usedTickets = tour.tickets.filter((t) => t.ticket_status === 'used').length
           const cancelledTickets = tour.tickets.filter((t) => t.ticket_status === 'cancelled').length
+          
+          // Подсчитать места по всем рейсам
+          const totalMaxPlaces = tour.flights.reduce((sum, flight) => sum + flight.max_places, 0)
+          const totalBookedPlaces = tour.flights.reduce((sum, flight) => sum + flight.current_booked_places, 0)
 
           return {
             tour: {
               id: tour.id,
               company: tour.company,
-              flight_number: tour.flight_number,
-              date: tour.date,
-              departure_time: tour.departure_time,
+              flights_count: tour.flights.length,
               category: tour.category_id,
             },
             sales: {
@@ -58,9 +61,9 @@ export async function GET(request: NextRequest) {
               sold: totalTickets - usedTickets - cancelledTickets,
             },
             places: {
-              booked: tour.current_booked_places,
-              max: tour.max_places,
-              available: tour.max_places - tour.current_booked_places,
+              booked: totalBookedPlaces,
+              max: totalMaxPlaces,
+              available: totalMaxPlaces - totalBookedPlaces,
             },
           }
         })

@@ -35,6 +35,7 @@ export async function GET(
           include: {
             toursCreated: {
               include: {
+                flights: true,
                 sales: {
                   where: {
                     payment_status: PaymentStatus.completed,
@@ -90,7 +91,7 @@ export async function GET(
             tours_details: tours.map((tour) => ({
               id: tour.id,
               company: tour.company,
-              flight_number: tour.flight_number,
+              flights_count: tour.flights?.length || 0,
               sales_count: tour.sales.length,
               tickets_count: tour.tickets.length,
               revenue: tour.sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0),
