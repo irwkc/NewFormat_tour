@@ -38,10 +38,10 @@ export async function GET(
           id: sale.id,
           adult_count: sale.adult_count,
           child_count: sale.child_count,
-          concession_count: sale.concession_count || 0,
+          concession_count: (sale as any).concession_count || 0,
           adult_price: sale.adult_price,
           child_price: sale.child_price,
-          concession_price: sale.concession_price,
+          concession_price: (sale as any).concession_price,
           total_amount: sale.total_amount,
           tour: {
             company: sale.tour.company,

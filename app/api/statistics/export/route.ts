@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
             promoter: sale.promoter?.full_name || '',
             adults: sale.adult_count,
             children: sale.child_count,
-            concessions: sale.concession_count || 0,
+            concessions: (sale as any).concession_count || 0,
             amount: Number(sale.total_amount),
             method: sale.payment_method,
             date: sale.created_at.toISOString(),

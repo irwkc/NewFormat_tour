@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
               },
               adult_count: ticket.adult_count,
               child_count: ticket.child_count,
-              concession_count: ticket.concession_count || 0,
+              concession_count: (ticket as any).concession_count || 0,
               ticket_status: ticket.ticket_status,
               ticket_number: ticket.ticket_number,
               ticket_photo_url: ticket.ticket_photo_url,
