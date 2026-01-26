@@ -51,8 +51,16 @@ export async function GET(
                 tour: {
                   select: {
                     company: true,
-                    flight_number: true,
-                    date: true,
+                  },
+                },
+                sale: {
+                  include: {
+                    flight: {
+                      select: {
+                        flight_number: true,
+                        date: true,
+                      },
+                    },
                   },
                 },
               },
@@ -62,6 +70,10 @@ export async function GET(
                 tour: {
                   select: {
                     company: true,
+                  },
+                },
+                flight: {
+                  select: {
                     flight_number: true,
                     date: true,
                   },

@@ -95,11 +95,15 @@ export async function GET(
               tour: {
                 id: ticket.tour.id,
                 company: ticket.tour.company,
-                date: ticket.tour.date,
-                departure_time: ticket.tour.departure_time,
-                flight_number: ticket.tour.flight_number,
                 category: ticket.tour.category.name,
               },
+              flight: ticket.sale?.flight ? {
+                id: ticket.sale.flight.id,
+                flight_number: ticket.sale.flight.flight_number,
+                date: ticket.sale.flight.date,
+                departure_time: ticket.sale.flight.departure_time,
+                boarding_location_url: ticket.sale.flight.boarding_location_url,
+              } : null,
               adult_count: ticket.adult_count,
               child_count: ticket.child_count,
               concession_count: (ticket as any).concession_count || 0,

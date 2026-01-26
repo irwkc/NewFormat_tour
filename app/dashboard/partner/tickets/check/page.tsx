@@ -234,9 +234,13 @@ export default function TicketCheckPage() {
               {ticketInfo.is_valid && (
                 <>
                   <div className="space-y-2 mb-4 text-white/90">
-                    <p><strong className="text-white">Экскурсия:</strong> {ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</p>
-                    <p><strong className="text-white">Дата:</strong> {new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</p>
-                    <p><strong className="text-white">Время отправления:</strong> {new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p><strong className="text-white">Экскурсия:</strong> {ticketInfo.ticket.tour.company}{ticketInfo.ticket.flight && ` - ${ticketInfo.ticket.flight.flight_number}`}</p>
+                    {ticketInfo.ticket.flight && (
+                      <>
+                        <p><strong className="text-white">Дата:</strong> {new Date(ticketInfo.ticket.flight.date).toLocaleDateString('ru-RU')}</p>
+                        <p><strong className="text-white">Время отправления:</strong> {new Date(ticketInfo.ticket.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </>
+                    )}
                     <p><strong className="text-white">Категория:</strong> {ticketInfo.ticket.tour.category}</p>
                     <p><strong className="text-white">Взрослых мест:</strong> {ticketInfo.ticket.adult_count}</p>
                     {ticketInfo.ticket.child_count > 0 && (

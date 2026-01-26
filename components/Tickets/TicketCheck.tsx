@@ -205,16 +205,23 @@ export default function TicketCheck() {
             <div className="glass p-4 rounded-xl space-y-3">
               <div className="flex justify-between items-start">
                 <span className="text-gray-600 text-sm">Экскурсия:</span>
-                <span className="text-gray-900 font-medium text-right">{ticket.tour.company} - {ticket.tour.flight_number}</span>
+                <span className="text-gray-900 font-medium text-right">
+                  {ticket.tour.company}
+                  {ticket.flight && ` - ${ticket.flight.flight_number}`}
+                </span>
               </div>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-600 text-sm">Дата:</span>
-                <span className="text-gray-900 font-medium">{new Date(ticket.tour.date).toLocaleDateString('ru-RU')}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-600 text-sm">Время отправления:</span>
-                <span className="text-gray-900 font-medium">{new Date(ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
+              {ticket.flight && (
+                <>
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-600 text-sm">Дата:</span>
+                    <span className="text-gray-900 font-medium">{new Date(ticket.flight.date).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-600 text-sm">Время отправления:</span>
+                    <span className="text-gray-900 font-medium">{new Date(ticket.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-start">
                 <span className="text-gray-600 text-sm">Взрослых мест:</span>
                 <span className="text-gray-900 font-medium">{ticket.adult_count}</span>

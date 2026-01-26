@@ -67,15 +67,12 @@ export default function ModerationPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-semibold text-lg text-white">{tour.company} - {tour.flight_number}</div>
+                      <div className="font-semibold text-lg text-white">{tour.company}</div>
                       <div className="text-sm text-white/70 mt-1">
                         Категория: {tour.category.name}
                       </div>
                       <div className="text-sm text-white/70">
-                        Дата: {new Date(tour.date).toLocaleDateString('ru-RU')} в {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      <div className="text-sm text-white/70">
-                        Мест: {tour.max_places}
+                        Рейсов: {tour.flights?.length || 0}
                       </div>
                       <div className="text-sm mt-2 text-white/70">
                         <span className="font-medium text-white">Цены партнера:</span> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽{tour.partner_min_concession_price && `, Льготный: ${Number(tour.partner_min_concession_price).toFixed(2)}₽`}

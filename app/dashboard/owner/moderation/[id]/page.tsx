@@ -155,28 +155,42 @@ export default function ModerateTourPage() {
             <h3 className="font-semibold mb-2 text-white">Информация об экскурсии</h3>
             <div className="space-y-1 text-sm text-white/70">
               <p><strong className="text-white/90">Компания:</strong> {tour.company}</p>
-              <p><strong className="text-white/90">Рейс:</strong> {tour.flight_number}</p>
               <p><strong className="text-white/90">Категория:</strong> {tour.category?.name}</p>
-              <p><strong className="text-white/90">Дата:</strong> {new Date(tour.date).toLocaleDateString('ru-RU')}</p>
-              <p><strong className="text-white/90">Время отправления:</strong> {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
-              <p><strong className="text-white/90">Мест:</strong> {tour.max_places}</p>
               <p><strong className="text-white/90">Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽{tour.partner_min_concession_price && `, Льготный: ${Number(tour.partner_min_concession_price).toFixed(2)}₽`}</p>
               <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
-              {tour.boarding_location_url && (
-                <p>
-                  <strong className="text-white/90">Точка посадки:</strong>{' '}
-                  <a 
-                    href={tour.boarding_location_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline"
-                  >
-                    Открыть на Яндекс.Картах
-                  </a>
-                </p>
-              )}
             </div>
           </div>
+
+          {tour.flights && tour.flights.length > 0 && (
+            <div className="mb-6 p-4 glass rounded-xl">
+              <h3 className="font-semibold mb-3 text-white">Рейсы</h3>
+              <div className="space-y-3">
+                {tour.flights.map((flight: any) => (
+                  <div key={flight.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
+                    <div className="space-y-1 text-sm text-white/70">
+                      <p><strong className="text-white/90">Рейс:</strong> {flight.flight_number}</p>
+                      <p><strong className="text-white/90">Дата:</strong> {new Date(flight.date).toLocaleDateString('ru-RU')}</p>
+                      <p><strong className="text-white/90">Время отправления:</strong> {new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p><strong className="text-white/90">Мест:</strong> {flight.max_places} (забронировано: {flight.current_booked_places})</p>
+                      {flight.boarding_location_url && (
+                        <p>
+                          <strong className="text-white/90">Точка посадки:</strong>{' '}
+                          <a 
+                            href={flight.boarding_location_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Открыть на Яндекс.Картах
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

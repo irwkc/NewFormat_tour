@@ -233,16 +233,23 @@ export default function TicketCheckPage() {
                   <div className="glass p-4 rounded-xl mb-4 space-y-3">
                     <div className="flex justify-between items-start">
                       <span className="text-white/70 text-sm">Экскурсия:</span>
-                      <span className="text-white font-medium text-right">{ticketInfo.ticket.tour.company} - {ticketInfo.ticket.tour.flight_number}</span>
+                      <span className="text-white font-medium text-right">
+                        {ticketInfo.ticket.tour.company}
+                        {ticketInfo.ticket.flight && ` - ${ticketInfo.ticket.flight.flight_number}`}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-white/70 text-sm">Дата:</span>
-                      <span className="text-white font-medium">{new Date(ticketInfo.ticket.tour.date).toLocaleDateString('ru-RU')}</span>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <span className="text-white/70 text-sm">Время отправления:</span>
-                      <span className="text-white font-medium">{new Date(ticketInfo.ticket.tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
+                    {ticketInfo.ticket.flight && (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <span className="text-white/70 text-sm">Дата:</span>
+                          <span className="text-white font-medium">{new Date(ticketInfo.ticket.flight.date).toLocaleDateString('ru-RU')}</span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-white/70 text-sm">Время отправления:</span>
+                          <span className="text-white font-medium">{new Date(ticketInfo.ticket.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </>
+                    )}
                     {ticketInfo.ticket.tour.category && (
                       <div className="flex justify-between items-start">
                         <span className="text-white/70 text-sm">Категория:</span>

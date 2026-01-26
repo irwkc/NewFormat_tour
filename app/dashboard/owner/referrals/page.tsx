@@ -148,7 +148,7 @@ export default function ReferralsPage() {
                                   <div className="text-sm text-white/90">{history.description}</div>
                                   {history.ticket?.tour && (
                                     <div className="text-xs text-white/70 mt-1">
-                                      {history.ticket.tour.company} - {history.ticket.tour.flight_number}
+                                      {history.ticket.tour.company}{history.ticket.flight && ` - ${history.ticket.flight.flight_number}`}
                                     </div>
                                   )}
                                   <div className="text-xs text-white/70">

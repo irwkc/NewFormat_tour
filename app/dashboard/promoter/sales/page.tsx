@@ -80,11 +80,14 @@ export default function PromoterSalesPage() {
                     <tr key={sale.id}>
                       <td>
                         <div className="text-sm font-medium text-white">
-                          {sale.tour.company} - {sale.tour.flight_number}
+                          {sale.tour.company}
+                          {sale.flight && ` - ${sale.flight.flight_number}`}
                         </div>
-                        <div className="text-sm text-white/70">
-                          {new Date(sale.tour.date).toLocaleDateString('ru-RU')}
-                        </div>
+                        {sale.flight && (
+                          <div className="text-sm text-white/70">
+                            {new Date(sale.flight.date).toLocaleDateString('ru-RU')} {new Date(sale.flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
                       </td>
                       <td className="text-sm text-white/70 whitespace-nowrap">
                         {new Date(sale.created_at).toLocaleDateString('ru-RU')}

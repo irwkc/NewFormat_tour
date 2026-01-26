@@ -79,7 +79,8 @@ jobs:
             
             # Генерация Prisma Client (всегда после обновления кода и миграций)
             echo "🔧 Генерация Prisma Client..."
-            rm -rf node_modules/.prisma 2>/dev/null || true
+            rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true
+            npm install @prisma/client 2>&1 | grep -v "^npm WARN" || true
             npx prisma generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
             # Сборка проекта

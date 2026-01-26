@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
                 category: true,
               },
             },
+            flight: true,
             seller: {
               select: {
                 id: true,

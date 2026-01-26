@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
           include: {
             seller: { select: { full_name: true } },
             promoter: { select: { full_name: true } },
-            tour: { select: { company: true, flight_number: true } },
+            tour: { select: { company: true } },
+            flight: { select: { flight_number: true } },
           },
           orderBy: { created_at: 'desc' },
         })
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
         salesSheet.addRows(
           sales.map((sale) => ({
             id: sale.id,
-            tour: `${sale.tour.company} - ${sale.tour.flight_number}`,
+            tour: `${sale.tour.company}${sale.flight ? ` - ${sale.flight.flight_number}` : ''}`,
             seller: sale.seller.full_name || '',
             promoter: sale.promoter?.full_name || '',
             adults: sale.adult_count,
@@ -100,7 +101,12 @@ export async function GET(request: NextRequest) {
 
         const tickets = await prisma.ticket.findMany({
           include: {
-            tour: { select: { company: true, flight_number: true } },
+            tour: { select: { company: true } },
+            sale: {
+              include: {
+                flight: { select: { flight_number: true } },
+              },
+            },
           },
           orderBy: { created_at: 'desc' },
         })
@@ -109,7 +115,7 @@ export async function GET(request: NextRequest) {
           tickets.map((ticket) => ({
             id: ticket.id,
             number: ticket.ticket_number || '',
-            tour: `${ticket.tour.company} - ${ticket.tour.flight_number}`,
+            tour: `${ticket.tour.company}${ticket.sale?.flight ? ` - ${ticket.sale.flight.flight_number}` : ''}`,
             adults: ticket.adult_count,
             children: ticket.child_count,
             concessions: (ticket as any).concession_count || 0,
