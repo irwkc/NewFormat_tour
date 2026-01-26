@@ -123,63 +123,78 @@ export default function PartnerToursPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tours.map((tour) => (
-                    <tr key={tour.id}>
-                      <td>
-                        <div className="text-sm font-medium text-white">
-                          {tour.company}
-                        </div>
-                        <div className="text-sm text-white/70">
-                          {tour.flight_number}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="text-sm text-white">
-                          {new Date(tour.date).toLocaleDateString('ru-RU')}
-                        </div>
-                        <div className="text-sm text-white/70">
-                          {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </td>
-                      <td className="text-sm text-white/70 whitespace-nowrap">
-                        {tour.current_booked_places} / {tour.max_places}
-                      </td>
-                      <td className="whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full border ${
-                          tour.moderation_status === 'approved' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
-                          tour.moderation_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
-                          'bg-red-300/30 text-red-200 border-red-400/30'
-                        }`}>
-                          {tour.moderation_status === 'approved' ? 'Одобрена' :
-                           tour.moderation_status === 'pending' ? 'На модерации' :
-                           'Отклонена'}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full border ${
-                          tour.is_sale_stopped ? 'bg-red-300/30 text-red-200 border-red-400/30' : 'bg-green-300/30 text-green-200 border-green-400/30'
-                        }`}>
-                          {tour.is_sale_stopped ? 'Остановлены' : 'Активны'}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap text-sm space-x-2">
-                        {!tour.is_sale_stopped && (
+                  {tours.map((tour) => {
+                    const totalMaxPlaces = tour.flights?.reduce((sum: number, flight: any) => sum + flight.max_places, 0) || 0
+                    const totalBookedPlaces = tour.flights?.reduce((sum: number, flight: any) => sum + flight.current_booked_places, 0) || 0
+                    const hasStoppedFlights = tour.flights?.some((flight: any) => flight.is_sale_stopped) || false
+                    const allFlightsStopped = tour.flights?.every((flight: any) => flight.is_sale_stopped) || false
+                    
+                    return (
+                      <tr key={tour.id}>
+                        <td>
+                          <div className="text-sm font-medium text-white">
+                            {tour.company}
+                          </div>
+                          <div className="text-sm text-white/70">
+                            Рейсов: {tour.flights?.length || 0}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-sm text-white">
+                            {tour.flights && tour.flights.length > 0 && (
+                              <>
+                                {new Date(tour.flights[0].date).toLocaleDateString('ru-RU')}
+                                <div className="text-sm text-white/70">
+                                  {new Date(tour.flights[0].departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-sm text-white/70 whitespace-nowrap">
+                          {totalBookedPlaces} / {totalMaxPlaces}
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full border ${
+                            tour.moderation_status === 'approved' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
+                            tour.moderation_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
+                            'bg-red-300/30 text-red-200 border-red-400/30'
+                          }`}>
+                            {tour.moderation_status === 'approved' ? 'Одобрена' :
+                             tour.moderation_status === 'pending' ? 'На модерации' :
+                             'Отклонена'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full border ${
+                            allFlightsStopped ? 'bg-red-300/30 text-red-200 border-red-400/30' : 
+                            hasStoppedFlights ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
+                            'bg-green-300/30 text-green-200 border-green-400/30'
+                          }`}>
+                            {allFlightsStopped ? 'Остановлены' : 
+                             hasStoppedFlights ? 'Частично' :
+                             'Активны'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap text-sm space-x-2">
+                          {!allFlightsStopped && (
+                            <button
+                              onClick={() => handleStopSales(tour.id)}
+                              className="btn-warning text-xs px-3 py-1"
+                            >
+                              Остановить
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleStopSales(tour.id)}
-                            className="btn-warning text-xs px-3 py-1"
+                            onClick={() => handleDelete(tour.id)}
+                            className="btn-danger text-xs px-3 py-1"
                           >
-                            Остановить
+                            Удалить
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(tour.id)}
-                          className="btn-danger text-xs px-3 py-1"
-                        >
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

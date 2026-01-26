@@ -91,9 +91,9 @@ export default function ManagerDashboard() {
                     href={`/dashboard/manager/sales/create?tourId=${tour.id}`}
                     className="block p-3 rounded-xl border border-white/20 hover:bg-white/10 transition-all duration-200"
                   >
-                    <div className="font-semibold text-white">{tour.company} - {tour.flight_number}</div>
+                    <div className="font-semibold text-white">{tour.company}</div>
                     <div className="text-sm text-white/70">
-                      {new Date(tour.date).toLocaleDateString('ru-RU')} {new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      Рейсов: {tour.flights?.length || 0}
                     </div>
                   </Link>
                 ))}
