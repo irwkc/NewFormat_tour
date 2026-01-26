@@ -72,15 +72,15 @@ jobs:
             # Применение миграций (только если изменилась схема)
             if [ "$SCHEMA_CHANGED" = true ]; then
               echo "🗄️ Применение миграций..."
-              npx prisma db push --accept-data-loss --skip-generate --silent 2>&1 | grep -v "^Environment\|^Prisma schema\|^Datasource\|^Tip:" || true
+              npx prisma db push --accept-data-loss --skip-generate 2>&1 | grep -v "^Environment\|^Prisma schema\|^Datasource\|^Tip:" || true
             else
               echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
             
             # Генерация Prisma Client (всегда после обновления кода и миграций)
             echo "🔧 Генерация Prisma Client..."
-            rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true
-            npx prisma generate --silent 2>&1 | grep -v "^Start by importing\|^Tip:" || true
+            rm -rf node_modules/.prisma 2>/dev/null || true
+            npx prisma generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
             # Сборка проекта
             echo "🏗️ Сборка проекта..."
