@@ -146,6 +146,7 @@ model Tour {
   is_sale_stopped       Boolean         @default(false)
   current_booked_places Int             @default(0)
   flight_number         String
+  boarding_location_url  String?         @map("boarding_location_url")
   created_at            DateTime        @default(now())
   updated_at            DateTime        @updatedAt
 

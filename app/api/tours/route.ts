@@ -14,6 +14,7 @@ const createTourSchema = z.object({
   partner_min_child_price: z.number().positive(),
   partner_min_concession_price: z.number().positive().optional(),
   flight_number: z.string().min(1),
+  boarding_location_url: z.string().url().optional().or(z.literal('')),
 })
 
 // GET /api/tours - список экскурсий
@@ -139,6 +140,7 @@ export async function POST(request: NextRequest) {
             partner_min_child_price: data.partner_min_child_price,
             partner_min_concession_price: data.partner_min_concession_price || null,
             flight_number: data.flight_number,
+            boarding_location_url: data.boarding_location_url || null,
             moderation_status: ModerationStatus.pending,
           },
           include: {

@@ -162,6 +162,19 @@ export default function ModerateTourPage() {
               <p><strong className="text-white/90">Мест:</strong> {tour.max_places}</p>
               <p><strong className="text-white/90">Цены партнера:</strong> Взрослый: {Number(tour.partner_min_adult_price).toFixed(2)}₽, Детский: {Number(tour.partner_min_child_price).toFixed(2)}₽{tour.partner_min_concession_price && `, Льготный: ${Number(tour.partner_min_concession_price).toFixed(2)}₽`}</p>
               <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
+              {tour.boarding_location_url && (
+                <p>
+                  <strong className="text-white/90">Точка посадки:</strong>{' '}
+                  <a 
+                    href={tour.boarding_location_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Открыть на Яндекс.Картах
+                  </a>
+                </p>
+              )}
             </div>
           </div>
 

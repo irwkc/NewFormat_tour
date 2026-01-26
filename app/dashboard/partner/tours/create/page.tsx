@@ -18,6 +18,7 @@ const createTourSchema = z.object({
   partner_min_child_price: z.number().positive(),
   partner_min_concession_price: z.number().positive().optional(),
   flight_number: z.string().min(1),
+  boarding_location_url: z.string().url().optional().or(z.literal('')),
 })
 
 type CreateTourFormData = z.infer<typeof createTourSchema>
@@ -148,6 +149,24 @@ export default function CreateTourPage() {
               {errors.flight_number && (
                 <p className="text-red-300 text-xs mt-1">{errors.flight_number.message}</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Ссылка на Яндекс.Карты (точка посадки)
+              </label>
+              <input
+                {...register('boarding_location_url')}
+                type="url"
+                className="input-glass"
+                placeholder="https://yandex.ru/maps/..."
+              />
+              {errors.boarding_location_url && (
+                <p className="text-red-300 text-xs mt-1">{errors.boarding_location_url.message}</p>
+              )}
+              <p className="text-xs text-white/60 mt-1">
+                Укажите ссылку на Яндекс.Карты с точкой посадки для экскурсии
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -45,6 +45,16 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
       doc.text(`Рейс: ${tour.flight_number}`, 50, 280)
       doc.text(`Дата: ${new Date(tour.date).toLocaleDateString('ru-RU')}`, 50, 310)
       doc.text(`Время отправления: ${new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, 340)
+      
+      // Ссылка на Яндекс.Карты (если есть)
+      if (tour.boarding_location_url) {
+        yPos = 370
+        doc.fontSize(12).fillColor('blue').text('Точка посадки: Яндекс.Карты', 50, yPos, {
+          link: tour.boarding_location_url,
+          underline: true
+        })
+        doc.fillColor('black')
+      }
 
       // Информация о билете
       doc.fontSize(14).text('Детали билета:', 50, 390)
