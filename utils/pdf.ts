@@ -41,14 +41,18 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
       const tour = sale.tour || ticketData.tour
 
       // Информация об экскурсии
-      doc.fontSize(16).text(`Компания: ${tour.company}`, 50, 250)
-      doc.text(`Рейс: ${tour.flight_number}`, 50, 280)
-      doc.text(`Дата: ${new Date(tour.date).toLocaleDateString('ru-RU')}`, 50, 310)
-      doc.text(`Время отправления: ${new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, 340)
+      let yPos = 250
+      doc.fontSize(16).text(`Компания: ${tour.company}`, 50, yPos)
+      yPos += 30
+      doc.text(`Рейс: ${tour.flight_number}`, 50, yPos)
+      yPos += 30
+      doc.text(`Дата: ${new Date(tour.date).toLocaleDateString('ru-RU')}`, 50, yPos)
+      yPos += 30
+      doc.text(`Время отправления: ${new Date(tour.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, yPos)
       
       // Ссылка на Яндекс.Карты (если есть)
       if (tour.boarding_location_url) {
-        yPos = 370
+        yPos += 30
         doc.fontSize(12).fillColor('blue').text('Точка посадки: Яндекс.Карты', 50, yPos, {
           link: tour.boarding_location_url,
           underline: true
@@ -57,8 +61,9 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
       }
 
       // Информация о билете
-      doc.fontSize(14).text('Детали билета:', 50, 390)
-      let yPos = 420
+      yPos += 50
+      doc.fontSize(14).text('Детали билета:', 50, yPos)
+      yPos += 30
       doc.text(`Взрослых мест: ${ticketData.adult_count}`, 70, yPos)
       
       if (ticketData.child_count > 0) {
