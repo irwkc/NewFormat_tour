@@ -61,7 +61,7 @@ export async function POST(
 
         // Если билет был в статусе sold, освободить места
         if (oldStatus === TicketStatus.sold) {
-          const placesToFree = ticket.adult_count + ticket.child_count + (ticket.concession_count || 0)
+          const placesToFree = ticket.adult_count + ticket.child_count + ((ticket as any).concession_count || 0)
           
           await prisma.tour.update({
             where: { id: ticket.tour_id },

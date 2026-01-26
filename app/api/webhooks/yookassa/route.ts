@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       sale,
       adult_count: sale.adult_count,
       child_count: sale.child_count,
-      concession_count: sale.concession_count || 0,
+      concession_count: (sale as any).concession_count || 0,
       qr_code_data: qrData,
     })
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         tour_id: sale.tour_id,
         adult_count: sale.adult_count,
         child_count: sale.child_count,
-        concession_count: sale.concession_count || 0,
+        concession_count: (sale as any).concession_count || 0,
         ticket_status: 'sold',
         qr_code_data: qrData,
         qr_code_url: qrUrl,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       sale,
       adult_count: sale.adult_count,
       child_count: sale.child_count,
-      concession_count: sale.concession_count || 0,
+      concession_count: (sale as any).concession_count || 0,
       qr_code_data: correctQrData,
     })
     
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Обновить количество мест
-    const placesToAdd = sale.adult_count + sale.child_count + (sale.concession_count || 0)
+    const placesToAdd = sale.adult_count + sale.child_count + ((sale as any).concession_count || 0)
     const updatedTour = await prisma.tour.update({
       where: { id: sale.tour_id },
       data: {

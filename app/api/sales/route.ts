@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         // Вычислить общую сумму
         const childPrice = data.child_price || 0
         const concessionPrice = data.concession_price || 0
-        const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice) + (data.concession_count * concessionPrice)
+        const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice) + ((data.concession_count || 0) * concessionPrice)
 
         // Создать продажу
         const sale = await prisma.sale.create({
