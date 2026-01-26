@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
           where: { id: sale_id },
           include: {
             tour: true,
+            flight: true,
           },
         })
 
@@ -237,6 +238,7 @@ export async function POST(request: NextRequest) {
             sale: {
               include: {
                 tour: true,
+                flight: true,
               },
             },
           },
@@ -248,24 +250,21 @@ export async function POST(request: NextRequest) {
           data: { payment_status: 'completed' },
         })
 
-        // Обновить количество забронированных мест
-        await prisma.tour.update({
-          where: { id: sale.tour_id },
+        // Обновить количество забронированных мест на рейсе
+        const placesToAdd = sale.adult_count + sale.child_count + ((sale as any).concession_count || 0)
+        const updatedFlight = await prisma.flight.update({
+          where: { id: sale.flight_id },
           data: {
             current_booked_places: {
-              increment: sale.adult_count + sale.child_count + ((sale as any).concession_count || 0),
+              increment: placesToAdd,
             },
           },
         })
 
         // Проверить, не закончились ли места
-        const updatedTour = await prisma.tour.findUnique({
-          where: { id: sale.tour_id },
-        })
-
-        if (updatedTour && updatedTour.current_booked_places >= updatedTour.max_places) {
-          await prisma.tour.update({
-            where: { id: sale.tour_id },
+        if (updatedFlight.current_booked_places >= updatedFlight.max_places) {
+          await prisma.flight.update({
+            where: { id: sale.flight_id },
             data: { is_sale_stopped: true },
           })
         }

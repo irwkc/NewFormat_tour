@@ -12,6 +12,7 @@ import { customAlert } from '@/utils/modals'
 
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
+  flight_id: z.string().uuid(),
   adult_count: z.number().int().positive(),
   child_count: z.number().int().min(0).default(0),
   concession_count: z.number().int().min(0).default(0),
@@ -26,6 +27,7 @@ export default function CreateSalePage() {
   const router = useRouter()
   const { token } = useAuthStore()
   const [tours, setTours] = useState<any[]>([])
+  const [selectedTour, setSelectedTour] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
@@ -34,6 +36,7 @@ export default function CreateSalePage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<CreateSaleFormData>({
     resolver: zodResolver(createSaleSchema),
@@ -43,9 +46,20 @@ export default function CreateSalePage() {
     },
   })
 
+  const selectedTourId = watch('tour_id')
+
   useEffect(() => {
     fetchTours()
   }, [token])
+
+  useEffect(() => {
+    if (selectedTourId) {
+      const tour = tours.find(t => t.id === selectedTourId)
+      setSelectedTour(tour || null)
+    } else {
+      setSelectedTour(null)
+    }
+  }, [selectedTourId, tours])
 
   const fetchTours = async () => {
     try {
@@ -137,7 +151,7 @@ export default function CreateSalePage() {
                   <option value="">Выберите экскурсию</option>
                   {tours.map((tour) => (
                     <option key={tour.id} value={tour.id}>
-                      {tour.company} - {tour.flight_number} ({new Date(tour.date).toLocaleDateString('ru-RU')})
+                      {tour.company}
                     </option>
                   ))}
                 </select>
@@ -145,6 +159,35 @@ export default function CreateSalePage() {
                   <p className="text-red-300 text-xs mt-1">{errors.tour_id.message}</p>
                 )}
               </div>
+
+              {selectedTour && selectedTour.flights && selectedTour.flights.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Рейс (время отправления) *
+                  </label>
+                  <select
+                    {...register('flight_id')}
+                    className="input-glass"
+                  >
+                    <option value="">Выберите рейс</option>
+                    {selectedTour.flights
+                      .filter((flight: any) => !flight.is_sale_stopped && (flight.max_places - flight.current_booked_places > 0))
+                      .map((flight: any) => {
+                        const availablePlaces = flight.max_places - flight.current_booked_places
+                        const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
+                        const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                        return (
+                          <option key={flight.id} value={flight.id}>
+                            {flight.flight_number} - {dateStr} {timeStr} (Свободно мест: {availablePlaces})
+                          </option>
+                        )
+                      })}
+                  </select>
+                  {errors.flight_id && (
+                    <p className="text-red-300 text-xs mt-1">{errors.flight_id.message}</p>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>

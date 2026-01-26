@@ -28,6 +28,7 @@ export async function POST(
             sale: {
               include: {
                 tour: true,
+                flight: true,
               },
             },
           },
@@ -59,12 +60,12 @@ export async function POST(
           },
         })
 
-        // Если билет был в статусе sold, освободить места
+        // Если билет был в статусе sold, освободить места на рейсе
         if (oldStatus === TicketStatus.sold) {
           const placesToFree = ticket.adult_count + ticket.child_count + ((ticket as any).concession_count || 0)
           
-          await prisma.tour.update({
-            where: { id: ticket.tour_id },
+          const updatedFlight = await prisma.flight.update({
+            where: { id: ticket.sale.flight_id },
             data: {
               current_booked_places: {
                 decrement: placesToFree,
@@ -73,10 +74,9 @@ export async function POST(
           })
 
           // Проверить, нужно ли возобновить продажи
-          const tour = ticket.sale.tour
-          if (tour.is_sale_stopped && tour.current_booked_places - placesToFree < tour.max_places) {
-            await prisma.tour.update({
-              where: { id: ticket.tour_id },
+          if (updatedFlight.is_sale_stopped && updatedFlight.current_booked_places < updatedFlight.max_places) {
+            await prisma.flight.update({
+              where: { id: ticket.sale.flight_id },
               data: {
                 is_sale_stopped: false,
               },

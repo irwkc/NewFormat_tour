@@ -7,6 +7,7 @@ import { generateRandomToken } from '@/lib/auth'
 
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
+  flight_id: z.string().uuid(),
   adult_count: z.number().int().positive(),
   child_count: z.number().int().min(0).default(0),
   concession_count: z.number().int().min(0).default(0),
@@ -134,9 +135,38 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        if (tour.is_sale_stopped) {
+        // Проверить рейс
+        const flight = await prisma.flight.findUnique({
+          where: { id: data.flight_id },
+        })
+
+        if (!flight) {
           return NextResponse.json(
-            { success: false, error: 'Sales are stopped for this tour' },
+            { success: false, error: 'Flight not found' },
+            { status: 404 }
+          )
+        }
+
+        if (flight.tour_id !== data.tour_id) {
+          return NextResponse.json(
+            { success: false, error: 'Flight does not belong to this tour' },
+            { status: 400 }
+          )
+        }
+
+        if (flight.is_sale_stopped) {
+          return NextResponse.json(
+            { success: false, error: 'Sales are stopped for this flight' },
+            { status: 400 }
+          )
+        }
+
+        // Проверить доступность мест
+        const totalPlaces = data.adult_count + data.child_count + (data.concession_count || 0)
+        const availablePlaces = flight.max_places - flight.current_booked_places
+        if (totalPlaces > availablePlaces) {
+          return NextResponse.json(
+            { success: false, error: `Not enough places available. Available: ${availablePlaces}, Requested: ${totalPlaces}` },
             { status: 400 }
           )
         }
@@ -197,6 +227,7 @@ export async function POST(request: NextRequest) {
         const sale = await prisma.sale.create({
           data: {
             tour_id: data.tour_id,
+            flight_id: data.flight_id,
             seller_user_id: req.user!.userId,
             promoter_user_id: data.promoter_user_id || null,
             adult_count: data.adult_count,
@@ -216,6 +247,7 @@ export async function POST(request: NextRequest) {
                 category: true,
               },
             },
+            flight: true,
             seller: {
               select: {
                 id: true,

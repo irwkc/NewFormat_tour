@@ -128,9 +128,6 @@ model Tour {
   created_by_user_id    String          @map("created_by_user_id")
   category_id           String          @map("category_id")
   company               String
-  departure_time        DateTime
-  date                  DateTime        @db.Date
-  max_places            Int
   partner_min_adult_price Decimal       @map("partner_min_adult_price") @db.Decimal(10, 2)
   partner_min_child_price Decimal       @map("partner_min_child_price") @db.Decimal(10, 2)
   partner_min_concession_price Decimal? @map("partner_min_concession_price") @db.Decimal(10, 2)
@@ -143,10 +140,6 @@ model Tour {
   commission_type       CommissionType?
   commission_percentage Decimal?        @db.Decimal(5, 2)
   commission_fixed_amount Decimal?      @db.Decimal(10, 2)
-  is_sale_stopped       Boolean         @default(false)
-  current_booked_places Int             @default(0)
-  flight_number         String
-  boarding_location_url  String?         @map("boarding_location_url")
   created_at            DateTime        @default(now())
   updated_at            DateTime        @updatedAt
 
@@ -154,6 +147,7 @@ model Tour {
   createdBy             User            @relation("TourCreatedBy", fields: [created_by_user_id], references: [id])
   category              Category        @relation(fields: [category_id], references: [id])
   moderatedBy           User?           @relation("TourModeratedBy", fields: [moderated_by_user_id], references: [id])
+  flights               Flight[]
   sales                 Sale[]
   tickets               Ticket[]
 
@@ -163,9 +157,33 @@ model Tour {
   @@map("tours")
 }
 
+model Flight {
+  id                    String          @id @default(uuid())
+  tour_id               String          @map("tour_id")
+  flight_number         String
+  departure_time        DateTime
+  date                  DateTime        @db.Date
+  max_places            Int
+  current_booked_places Int             @default(0)
+  is_sale_stopped       Boolean         @default(false)
+  boarding_location_url String?         @map("boarding_location_url")
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @updatedAt
+
+  // Relations
+  tour                  Tour            @relation(fields: [tour_id], references: [id], onDelete: Cascade)
+  sales                 Sale[]
+
+  @@index([tour_id])
+  @@index([date])
+  @@index([departure_time])
+  @@map("flights")
+}
+
 model Sale {
   id                  String        @id @default(uuid())
   tour_id             String        @map("tour_id")
+  flight_id            String        @map("flight_id")
   seller_user_id      String        @map("seller_user_id")
   promoter_user_id    String?       @map("promoter_user_id")
   adult_count         Int
@@ -188,6 +206,7 @@ model Sale {
 
   // Relations
   tour                Tour          @relation(fields: [tour_id], references: [id])
+  flight              Flight        @relation(fields: [flight_id], references: [id])
   seller              User          @relation("SaleSeller", fields: [seller_user_id], references: [id])
   promoter            User?         @relation("SalePromoter", fields: [promoter_user_id], references: [id])
   ticket              Ticket?
@@ -195,6 +214,7 @@ model Sale {
   balanceHistory      BalanceHistory[]
 
   @@index([tour_id])
+  @@index([flight_id])
   @@index([seller_user_id])
   @@index([promoter_user_id])
   @@index([payment_status])

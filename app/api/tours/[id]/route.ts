@@ -15,6 +15,12 @@ export async function GET(
       where: { id },
       include: {
         category: true,
+        flights: {
+          orderBy: [
+            { date: 'asc' },
+            { departure_time: 'asc' },
+          ],
+        },
         createdBy: {
           select: {
             id: true,

@@ -4,17 +4,21 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, ModerationStatus } from '@prisma/client'
 import { z } from 'zod'
 
-const createTourSchema = z.object({
-  category_id: z.string().uuid(),
-  company: z.string().min(1),
+const flightSchema = z.object({
+  flight_number: z.string().min(1),
   departure_time: z.string().datetime(),
   date: z.string().date(),
   max_places: z.number().int().positive(),
+  boarding_location_url: z.string().url().optional().or(z.literal('')),
+})
+
+const createTourSchema = z.object({
+  category_id: z.string().uuid(),
+  company: z.string().min(1),
   partner_min_adult_price: z.number().positive(),
   partner_min_child_price: z.number().positive(),
   partner_min_concession_price: z.number().positive().optional(),
-  flight_number: z.string().min(1),
-  boarding_location_url: z.string().url().optional().or(z.literal('')),
+  flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
 })
 
 // GET /api/tours - список экскурсий
@@ -83,6 +87,12 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         category: true,
+        flights: {
+          orderBy: [
+            { date: 'asc' },
+            { departure_time: 'asc' },
+          ],
+        },
         createdBy: {
           select: {
             id: true,
@@ -133,18 +143,28 @@ export async function POST(request: NextRequest) {
             created_by_user_id: req.user!.userId,
             category_id: data.category_id,
             company: data.company,
-            departure_time: new Date(data.departure_time),
-            date: new Date(data.date),
-            max_places: data.max_places,
             partner_min_adult_price: data.partner_min_adult_price,
             partner_min_child_price: data.partner_min_child_price,
             partner_min_concession_price: data.partner_min_concession_price || null,
-            flight_number: data.flight_number,
-            boarding_location_url: data.boarding_location_url || null,
             moderation_status: ModerationStatus.pending,
+            flights: {
+              create: data.flights.map(flight => ({
+                flight_number: flight.flight_number,
+                departure_time: new Date(flight.departure_time),
+                date: new Date(flight.date),
+                max_places: flight.max_places,
+                boarding_location_url: flight.boarding_location_url || null,
+              })),
+            },
           },
           include: {
             category: true,
+            flights: {
+              orderBy: [
+                { date: 'asc' },
+                { departure_time: 'asc' },
+              ],
+            },
             createdBy: {
               select: {
                 id: true,

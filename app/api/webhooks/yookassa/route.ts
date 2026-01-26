@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
             category: true,
           },
         },
+        flight: true,
         seller: true,
         promoter: true,
       },
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
         sale: {
           include: {
             tour: true,
+            flight: true,
           },
         },
       },
@@ -120,10 +122,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Обновить количество мест
+    // Обновить количество мест на рейсе
     const placesToAdd = sale.adult_count + sale.child_count + ((sale as any).concession_count || 0)
-    const updatedTour = await prisma.tour.update({
-      where: { id: sale.tour_id },
+    const updatedFlight = await prisma.flight.update({
+      where: { id: sale.flight_id },
       data: {
         current_booked_places: {
           increment: placesToAdd,
@@ -132,9 +134,9 @@ export async function POST(request: NextRequest) {
     })
 
     // Проверить, нужно ли остановить продажи
-    if (updatedTour.current_booked_places >= updatedTour.max_places) {
-      await prisma.tour.update({
-        where: { id: sale.tour_id },
+    if (updatedFlight.current_booked_places >= updatedFlight.max_places) {
+      await prisma.flight.update({
+        where: { id: sale.flight_id },
         data: {
           is_sale_stopped: true,
         },
