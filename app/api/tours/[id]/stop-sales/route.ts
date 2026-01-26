@@ -16,6 +16,9 @@ export async function PATCH(
 
         const tour = await prisma.tour.findUnique({
           where: { id },
+          include: {
+            flights: true,
+          },
         })
 
         if (!tour) {
@@ -41,13 +44,21 @@ export async function PATCH(
           )
         }
 
-        const updatedTour = await prisma.tour.update({
-          where: { id },
+        // Остановить продажи для всех рейсов тура
+        await prisma.flight.updateMany({
+          where: {
+            tour_id: id,
+          },
           data: {
             is_sale_stopped: true,
           },
+        })
+
+        const updatedTour = await prisma.tour.findUnique({
+          where: { id },
           include: {
             category: true,
+            flights: true,
             createdBy: {
               select: {
                 id: true,
