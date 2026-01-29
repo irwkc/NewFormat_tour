@@ -90,7 +90,17 @@ jobs:
             # Перезапуск приложения
             echo "🔄 Перезапуск приложения..."
             pm2 restart newformat-tour --silent 2>/dev/null || pm2 start npm --name "newformat-tour" -- start --silent 2>/dev/null
-            pm2 save --silent 2>/dev/null
+
+            # Автозапуск после перезагрузки сервера (systemd + resurrect)
+            echo "🧩 Настройка автозапуска PM2..."
+            if command -v pm2 >/dev/null 2>&1; then
+              pm2 save --silent 2>/dev/null || true
+              if command -v systemctl >/dev/null 2>&1; then
+                pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
+                systemctl enable pm2-root >/dev/null 2>&1 || true
+                systemctl restart pm2-root >/dev/null 2>&1 || true
+              fi
+            fi
             
             echo "✅ Деплой завершен!"
           ENDSSH
