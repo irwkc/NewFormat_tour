@@ -5,6 +5,12 @@ import { UserRole, PaymentMethod } from '@prisma/client'
 import { z } from 'zod'
 import { generateRandomToken } from '@/lib/auth'
 
+const optionalPrice = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().positive().optional())
+
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   flight_id: z.string().uuid(),
@@ -12,11 +18,18 @@ const createSaleSchema = z.object({
   child_count: z.number().int().min(0).default(0),
   concession_count: z.number().int().min(0).default(0),
   adult_price: z.number().positive(),
-  child_price: z.number().positive().optional(),
-  concession_price: z.number().positive().optional(),
+  child_price: optionalPrice,
+  concession_price: optionalPrice,
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
-})
+}).refine((data) => {
+  if (data.child_count > 0) return data.child_price !== undefined
+  return true
+}, { message: 'child_price is required when child_count > 0', path: ['child_price'] })
+  .refine((data) => {
+    if (data.concession_count > 0) return data.concession_price !== undefined
+    return true
+  }, { message: 'concession_price is required when concession_count > 0', path: ['concession_price'] })
 
 // GET /api/sales - список продаж
 export async function GET(request: NextRequest) {
@@ -220,8 +233,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Вычислить общую сумму
-        const childPrice = data.child_price || 0
-        const concessionPrice = data.concession_price || 0
+        const childPrice = data.child_count > 0 ? (data.child_price || 0) : 0
+        const concessionPrice = data.concession_count > 0 ? (data.concession_price || 0) : 0
         const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice) + ((data.concession_count || 0) * concessionPrice)
 
         // Создать продажу
@@ -235,8 +248,8 @@ export async function POST(request: NextRequest) {
             child_count: data.child_count,
             concession_count: data.concession_count,
             adult_price: data.adult_price,
-            child_price: data.child_price || null,
-            concession_price: data.concession_price || null,
+            child_price: data.child_count > 0 ? (data.child_price || null) : null,
+            concession_price: data.concession_count > 0 ? (data.concession_price || null) : null,
             total_amount: totalAmount,
             payment_method: data.payment_method as PaymentMethod,
             payment_status: 'pending',

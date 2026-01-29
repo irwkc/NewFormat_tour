@@ -60,25 +60,18 @@ function AcquiringReceiptPageContent() {
       setError(null)
       setLoading(true)
 
-      // Конвертировать фото в base64
       const file = data.receipt_photo[0]
-      const photoBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
 
-      // Загрузить фото чека на продажу
+      // Загрузить фото чека на продажу (multipart/form-data)
+      const formData = new FormData()
+      formData.append('photo', file)
+
       const uploadResponse = await fetch(`/api/sales/${saleId}/upload-receipt`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          photo: photoBase64,
-        }),
+        body: formData,
       })
 
       const uploadResult = await uploadResponse.json()
