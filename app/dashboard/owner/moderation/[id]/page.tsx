@@ -8,20 +8,28 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
+const optionalNumber = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().min(0).optional())
+
+const requiredPrice = z.preprocess((v) => Number(v), z.number().min(0.01))
+
 const moderateSchema = z.object({
   moderation_status: z.enum(['approved', 'rejected']),
-  owner_min_adult_price: z.number().positive(),
-  owner_min_child_price: z.number().positive(),
-  owner_min_concession_price: z.number().positive().optional(),
+  owner_min_adult_price: requiredPrice,
+  owner_min_child_price: requiredPrice,
+  owner_min_concession_price: optionalNumber,
   commission_type: z.enum(['percentage', 'fixed']),
-  commission_percentage: z.number().positive().optional(),
-  commission_fixed_amount: z.number().positive().optional(),
+  // Комиссия может быть 0, поэтому min(0)
+  commission_percentage: optionalNumber,
+  commission_fixed_amount: optionalNumber,
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
-  } else {
-    return data.commission_fixed_amount !== undefined
   }
+  return data.commission_fixed_amount !== undefined
 }, {
   message: "commission_percentage or commission_fixed_amount is required",
 })
