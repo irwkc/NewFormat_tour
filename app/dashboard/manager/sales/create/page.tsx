@@ -19,6 +19,13 @@ const optionalNumber = z.preprocess((v) => {
 
 const requiredNumber = z.preprocess((v) => Number(v), z.number().positive())
 
+const optionalPositiveInt = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  if (typeof v === 'number' && Number.isNaN(v)) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().int().positive().optional())
+
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   flight_id: z.string().uuid(),
@@ -30,7 +37,7 @@ const createSaleSchema = z.object({
   concession_price: optionalNumber,
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
-  promoter_id: z.number().optional(),
+  promoter_id: optionalPositiveInt,
   ticket_number: z.string().regex(/^[A-Z]{2}\d{8}$/).optional(),
   ticket_photo: z.any().optional(),
   receipt_photo: z.any().optional(),
@@ -90,10 +97,21 @@ export default function CreateSalePage() {
   }, [token])
 
   useEffect(() => {
-    if (promoterId && paymentMethod === 'cash' || paymentMethod === 'acquiring') {
+    const needsPromoter = paymentMethod === 'cash' || paymentMethod === 'acquiring'
+    const hasPromoterId = typeof promoterId === 'number' && Number.isFinite(promoterId) && promoterId > 0
+
+    if (!needsPromoter) {
+      setPromoterInfo(null)
+      setValue('promoter_id', undefined, { shouldValidate: false })
+      setValue('promoter_user_id', undefined, { shouldValidate: false })
+      return
+    }
+
+    if (hasPromoterId) {
       checkPromoter()
     } else {
       setPromoterInfo(null)
+      setValue('promoter_user_id', undefined, { shouldValidate: false })
     }
   }, [promoterId, paymentMethod])
 
@@ -517,7 +535,13 @@ export default function CreateSalePage() {
                     ID промоутера (опционально)
                   </label>
                   <input
-                    {...register('promoter_id', { valueAsNumber: true })}
+                    {...register('promoter_id', {
+                      setValueAs: (v) => {
+                        if (v === '' || v === null || v === undefined) return undefined
+                        const n = Number(v)
+                        return Number.isFinite(n) && n > 0 ? n : undefined
+                      },
+                    })}
                     type="number"
                     className="input-glass"
                     placeholder="Введите ID промоутера"
