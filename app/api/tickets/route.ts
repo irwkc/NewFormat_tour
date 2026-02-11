@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { TicketStatus } from '@prisma/client'
+import { TicketStatus, UserRole } from '@prisma/client'
 
 // GET /api/tickets - список билетов (с фильтрацией по статусу, экскурсии, продавцу)
 export async function GET(request: NextRequest) {
@@ -314,6 +314,6 @@ export async function POST(request: NextRequest) {
         )
       }
     },
-    ['manager']
+    [UserRole.manager]
   )
 }

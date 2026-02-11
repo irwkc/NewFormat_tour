@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
 export default function OwnerDashboard() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [stats, setStats] = useState<any>(null)
   const [promoters, setPromoters] = useState<any[]>([])
   const [managers, setManagers] = useState<any[]>([])
@@ -65,7 +65,7 @@ export default function OwnerDashboard() {
     <DashboardLayout title="Панель владельца" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать, Никита!</h2>
+          <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать{user?.full_name || user?.email ? `, ${user.full_name || user.email}` : ''}!</h2>
           <p className="text-white/70">Обзор системы управления экскурсиями</p>
         </div>
         

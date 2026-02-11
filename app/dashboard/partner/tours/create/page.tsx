@@ -130,6 +130,7 @@ export default function CreateTourPage() {
     { label: 'Мои экскурсии', href: '/dashboard/partner/tours' },
     { label: 'Проверка билетов', href: '/dashboard/partner/tickets/check' },
     { label: 'Статистика', href: '/dashboard/partner/statistics' },
+    { label: 'Настройки', href: '/dashboard/partner/settings' },
   ]
 
   return (
