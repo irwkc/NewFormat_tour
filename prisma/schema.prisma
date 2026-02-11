@@ -102,6 +102,8 @@ model User {
   ticketUsedBy            Ticket[]  @relation("UsedByUser")
   ticketCancelledBy       Ticket[]  @relation("CancelledByUser")
   balancePerformedBy      BalanceHistory[] @relation("PerformedByUser")
+  ticketRangesCreated     ManagerTicketRange[] @relation("TicketRangesCreatedBy")
+  ticketRangesReceived    ManagerTicketRange[] @relation("TicketRangesReceivedBy")
   
   @@index([email])
   @@index([promoter_id])
@@ -315,6 +317,23 @@ model IssuedItem {
   @@index([issued_to_user_id])
   @@index([issued_by_user_id])
   @@map("issued_items")
+}
+
+model ManagerTicketRange {
+  id                     String   @id @default(uuid())
+  created_by_user_id     String   @map("created_by_user_id")
+  manager_user_id        String   @map("manager_user_id")
+  ticket_number_start    String   @map("ticket_number_start")
+  ticket_number_end      String   @map("ticket_number_end")
+  created_at             DateTime @default(now())
+
+  // Relations
+  createdBy              User     @relation("TicketRangesCreatedBy", fields: [created_by_user_id], references: [id], onDelete: Cascade)
+  manager                User     @relation("TicketRangesReceivedBy", fields: [manager_user_id], references: [id], onDelete: Cascade)
+
+  @@index([manager_user_id])
+  @@index([created_by_user_id])
+  @@map("manager_ticket_ranges")
 }
 
 model BalanceHistory {

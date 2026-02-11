@@ -9,7 +9,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
 const acquiringReceiptSchema = z.object({
-  ticket_number: z.string().regex(/^[A-Z]{2}\d{8}$/, 'Формат: AA00000000 (2 заглавные буквы + 8 цифр)'),
+  ticket_number: z.string().min(1, 'Выберите номер билета из переданных вам'),
   receipt_photo: z.any(),
 })
 
@@ -22,8 +22,22 @@ function AcquiringReceiptPageContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [availableNumbers, setAvailableNumbers] = useState<string[]>([])
+  const [availableLoading, setAvailableLoading] = useState(true)
 
   const saleId = searchParams.get('sale_id')
+
+  useEffect(() => {
+    if (!token) return
+    fetch('/api/manager-ticket-ranges/my-available', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) setAvailableNumbers(data.data)
+      })
+      .finally(() => setAvailableLoading(false))
+  }, [token])
 
   const {
     register,
@@ -114,32 +128,43 @@ function AcquiringReceiptPageContent() {
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
   ]
 
+  const noNumbers = !availableLoading && availableNumbers.length === 0
+
   return (
     <DashboardLayout title="Ввод чека эквайринга" navItems={navItems}>
       <div className="space-y-6 max-w-2xl mx-auto">
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Ввод номера билета и фото чека эквайринга</h2>
 
+          {noNumbers && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-sm">
+              Нет переданных вам билетов. Обратитесь к владельцу или его помощнику для передачи пронумерованных билетов.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
-                Номер билета (формат: AA00000000) *
+                Номер билета (из переданных вам) *
               </label>
-              <input
-                {...register('ticket_number')}
-                type="text"
-                pattern="[A-Z]{2}\d{8}"
-                maxLength={10}
-                className="input-glass uppercase"
-                placeholder="AB12345678"
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase()
-                }}
-              />
+              {availableLoading ? (
+                <p className="text-white/60">Загрузка списка...</p>
+              ) : (
+                <select
+                  {...register('ticket_number')}
+                  className="input-glass w-full uppercase"
+                  disabled={availableNumbers.length === 0}
+                >
+                  <option value="">— Выберите номер —</option>
+                  {availableNumbers.map((num) => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              )}
               {errors.ticket_number && (
                 <p className="text-red-300 text-xs mt-1">{errors.ticket_number.message}</p>
               )}
-              <p className="text-xs text-white/60 mt-1">Формат: 2 заглавные английские буквы + 8 цифр</p>
+              <p className="text-xs text-white/60 mt-1">Доступны только номера, переданные вам владельцем</p>
             </div>
 
             <div>
@@ -173,7 +198,7 @@ function AcquiringReceiptPageContent() {
             <div className="flex space-x-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || noNumbers}
                 className="btn-primary flex-1"
               >
                 {loading ? 'Создание...' : 'Создать билет'}

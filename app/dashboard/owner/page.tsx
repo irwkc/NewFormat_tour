@@ -53,6 +53,7 @@ export default function OwnerDashboard() {
     { label: 'Категории', href: '/dashboard/owner/categories' },
     { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
     { label: 'Менеджеры', href: '/dashboard/owner/managers' },
+    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
     { label: 'Приглашения', href: '/dashboard/owner/invitations' },

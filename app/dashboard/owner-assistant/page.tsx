@@ -125,6 +125,7 @@ export default function OwnerAssistantDashboard() {
 
   const navItems = [
     { label: 'Выдача вещей', href: '/dashboard/owner-assistant' },
+    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
   ]
 
   return (
