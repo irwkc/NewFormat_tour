@@ -40,9 +40,14 @@ export default function LoginForm() {
   const [godMode, setGodMode] = useState<'key' | 'menu' | null>(null)
   const [godSplash, setGodSplash] = useState(false)
   const [godToken, setGodToken] = useState<string | null>(null)
-  const [godUsers, setGodUsers] = useState<{ id: string; email: string; full_name: string; role: string; promoter_id: number | null }[]>([])
+  const [godUsers, setGodUsers] = useState<{
+    id: string; email: string; full_name: string; role: string; promoter_id: number | null;
+    phone?: string; created_at?: string; is_active?: boolean; balance?: string; debt_to_company?: string; email_confirmed?: boolean;
+  }[]>([])
+  const [godHoveredIndex, setGodHoveredIndex] = useState<number | null>(null)
   const [godKeyError, setGodKeyError] = useState<string | null>(null)
   const [godKeyLoading, setGodKeyLoading] = useState(false)
+  const [godMenuSelectedIndex, setGodMenuSelectedIndex] = useState(0)
   const godKeyBufRef = useRef('')
 
   const {
@@ -152,6 +157,30 @@ export default function LoginForm() {
   }, [godSplash])
 
   useEffect(() => {
+    if (godMode !== 'menu' || godSplash || godUsers.length === 0) return
+    setGodMenuSelectedIndex(0)
+  }, [godMode, godSplash, godUsers.length])
+
+  useEffect(() => {
+    if (godMode !== 'menu' || godSplash) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setGodMenuSelectedIndex((i) => (i < godUsers.length - 1 ? i + 1 : i))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setGodMenuSelectedIndex((i) => (i > 0 ? i - 1 : i))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const u = godUsers[godMenuSelectedIndex]
+        if (u) handleGodImpersonate(u.id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [godMode, godSplash, godUsers, godMenuSelectedIndex, handleGodImpersonate])
+
+  useEffect(() => {
     if (faceAuth || godMode) return
     const onKey = (e: KeyboardEvent) => {
       const key = e.key?.length === 1 ? e.key : ''
@@ -253,7 +282,7 @@ export default function LoginForm() {
 
   if (godMode) {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col font-mono text-[#0f0] selection:bg-[#0f0] selection:text-black">
+      <div className="fixed inset-0 z-50 bg-black flex flex-col font-mono text-white selection:bg-white selection:text-black">
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes god-flicker {
             0%, 100% { opacity: 1; }
@@ -275,8 +304,8 @@ export default function LoginForm() {
           <div className="flex-1 overflow-auto p-6 flex flex-col min-h-0">
             {godMode === 'key' && (
               <div className="flex flex-col items-center justify-center flex-1">
-                <p className="text-[#0f0]/80 text-sm mb-2">$</p>
-                <label className="cursor-pointer text-[#0f0] hover:text-white transition-colors">
+                <p className="text-white/80 text-sm mb-2">$</p>
+                <label className="cursor-pointer text-white hover:text-white/90 transition-colors">
                   <input
                     type="file"
                     accept=".txt,.key,text/*"
@@ -292,35 +321,57 @@ export default function LoginForm() {
               </div>
             )}
             {godMode === 'menu' && !godSplash && (
-              <>
-                <p className="text-[#0f0]/80 text-sm mb-4">$ access --list</p>
-                <p className="text-[#0f0]/60 text-xs mb-4">select account [id]</p>
-                <ul className="space-y-1 max-w-xl">
-                  {godUsers.map((u, i) => (
-                    <li key={u.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleGodImpersonate(u.id)}
-                        className="w-full text-left py-2 px-2 text-[#0f0] hover:bg-[#0f0]/10 hover:text-white font-mono text-sm border-l-2 border-transparent hover:border-[#0f0] transition-colors"
-                      >
-                        <span className="text-[#0f0]/70">[{i}]</span>{' '}
-                        {u.full_name || u.email || `id:${u.promoter_id ?? u.id.slice(0, 8)}`}{' '}
-                        <span className="text-[#0f0]/50">({ROLE_LABELS[u.role] || u.role})</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {godKeyError && (
-                  <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => { setGodMode(null); setGodSplash(false); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
-                  className="mt-8 text-[#0f0]/60 hover:text-[#0f0] text-sm"
-                >
-                  &gt; back
-                </button>
-              </>
+              <div className="flex gap-8 w-full max-w-4xl">
+                <div className="flex-shrink-0">
+                  <p className="text-white/80 text-sm mb-4">$ access --list</p>
+                  <p className="text-white/60 text-xs mb-4">select account [id] — arrows + Enter</p>
+                  <ul className="space-y-1 min-w-[280px]">
+                    {godUsers.map((u, i) => (
+                      <li key={u.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleGodImpersonate(u.id)}
+                          onMouseEnter={() => setGodHoveredIndex(i)}
+                          onMouseLeave={() => setGodHoveredIndex(null)}
+                          className={`w-full text-left py-2 px-2 font-mono text-sm border-l-2 transition-colors ${
+                            i === godMenuSelectedIndex
+                              ? 'bg-white/15 text-white border-white'
+                              : 'text-white/80 hover:bg-white/5 border-transparent hover:border-white/50'
+                          }`}
+                        >
+                          <span className="text-white/70">[{i}]</span>{' '}
+                          {u.full_name || u.email || `id:${u.promoter_id ?? u.id.slice(0, 8)}`}{' '}
+                          <span className="text-white/50">({ROLE_LABELS[u.role] || u.role})</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {godKeyError && (
+                    <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 border-l border-white/20 pl-6">
+                  {(godHoveredIndex !== null || godMenuSelectedIndex >= 0) && (() => {
+                    const u = godUsers[godHoveredIndex ?? godMenuSelectedIndex]
+                    if (!u) return null
+                    return (
+                      <div className="font-mono text-white/90 text-xs space-y-2">
+                        <p><span className="text-white/50">id:</span> {u.id}</p>
+                        <p><span className="text-white/50">role:</span> {u.role}</p>
+                        {u.email && <p><span className="text-white/50">email:</span> {u.email}</p>}
+                        {u.full_name && <p><span className="text-white/50">name:</span> {u.full_name}</p>}
+                        {u.phone && <p><span className="text-white/50">phone:</span> {u.phone}</p>}
+                        {u.promoter_id != null && <p><span className="text-white/50">promoter_id:</span> {u.promoter_id}</p>}
+                        {u.created_at != null && <p><span className="text-white/50">created:</span> {new Date(u.created_at).toLocaleString()}</p>}
+                        {u.balance != null && <p><span className="text-white/50">balance:</span> {u.balance}</p>}
+                        {u.debt_to_company != null && <p><span className="text-white/50">debt_to_company:</span> {u.debt_to_company}</p>}
+                        {u.email_confirmed != null && <p><span className="text-white/50">email_confirmed:</span> {u.email_confirmed ? 'yes' : 'no'}</p>}
+                        {u.is_active != null && <p><span className="text-white/50">active:</span> {u.is_active ? 'yes' : 'no'}</p>}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
             )}
           </div>
         )}

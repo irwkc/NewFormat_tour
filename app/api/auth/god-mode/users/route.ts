@@ -22,7 +22,13 @@ export async function GET(request: NextRequest) {
         email: true,
         promoter_id: true,
         full_name: true,
+        phone: true,
         role: true,
+        created_at: true,
+        is_active: true,
+        balance: true,
+        debt_to_company: true,
+        email_confirmed: true,
       },
     })
 
@@ -33,7 +39,13 @@ export async function GET(request: NextRequest) {
         email: u.email ?? '',
         promoter_id: u.promoter_id,
         full_name: u.full_name ?? '',
+        phone: u.phone ?? '',
         role: u.role,
+        created_at: u.created_at.toISOString(),
+        is_active: u.is_active,
+        balance: String(u.balance),
+        debt_to_company: String(u.debt_to_company),
+        email_confirmed: u.email_confirmed,
       })),
     })
   } catch (e: any) {
