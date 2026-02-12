@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Script from 'next/script'
+import { preprocessImageData } from '@/utils/face-preprocess'
 
 const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js-models/master'
 
@@ -29,8 +30,11 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const overlayRef = useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const modelsLoadedRef = useRef(false)
+  const faceDetectionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const loadModels = useCallback(async () => {
     const faceapi = window.faceapi
@@ -83,9 +87,15 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
   }, [loadModels])
 
   const stopCamera = useCallback(() => {
+    if (faceDetectionIntervalRef.current) {
+      clearInterval(faceDetectionIntervalRef.current)
+      faceDetectionIntervalRef.current = null
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
+    const ov = overlayRef.current
+    if (ov?.getContext('2d')) ov.getContext('2d')!.clearRect(0, 0, ov.width, ov.height)
     setStatus('idle')
     setMessage('')
     setError(null)
@@ -94,20 +104,40 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
   const handleCapture = async () => {
     const faceapi = window.faceapi
     const video = videoRef.current
+    const canvas = canvasRef.current
     if (!faceapi || !video || !modelsLoadedRef.current || video.readyState < 2) {
       setError('Камера не готова')
       return
     }
     setStatus('capturing')
-    setMessage('Обнаружение лица...')
+    setMessage('Обработка изображения...')
     setError(null)
     try {
+      if (!canvas) {
+        setError('Ошибка захвата')
+        setStatus('camera')
+        return
+      }
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        setStatus('camera')
+        return
+      }
+      ctx.save()
+      ctx.scale(-1, 1)
+      ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height)
+      ctx.restore()
+      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      imageData = preprocessImageData(imageData)
+      ctx.putImageData(imageData, 0, 0)
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options())
+        .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options())
         .withFaceLandmarks()
         .withFaceDescriptor()
       if (!detection?.descriptor) {
-        setError('Лицо не обнаружено. Расположите лицо в кадре.')
+        setError('Лицо не обнаружено. Расположите лицо в кадре и попробуйте снова.')
         setStatus('camera')
         return
       }
@@ -137,13 +167,54 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
     }
   }
 
-  // Привязка потока к video после монтирования (когда status === 'camera' и элемент в DOM)
   useEffect(() => {
     if (status !== 'camera' || !streamRef.current || !videoRef.current) return
     const video = videoRef.current
     const stream = streamRef.current
     video.srcObject = stream
     video.play().catch((e) => console.warn('video.play:', e))
+    const onLoadedMetadata = () => {
+      if (overlayRef.current && video.videoWidth && video.videoHeight) {
+        overlayRef.current.width = video.videoWidth
+        overlayRef.current.height = video.videoHeight
+      }
+    }
+    video.addEventListener('loadedmetadata', onLoadedMetadata)
+    if (video.videoWidth) onLoadedMetadata()
+    return () => video.removeEventListener('loadedmetadata', onLoadedMetadata)
+  }, [status])
+
+  useEffect(() => {
+    if (status !== 'camera' || !videoRef.current || !overlayRef.current || !modelsLoadedRef.current) return
+    const faceapi = window.faceapi
+    if (!faceapi) return
+    const video = videoRef.current
+    const overlay = overlayRef.current
+    faceDetectionIntervalRef.current = setInterval(async () => {
+      if (!streamRef.current) return
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.SsdMobilenetv1Options())
+          .withFaceLandmarks()
+        if (detection?.detection?.box) {
+          const ctx = overlay.getContext('2d')
+          if (ctx) {
+            ctx.clearRect(0, 0, overlay.width, overlay.height)
+            const box = detection.detection.box
+            const x = overlay.width - box.x - box.width
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'
+            ctx.lineWidth = 2
+            ctx.strokeRect(x, box.y, box.width, box.height)
+          }
+        } else {
+          const ctx = overlay.getContext('2d')
+          if (ctx) ctx.clearRect(0, 0, overlay.width, overlay.height)
+        }
+      } catch (_) {}
+    }, 100)
+    return () => {
+      if (faceDetectionIntervalRef.current) clearInterval(faceDetectionIntervalRef.current)
+    }
   }, [status])
 
   useEffect(() => {
@@ -178,10 +249,16 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full min-h-[320px] object-cover"
+                className="w-full h-full min-h-[320px] object-cover absolute inset-0"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+              <canvas
+                ref={overlayRef}
+                className="absolute inset-0 w-full h-full pointer-events-none"
                 style={{ transform: 'scaleX(-1)' }}
               />
             </div>
+            <p className="text-white/60 text-xs">Наведите камеру на лицо, убедитесь что рамка зелёная, затем нажмите «Зарегистрировать».</p>
             <div className="flex gap-2">
               <button type="button" onClick={handleCapture} className="btn-primary">
                 Зарегистрировать
@@ -198,6 +275,7 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
         {error && (
           <p className="text-red-300 text-sm">{error}</p>
         )}
+        <canvas ref={canvasRef} className="hidden" />
       </div>
     </>
   )

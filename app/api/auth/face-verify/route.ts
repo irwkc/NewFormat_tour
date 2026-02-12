@@ -3,15 +3,45 @@ import { prisma } from '@/lib/prisma'
 import { verifyFaceVerifyToken, generateToken } from '@/lib/auth'
 import { computeMinDistance, FACE_MATCH_THRESHOLD } from '@/utils/face-descriptor'
 
+const MIN_BLINKS = 2
+const MIN_HEAD_MOVEMENTS = 3
+const MIN_LIVENESS_DURATION_MS = 3000
+
+function validateLiveness(livenessData: unknown): boolean {
+  if (!livenessData || typeof livenessData !== 'object') return false
+  const d = livenessData as { blinks?: number; headMovements?: number; startTime?: number; timestamp?: number }
+  const blinks = Number(d.blinks) || 0
+  const headMovements = Number(d.headMovements) || 0
+  const startTime = Number(d.startTime) || 0
+  const timestamp = Number(d.timestamp) || Date.now()
+  const duration = timestamp - startTime
+  return blinks >= MIN_BLINKS && headMovements >= MIN_HEAD_MOVEMENTS && duration >= MIN_LIVENESS_DURATION_MS
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { tempToken, descriptor } = body as { tempToken?: string; descriptor?: number[] }
+    const { tempToken, descriptor, livenessData } = body as {
+      tempToken?: string
+      descriptor?: number[]
+      livenessData?: unknown
+    }
 
     if (!tempToken || !descriptor || !Array.isArray(descriptor) || descriptor.length !== 128) {
       return NextResponse.json(
         { success: false, error: 'Требуются tempToken и дескриптор лица (128 чисел)' },
         { status: 400 }
+      )
+    }
+
+    if (!validateLiveness(livenessData)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Проверка подлинности не пройдена. Выполните: минимум 2 мигания, повороты головы (вверх/вниз/влево/вправо), не менее 3 секунд.',
+        },
+        { status: 403 }
       )
     }
 

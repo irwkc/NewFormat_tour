@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
@@ -38,6 +38,8 @@ export default function OwnerSettingsPage() {
   const [ownerEmailMessage, setOwnerEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [hasAssistant, setHasAssistant] = useState<boolean | null>(null)
   const [faceStatus, setFaceStatus] = useState<{ registered: boolean; count: number } | null>(null)
+  const [faceDeleteMessage, setFaceDeleteMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [faceDeleteLoading, setFaceDeleteLoading] = useState(false)
 
   const {
     register: registerPassword,
@@ -107,6 +109,40 @@ export default function OwnerSettingsPage() {
     }
     if (token) checkFace()
   }, [token])
+
+  const refreshFaceStatus = useCallback(async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/auth/face-status', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      if (data.success) setFaceStatus({ registered: data.registered, count: data.count ?? 0 })
+    } catch {
+      setFaceStatus(null)
+    }
+  }, [token])
+
+  const onFaceDelete = async () => {
+    if (!token) return
+    setFaceDeleteMessage(null)
+    setFaceDeleteLoading(true)
+    try {
+      const res = await fetch('/api/auth/face-delete', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success) {
+        setFaceDeleteMessage({ type: 'success', text: 'Данные лица удалены. Вход по лицу отключён.' })
+        await refreshFaceStatus()
+      } else {
+        setFaceDeleteMessage({ type: 'error', text: data.error || 'Ошибка удаления' })
+      }
+    } catch {
+      setFaceDeleteMessage({ type: 'error', text: 'Ошибка удаления данных лица' })
+    } finally {
+      setFaceDeleteLoading(false)
+    }
+  }
 
   const onCreateAssistant = async (data: CreateAssistantFormData) => {
     try {
@@ -319,9 +355,26 @@ export default function OwnerSettingsPage() {
                   : 'Лицо не зарегистрировано. Вход только по паролю.'}
               </p>
             )}
+            {faceStatus?.registered && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onFaceDelete}
+                  disabled={faceDeleteLoading}
+                  className="btn-secondary text-sm"
+                >
+                  {faceDeleteLoading ? 'Удаление…' : 'Удалить данные лица'}
+                </button>
+              </div>
+            )}
+            {faceDeleteMessage && (
+              <div className={faceDeleteMessage.type === 'success' ? 'alert-success' : 'alert-error'} style={{ marginBottom: '1rem' }}>
+                <p className="text-sm font-medium">{faceDeleteMessage.text}</p>
+              </div>
+            )}
             <FaceRegisterBlock
               token={token!}
-              onRegistered={() => setFaceStatus((s) => (s ? { ...s, registered: true, count: s.count + 1 } : { registered: true, count: 1 }))}
+              onRegistered={() => { refreshFaceStatus(); setFaceDeleteMessage(null) }}
             />
           </div>
 
