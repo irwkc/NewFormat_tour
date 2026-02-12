@@ -1,5 +1,5 @@
-/** Результат withFaceLandmarks(): и thenable (.then()), и цепочка .withFaceDescriptor() */
-type FaceLandmarksResult = PromiseLike<{
+/** Результат withFaceLandmarks(): Promise (.then/.catch) и цепочка .withFaceDescriptor() */
+type FaceLandmarksData = {
   withFaceDescriptor: () => Promise<{ descriptor: Float32Array }>
   detection: { box: { x: number; y: number; width: number; height: number } }
   landmarks: {
@@ -7,7 +7,8 @@ type FaceLandmarksResult = PromiseLike<{
     getRightEye: () => { x: number; y: number }[]
     getNose: () => { x: number; y: number }[]
   }
-}> & {
+}
+type FaceLandmarksResult = Promise<FaceLandmarksData> & {
   withFaceDescriptor: () => Promise<{ descriptor: Float32Array }>
 }
 
