@@ -204,13 +204,15 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
                 maxY = Math.max(maxY, p.y)
               })
               const pad = 15
+              const padTop = 28
               minX = Math.max(0, minX - pad)
-              minY = Math.max(0, minY - pad)
+              minY = Math.max(0, minY - padTop)
               maxX = Math.min(video.videoWidth, maxX + pad)
               maxY = Math.min(video.videoHeight, maxY + pad)
-              const x = (overlay.width - maxX) * scaleX
+              // Canvas с scaleX(-1): рисуем в координатах видео — после отражения совпадёт с лицом
+              const x = maxX * scaleX
               const y = minY * scaleY
-              const w = (maxX - minX) * scaleX
+              const w = (minX - maxX) * scaleX
               const h = (maxY - minY) * scaleY
               ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'
               ctx.lineWidth = 2
@@ -218,7 +220,7 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
               ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
               allPoints.forEach((p: { x: number; y: number }) => {
                 ctx.beginPath()
-                ctx.arc((overlay.width - p.x) * scaleX, p.y * scaleY, 2, 0, Math.PI * 2)
+                ctx.arc(p.x * scaleX, p.y * scaleY, 2, 0, Math.PI * 2)
                 ctx.fill()
               })
             }
