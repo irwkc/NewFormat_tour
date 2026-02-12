@@ -65,8 +65,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
         setMessage('Не удалось загрузить модели. Проверьте интернет.')
         return
       }
-      setMessage('Разрешите доступ к камере')
-      setStatus('camera')
+      setMessage('Запрос доступа к камере...')
       navigator.mediaDevices
         .getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } })
         .then((stream) => {
@@ -75,6 +74,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
             return
           }
           streamRef.current = stream
+          setStatus('camera')
           setMessage('Наведите камеру на лицо и нажмите «Проверить»')
         })
         .catch((err) => {
