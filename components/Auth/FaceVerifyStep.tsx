@@ -75,9 +75,6 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
             return
           }
           streamRef.current = stream
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream
-          }
           setMessage('Наведите камеру на лицо и нажмите «Проверить»')
         })
         .catch((err) => {
@@ -94,6 +91,15 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
       streamRef.current = null
     }
   }, [loadModels])
+
+  // Привязка потока к video после монтирования (когда status === 'camera')
+  useEffect(() => {
+    if (status !== 'camera' || !streamRef.current || !videoRef.current) return
+    const video = videoRef.current
+    const stream = streamRef.current
+    video.srcObject = stream
+    video.play().catch((e) => console.warn('video.play:', e))
+  }, [status])
 
   const handleCapture = async () => {
     const faceapi = window.faceapi
@@ -152,13 +158,13 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
           </div>
         )}
         {status === 'camera' && (
-          <div className="relative rounded-2xl overflow-hidden bg-black/40 aspect-video max-w-md mx-auto">
+          <div className="relative rounded-2xl overflow-hidden bg-black/40 w-full min-h-[300px] aspect-video max-w-xl mx-auto">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover mirror"
+              className="w-full h-full min-h-[300px] object-cover"
               style={{ transform: 'scaleX(-1)' }}
             />
           </div>

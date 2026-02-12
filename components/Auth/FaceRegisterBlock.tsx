@@ -67,7 +67,6 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
             .getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } })
             .then((stream) => {
               streamRef.current = stream
-              if (videoRef.current) videoRef.current.srcObject = stream
               setStatus('camera')
               setMessage('Наведите камеру на лицо и нажмите «Зарегистрировать»')
             })
@@ -138,6 +137,15 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
     }
   }
 
+  // Привязка потока к video после монтирования (когда status === 'camera' и элемент в DOM)
+  useEffect(() => {
+    if (status !== 'camera' || !streamRef.current || !videoRef.current) return
+    const video = videoRef.current
+    const stream = streamRef.current
+    video.srcObject = stream
+    video.play().catch((e) => console.warn('video.play:', e))
+  }, [status])
+
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -163,14 +171,14 @@ export default function FaceRegisterBlock({ token, onRegistered }: FaceRegisterB
           </div>
         )}
         {status === 'camera' && (
-          <div className="space-y-3">
-            <div className="relative rounded-2xl overflow-hidden bg-black/40 aspect-video max-w-sm">
+          <div className="space-y-4">
+            <div className="relative rounded-2xl overflow-hidden bg-black/40 w-full min-h-[320px] aspect-video max-w-2xl">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full min-h-[320px] object-cover"
                 style={{ transform: 'scaleX(-1)' }}
               />
             </div>
