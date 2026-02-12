@@ -38,6 +38,7 @@ export default function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [faceAuth, setFaceAuth] = useState<{ tempToken: string; user: any } | null>(null)
   const [godMode, setGodMode] = useState<'key' | 'menu' | null>(null)
+  const [godSplash, setGodSplash] = useState(false)
   const [godToken, setGodToken] = useState<string | null>(null)
   const [godUsers, setGodUsers] = useState<{ id: string; email: string; full_name: string; role: string; promoter_id: number | null }[]>([])
   const [godKeyError, setGodKeyError] = useState<string | null>(null)
@@ -145,6 +146,12 @@ export default function LoginForm() {
   }
 
   useEffect(() => {
+    if (!godSplash) return
+    const t = setTimeout(() => setGodSplash(false), 5000)
+    return () => clearTimeout(t)
+  }, [godSplash])
+
+  useEffect(() => {
     if (faceAuth || godMode) return
     const onKey = (e: KeyboardEvent) => {
       const key = e.key?.length === 1 ? e.key : ''
@@ -194,6 +201,7 @@ export default function LoginForm() {
       }
       setGodUsers(usersData.users)
       setGodMode('menu')
+      setGodSplash(true)
     } catch (err) {
       setGodKeyError('Ошибка проверки ключа')
     } finally {
@@ -245,71 +253,77 @@ export default function LoginForm() {
 
   if (godMode) {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col">
-        <div className="flex-1 overflow-auto p-6 flex flex-col items-center justify-center min-h-0">
-          {godMode === 'key' && (
-            <>
-              <h2 className="text-white text-xl font-medium mb-2">Цифровой ключ</h2>
-              <p className="text-white/70 text-sm text-center mb-6 max-w-sm">
-                Вставьте флешку и выберите файл ключа (текстовый файл с секретом)
-              </p>
-              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/15">
-                <input
-                  type="file"
-                  accept=".txt,.key,text/*"
-                  className="sr-only"
-                  onChange={handleGodKeyFile}
-                  disabled={godKeyLoading}
-                />
-                {godKeyLoading ? 'Проверка...' : 'Выбрать файл с флешки'}
-              </label>
-              {godKeyError && (
-                <p className="mt-4 text-red-400 text-sm">{godKeyError}</p>
-              )}
-              <button
-                type="button"
-                onClick={() => { setGodMode(null); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
-                className="mt-8 text-white/60 hover:text-white text-sm"
-              >
-                Отмена
-              </button>
-            </>
-          )}
-          {godMode === 'menu' && (
-            <>
-              <h2 className="text-white text-xl font-medium mb-1">Выберите аккаунт</h2>
-              <p className="text-white/50 text-sm mb-6">Полный доступ</p>
-              <ul className="w-full max-w-md space-y-2">
-                {godUsers.map((u) => (
-                  <li key={u.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleGodImpersonate(u.id)}
-                      className="w-full text-left px-4 py-3 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 flex flex-col gap-0.5"
-                    >
-                      <span className="font-medium">
-                        {u.full_name || u.email || `ID ${u.promoter_id ?? u.id.slice(0, 8)}`}
-                      </span>
-                      <span className="text-white/60 text-sm">
-                        {ROLE_LABELS[u.role] || u.role} {u.email ? ` · ${u.email}` : ''}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {godKeyError && (
-                <p className="mt-4 text-red-400 text-sm">{godKeyError}</p>
-              )}
-              <button
-                type="button"
-                onClick={() => { setGodMode(null); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
-                className="mt-6 text-white/60 hover:text-white text-sm"
-              >
-                Назад
-              </button>
-            </>
-          )}
-        </div>
+      <div className="fixed inset-0 z-50 bg-black flex flex-col font-mono text-[#0f0] selection:bg-[#0f0] selection:text-black">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes god-flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.75; }
+            25%, 75% { opacity: 0.9; }
+          }
+          .god-flicker { animation: god-flicker 0.12s ease-in-out infinite; }
+        ` }} />
+        {godSplash ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <p className="god-flicker text-white text-2xl sm:text-4xl md:text-5xl font-medium tracking-widest text-center">
+              Welcome master
+            </p>
+            <p className="god-flicker text-white text-xl sm:text-3xl md:text-4xl mt-4 tracking-[0.3em] text-center">
+              irwkc
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto p-6 flex flex-col min-h-0">
+            {godMode === 'key' && (
+              <div className="flex flex-col items-center justify-center flex-1">
+                <p className="text-[#0f0]/80 text-sm mb-2">$</p>
+                <label className="cursor-pointer text-[#0f0] hover:text-white transition-colors">
+                  <input
+                    type="file"
+                    accept=".txt,.key,text/*"
+                    className="sr-only"
+                    onChange={handleGodKeyFile}
+                    disabled={godKeyLoading}
+                  />
+                  {godKeyLoading ? '> verifying...' : '> open'}
+                </label>
+                {godKeyError && (
+                  <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
+                )}
+              </div>
+            )}
+            {godMode === 'menu' && !godSplash && (
+              <>
+                <p className="text-[#0f0]/80 text-sm mb-4">$ access --list</p>
+                <p className="text-[#0f0]/60 text-xs mb-4">select account [id]</p>
+                <ul className="space-y-1 max-w-xl">
+                  {godUsers.map((u, i) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleGodImpersonate(u.id)}
+                        className="w-full text-left py-2 px-2 text-[#0f0] hover:bg-[#0f0]/10 hover:text-white font-mono text-sm border-l-2 border-transparent hover:border-[#0f0] transition-colors"
+                      >
+                        <span className="text-[#0f0]/70">[{i}]</span>{' '}
+                        {u.full_name || u.email || `id:${u.promoter_id ?? u.id.slice(0, 8)}`}{' '}
+                        <span className="text-[#0f0]/50">({ROLE_LABELS[u.role] || u.role})</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {godKeyError && (
+                  <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setGodMode(null); setGodSplash(false); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
+                  className="mt-8 text-[#0f0]/60 hover:text-[#0f0] text-sm"
+                >
+                  &gt; back
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     )
   }
