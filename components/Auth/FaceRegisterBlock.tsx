@@ -6,15 +6,14 @@ import { preprocessImageData } from '@/utils/face-preprocess'
 
 const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js-models/master'
 const POSE_HOLD_MS = 1200
-const STEPS: { pose: 'center' | 'left' | 'right' | 'up'; label: string }[] = [
+const STEPS: { pose: 'center' | 'left' | 'right'; label: string }[] = [
   { pose: 'center', label: 'Центр' },
   { pose: 'left', label: 'Влево' },
   { pose: 'right', label: 'Вправо' },
-  { pose: 'up', label: 'Вверх' },
   { pose: 'center', label: 'Центр' },
 ]
 
-function getPoseFromLandmarks(landmarks: { getLeftEye: () => { x: number; y: number }[]; getRightEye: () => { x: number; y: number }[]; getNose: () => { x: number; y: number }[] }): 'center' | 'left' | 'right' | 'up' {
+function getPoseFromLandmarks(landmarks: { getLeftEye: () => { x: number; y: number }[]; getRightEye: () => { x: number; y: number }[]; getNose: () => { x: number; y: number }[] }): 'center' | 'left' | 'right' {
   const leftEye = landmarks.getLeftEye()
   const rightEye = landmarks.getRightEye()
   const nose = landmarks.getNose()
@@ -22,14 +21,9 @@ function getPoseFromLandmarks(landmarks: { getLeftEye: () => { x: number; y: num
   const leftCenterX = leftEye.reduce((s, p) => s + p.x, 0) / leftEye.length
   const rightCenterX = rightEye.reduce((s, p) => s + p.x, 0) / rightEye.length
   const eyeCenterX = (leftCenterX + rightCenterX) / 2
-  const eyeCenterY = (leftEye.reduce((s, p) => s + p.y, 0) / leftEye.length + rightEye.reduce((s, p) => s + p.y, 0) / rightEye.length) / 2
   const noseX = nose[3]?.x ?? nose[0]?.x ?? eyeCenterX
-  const noseY = nose[3]?.y ?? nose[0]?.y ?? eyeCenterY
   const spanX = Math.abs(rightCenterX - leftCenterX) || 1
-  const spanY = spanX
   const dx = (noseX - eyeCenterX) / spanX
-  const dy = (noseY - eyeCenterY) / spanY
-  if (dy < -0.15) return 'up'
   if (dx < -0.2) return 'left'
   if (dx > 0.2) return 'right'
   return 'center'

@@ -262,6 +262,42 @@ export default function OwnerSettingsPage() {
     <DashboardLayout title="Настройки" navItems={navItems}>
       <div className="space-y-6">
         <div className="space-y-6 max-w-2xl">
+          {/* Вход по лицу (2FA) — только для владельца */}
+          <div className="glass-card p-6">
+            <h2 className="text-2xl font-bold mb-2 text-white">Вход по лицу (2FA)</h2>
+            <p className="text-white/70 text-sm mb-4">
+              После регистрации лица при входе под вашим аккаунтом потребуется дополнительная проверка по камере. Пароль и логин по-прежнему обязательны.
+            </p>
+            {faceStatus && (
+              <p className="text-white/80 text-sm mb-4">
+                {faceStatus.registered
+                  ? `Лицо зарегистрировано (снимков: ${faceStatus.count}). При следующем входе будет запрошена проверка.`
+                  : 'Лицо не зарегистрировано. Вход только по паролю.'}
+              </p>
+            )}
+            {faceStatus?.registered && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onFaceDelete}
+                  disabled={faceDeleteLoading}
+                  className="btn-secondary text-sm"
+                >
+                  {faceDeleteLoading ? 'Удаление…' : 'Удалить данные лица'}
+                </button>
+              </div>
+            )}
+            {faceDeleteMessage && (
+              <div className={faceDeleteMessage.type === 'success' ? 'alert-success' : 'alert-error'} style={{ marginBottom: '1rem' }}>
+                <p className="text-sm font-medium">{faceDeleteMessage.text}</p>
+              </div>
+            )}
+            <FaceRegisterBlock
+              token={token!}
+              onRegistered={() => { refreshFaceStatus(); setFaceDeleteMessage(null) }}
+            />
+          </div>
+
           {/* Смена пароля владельца */}
           <div className="glass-card p-6">
             <h2 className="text-2xl font-bold mb-6 text-white">Смена пароля</h2>
@@ -340,42 +376,6 @@ export default function OwnerSettingsPage() {
                 Изменить email
               </button>
             </form>
-          </div>
-
-          {/* Вход по лицу (2FA) — только для владельца */}
-          <div className="glass-card p-6">
-            <h2 className="text-2xl font-bold mb-2 text-white">Вход по лицу (2FA)</h2>
-            <p className="text-white/70 text-sm mb-4">
-              После регистрации лица при входе под вашим аккаунтом потребуется дополнительная проверка по камере. Пароль и логин по-прежнему обязательны.
-            </p>
-            {faceStatus && (
-              <p className="text-white/80 text-sm mb-4">
-                {faceStatus.registered
-                  ? `Лицо зарегистрировано (снимков: ${faceStatus.count}). При следующем входе будет запрошена проверка.`
-                  : 'Лицо не зарегистрировано. Вход только по паролю.'}
-              </p>
-            )}
-            {faceStatus?.registered && (
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onFaceDelete}
-                  disabled={faceDeleteLoading}
-                  className="btn-secondary text-sm"
-                >
-                  {faceDeleteLoading ? 'Удаление…' : 'Удалить данные лица'}
-                </button>
-              </div>
-            )}
-            {faceDeleteMessage && (
-              <div className={faceDeleteMessage.type === 'success' ? 'alert-success' : 'alert-error'} style={{ marginBottom: '1rem' }}>
-                <p className="text-sm font-medium">{faceDeleteMessage.text}</p>
-              </div>
-            )}
-            <FaceRegisterBlock
-              token={token!}
-              onRegistered={() => { refreshFaceStatus(); setFaceDeleteMessage(null) }}
-            />
           </div>
 
           {/* Создание помощника */}
