@@ -494,7 +494,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
   }, [status, tempToken, onSuccess])
 
   useEffect(() => {
-    if (status !== 'camera' || !streamRef.current || !videoRef.current) return
+    if ((status !== 'camera' && status !== 'capturing') || !streamRef.current || !videoRef.current) return
     const video = videoRef.current
     const stream = streamRef.current
     video.srcObject = stream
@@ -525,7 +525,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/30 border-t-white" />
           </div>
         )}
-        {status === 'camera' && (
+        {(status === 'camera' || status === 'capturing') && (
           <>
             <div className="relative rounded-2xl overflow-hidden bg-black/40 w-full min-h-[300px] aspect-video max-w-xl mx-auto">
               <video
@@ -541,6 +541,14 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
                 className="absolute inset-0 w-full h-full pointer-events-none"
                 style={{ transform: 'scaleX(-1)' }}
               />
+              {status === 'capturing' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/30 border-t-white" />
+                    <span className="text-white/90 text-sm">Обработка...</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex justify-center gap-4 py-2">
               {[1, 2, 3].map((i) => (
