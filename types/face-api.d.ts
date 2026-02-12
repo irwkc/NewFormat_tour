@@ -6,6 +6,7 @@ type FaceLandmarksData = {
     getLeftEye: () => { x: number; y: number }[]
     getRightEye: () => { x: number; y: number }[]
     getNose: () => { x: number; y: number }[]
+    positions?: { x: number; y: number }[]
   }
 }
 type FaceLandmarksResult = Promise<FaceLandmarksData> & {

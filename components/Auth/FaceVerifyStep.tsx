@@ -195,15 +195,56 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
           ld.frameCount++
           ld.timestamp = currentTime
 
-          if (overlay && overlay.width && overlay.height) {
+          if (overlay && overlay.width && overlay.height && video) {
             const ctx = overlay.getContext('2d')
             if (ctx) {
               ctx.clearRect(0, 0, overlay.width, overlay.height)
-              const box = detection.detection?.box
-              if (box) {
+              const scaleX = overlay.width / video.videoWidth
+              const scaleY = overlay.height / video.videoHeight
+              const mirrorX = (x: number) => overlay!.width - x
+              const leftEye = detection.landmarks.getLeftEye()
+              const rightEye = detection.landmarks.getRightEye()
+              const nose = detection.landmarks.getNose()
+              const allPoints = detection.landmarks.positions ?? [
+                ...leftEye,
+                ...rightEye,
+                ...nose,
+              ]
+              if (allPoints.length > 0) {
+                let minX = allPoints[0].x
+                let minY = allPoints[0].y
+                let maxX = minX
+                let maxY = minY
+                allPoints.forEach((p) => {
+                  minX = Math.min(minX, p.x)
+                  minY = Math.min(minY, p.y)
+                  maxX = Math.max(maxX, p.x)
+                  maxY = Math.max(maxY, p.y)
+                })
+                const pad = 15
+                minX = Math.max(0, minX - pad)
+                minY = Math.max(0, minY - pad)
+                maxX = Math.min(video.videoWidth, maxX + pad)
+                maxY = Math.min(video.videoHeight, maxY + pad)
+                const x = (overlay.width - maxX) * scaleX
+                const y = minY * scaleY
+                const w = (maxX - minX) * scaleX
+                const h = (maxY - minY) * scaleY
                 ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'
                 ctx.lineWidth = 2
-                ctx.strokeRect(box.x, box.y, box.width, box.height)
+                ctx.strokeRect(x, y, w, h)
+                const drawPoint = (px: number, py: number, color: string) => {
+                  ctx.fillStyle = color
+                  ctx.beginPath()
+                  ctx.arc(mirrorX(px) * scaleX, py * scaleY, 2, 0, Math.PI * 2)
+                  ctx.fill()
+                }
+                leftEye.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 200, 0, 0.9)'))
+                rightEye.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 200, 0, 0.9)'))
+                nose.forEach((p) => drawPoint(p.x, p.y, 'rgba(100, 200, 255, 0.9)'))
+                if (allPoints.length > 20) {
+                  allPoints.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 255, 255, 0.4)'))
+                }
               }
             }
           }
