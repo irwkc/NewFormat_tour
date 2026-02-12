@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
+import FaceRegisterBlock from '@/components/Auth/FaceRegisterBlock'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
@@ -36,6 +37,7 @@ export default function OwnerSettingsPage() {
   const [ownerPasswordMessage, setOwnerPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [ownerEmailMessage, setOwnerEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [hasAssistant, setHasAssistant] = useState<boolean | null>(null)
+  const [faceStatus, setFaceStatus] = useState<{ registered: boolean; count: number } | null>(null)
 
   const {
     register: registerPassword,
@@ -89,6 +91,21 @@ export default function OwnerSettingsPage() {
       }
     }
     if (token) checkAssistant()
+  }, [token])
+
+  useEffect(() => {
+    const checkFace = async () => {
+      try {
+        const res = await fetch('/api/auth/face-status', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (data.success) setFaceStatus({ registered: data.registered, count: data.count ?? 0 })
+      } catch {
+        setFaceStatus(null)
+      }
+    }
+    if (token) checkFace()
   }, [token])
 
   const onCreateAssistant = async (data: CreateAssistantFormData) => {
@@ -197,6 +214,7 @@ export default function OwnerSettingsPage() {
     { label: 'Категории', href: '/dashboard/owner/categories' },
     { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
     { label: 'Менеджеры', href: '/dashboard/owner/managers' },
+    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
     { label: 'Приглашения', href: '/dashboard/owner/invitations' },
@@ -286,6 +304,25 @@ export default function OwnerSettingsPage() {
                 Изменить email
               </button>
             </form>
+          </div>
+
+          {/* Вход по лицу (2FA) — только для владельца */}
+          <div className="glass-card p-6">
+            <h2 className="text-2xl font-bold mb-2 text-white">Вход по лицу (2FA)</h2>
+            <p className="text-white/70 text-sm mb-4">
+              После регистрации лица при входе под вашим аккаунтом потребуется дополнительная проверка по камере. Пароль и логин по-прежнему обязательны.
+            </p>
+            {faceStatus && (
+              <p className="text-white/80 text-sm mb-4">
+                {faceStatus.registered
+                  ? `Лицо зарегистрировано (снимков: ${faceStatus.count}). При следующем входе будет запрошена проверка.`
+                  : 'Лицо не зарегистрировано. Вход только по паролю.'}
+              </p>
+            )}
+            <FaceRegisterBlock
+              token={token!}
+              onRegistered={() => setFaceStatus((s) => (s ? { ...s, registered: true, count: s.count + 1 } : { registered: true, count: 1 }))}
+            />
           </div>
 
           {/* Создание помощника */}

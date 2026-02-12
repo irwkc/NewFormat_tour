@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { withAuth } from '@/lib/middleware'
+import { prisma } from '@/lib/prisma'
+import { UserRole } from '@prisma/client'
+
+const MAX_DESCRIPTORS = 5
+
+export async function POST(request: NextRequest) {
+  return withAuth(
+    request,
+    async (req) => {
+      if (req.user!.role !== UserRole.owner) {
+        return NextResponse.json(
+          { success: false, error: 'Только владелец может регистрировать лицо' },
+          { status: 403 }
+        )
+      }
+      try {
+        const body = await request.json()
+        const descriptor = body.descriptor as number[] | undefined
+
+        if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+          return NextResponse.json(
+            { success: false, error: 'Требуется дескриптор лица (массив из 128 чисел)' },
+            { status: 400 }
+          )
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { id: req.user!.userId },
+          select: { face_descriptors: true },
+        })
+        if (!user) {
+          return NextResponse.json(
+            { success: false, error: 'Пользователь не найден' },
+            { status: 404 }
+          )
+        }
+
+        const current = (user.face_descriptors as number[][] | null) ?? []
+        const next = [...current, descriptor].slice(-MAX_DESCRIPTORS)
+
+        await prisma.user.update({
+          where: { id: req.user!.userId },
+          data: { face_descriptors: next },
+        })
+
+        return NextResponse.json({
+          success: true,
+          message: 'Лицо успешно зарегистрировано',
+          count: next.length,
+        })
+      } catch (e) {
+        console.error('face-register error:', e)
+        return NextResponse.json(
+          { success: false, error: 'Ошибка регистрации лица' },
+          { status: 500 }
+        )
+      }
+    },
+    [UserRole.owner]
+  )
+}

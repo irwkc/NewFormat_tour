@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { comparePassword, generateToken } from '@/lib/auth'
+import { comparePassword, generateToken, generateFaceVerifyToken } from '@/lib/auth'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -62,16 +62,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Сгенерировать токен
+    const { password_hash, face_descriptors: _fd, ...userWithoutPassword } = user
+
+    // Для владельца: если зарегистрировано лицо — требуем проверку по лицу (2FA)
+    const faceDescriptors = user.face_descriptors as number[][] | null
+    const hasFaceRegistered = Array.isArray(faceDescriptors) && faceDescriptors.length > 0
+
+    if (user.role === 'owner' && hasFaceRegistered) {
+      const tempToken = generateFaceVerifyToken(user.id)
+      return NextResponse.json({
+        success: true,
+        requiresFaceAuth: true,
+        data: {
+          user: userWithoutPassword,
+          tempToken,
+        },
+      })
+    }
+
     const token = generateToken({
       userId: user.id,
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
     })
-
-    // Убрать пароль из ответа
-    const { password_hash, ...userWithoutPassword } = user
 
     return NextResponse.json({
       success: true,

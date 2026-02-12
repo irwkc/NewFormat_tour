@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
+import FaceVerifyStep from './FaceVerifyStep'
 
 const loginSchema = z.object({
   email: z.string().email().optional(),
@@ -24,6 +25,7 @@ export default function LoginForm() {
   const { setAuth } = useAuthStore()
   const [inputValue, setInputValue] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [faceAuth, setFaceAuth] = useState<{ tempToken: string; user: any } | null>(null)
 
   const {
     register,
@@ -75,9 +77,19 @@ export default function LoginForm() {
         return
       }
 
+      if (result.requiresFaceAuth && result.data?.tempToken && result.data?.user) {
+        setFaceAuth({ tempToken: result.data.tempToken, user: result.data.user })
+        setError(null)
+        return
+      }
+
+      if (!result.data?.token || !result.data?.user) {
+        setError('Некорректный ответ сервера')
+        return
+      }
+
       setAuth(result.data.user, result.data.token, rememberMe)
       
-      // Редирект в зависимости от роли
       const role = result.data.user.role
       if (role === 'owner') {
         router.push('/dashboard/owner')
@@ -98,6 +110,37 @@ export default function LoginForm() {
       setError('An error occurred. Please try again.')
       console.error('Login error:', err)
     }
+  }
+
+  const handleFaceSuccess = (token: string, user: any) => {
+    setAuth(user, token, rememberMe)
+    const role = user.role
+    if (role === 'owner') router.push('/dashboard/owner')
+    else if (role === 'owner_assistant') router.push('/dashboard/owner-assistant')
+    else if (role === 'partner') router.push('/dashboard/partner')
+    else if (role === 'partner_controller') router.push('/dashboard/partner-controller')
+    else if (role === 'manager') router.push('/dashboard/manager')
+    else if (role === 'promoter') router.push('/dashboard/promoter')
+    else router.push('/dashboard')
+  }
+
+  if (faceAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-md w-full space-y-8 relative z-10">
+          <div className="glass-card">
+            <div className="text-center mb-6">
+              <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-auto h-16 object-contain mx-auto" priority />
+            </div>
+            <FaceVerifyStep
+              tempToken={faceAuth.tempToken}
+              onSuccess={handleFaceSuccess}
+              onCancel={() => setFaceAuth(null)}
+            />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
