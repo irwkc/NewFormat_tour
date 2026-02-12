@@ -18,10 +18,17 @@ export async function POST(request: NextRequest) {
       try {
         const body = await request.json()
         const descriptor = body.descriptor as number[] | undefined
+        const descriptors = body.descriptors as number[][] | undefined
 
-        if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+        const list: number[][] = Array.isArray(descriptors)
+          ? descriptors.filter((d) => Array.isArray(d) && d.length === 128)
+          : Array.isArray(descriptor) && descriptor.length === 128
+            ? [descriptor]
+            : []
+
+        if (list.length === 0) {
           return NextResponse.json(
-            { success: false, error: 'Требуется дескриптор лица (массив из 128 чисел)' },
+            { success: false, error: 'Требуется дескриптор (массив 128 чисел) или descriptors (массив таких дескрипторов)' },
             { status: 400 }
           )
         }
@@ -38,7 +45,10 @@ export async function POST(request: NextRequest) {
         }
 
         const current = (user.face_descriptors as number[][] | null) ?? []
-        const next = [...current, descriptor].slice(-MAX_DESCRIPTORS)
+        const next =
+          list.length > 1
+            ? list.slice(0, MAX_DESCRIPTORS)
+            : [...current, list[0]].slice(-MAX_DESCRIPTORS)
 
         await prisma.user.update({
           where: { id: req.user!.userId },

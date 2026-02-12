@@ -22,4 +22,4 @@ export function computeMinDistance(query: number[], descriptors: number[][]): nu
   return min
 }
 
-export const FACE_MATCH_THRESHOLD = 0.6
+export const FACE_MATCH_THRESHOLD = 0.55
