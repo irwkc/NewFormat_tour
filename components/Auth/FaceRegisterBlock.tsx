@@ -6,20 +6,6 @@ import { preprocessImageData } from '@/utils/face-preprocess'
 
 const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js-models/master'
 
-declare global {
-  interface Window {
-    faceapi?: {
-      nets: {
-        ssdMobilenetv1: { loadFromUri: (url: string) => Promise<void> }
-        faceLandmark68Net: { loadFromUri: (url: string) => Promise<void> }
-        faceRecognitionNet: { loadFromUri: (url: string) => Promise<void> }
-      }
-      detectSingleFace: (input: HTMLVideoElement | HTMLCanvasElement, options?: unknown) => { withFaceLandmarks: () => { withFaceDescriptor: () => Promise<{ descriptor: Float32Array }> } }
-      SsdMobilenetv1Options: new () => unknown
-    }
-  }
-}
-
 interface FaceRegisterBlockProps {
   token: string
   onRegistered: () => void

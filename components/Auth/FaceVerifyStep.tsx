@@ -14,27 +14,6 @@ const HEAD_MOVEMENT_THRESHOLD = 25
 const LIVENESS_INTERVAL_MS = 200
 const LIVENESS_TIMEOUT_MS = 20000
 
-declare global {
-  interface Window {
-    faceapi?: {
-      nets: {
-        ssdMobilenetv1: { loadFromUri: (url: string) => Promise<void> }
-        faceLandmark68Net: { loadFromUri: (url: string) => Promise<void> }
-        faceRecognitionNet: { loadFromUri: (url: string) => Promise<void> }
-      }
-      detectSingleFace: (input: HTMLVideoElement | HTMLCanvasElement, options?: unknown) => {
-        withFaceLandmarks: () => {
-          withFaceDescriptor: () => Promise<{
-            descriptor: Float32Array
-            landmarks: { getLeftEye: () => { x: number; y: number }[]; getRightEye: () => { x: number; y: number }[]; getNose: () => { x: number; y: number }[] }
-          }>
-        }
-      }
-      SsdMobilenetv1Options: new () => unknown
-    }
-  }
-}
-
 function getEyeAspectRatio(eye: { x: number; y: number }[]): number {
   if (!eye || eye.length < 6) return 0.5
   const v1 = Math.sqrt(Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2))
