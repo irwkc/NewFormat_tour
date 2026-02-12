@@ -205,7 +205,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
               const leftEye = detection.landmarks.getLeftEye()
               const rightEye = detection.landmarks.getRightEye()
               const nose = detection.landmarks.getNose()
-              const allPoints = detection.landmarks.positions ?? [
+              const allPoints: { x: number; y: number }[] = detection.landmarks.positions ?? [
                 ...leftEye,
                 ...rightEye,
                 ...nose,
@@ -215,7 +215,7 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
                 let minY = allPoints[0].y
                 let maxX = minX
                 let maxY = minY
-                allPoints.forEach((p) => {
+                allPoints.forEach((p: { x: number; y: number }) => {
                   minX = Math.min(minX, p.x)
                   minY = Math.min(minY, p.y)
                   maxX = Math.max(maxX, p.x)
@@ -233,18 +233,12 @@ export default function FaceVerifyStep({ tempToken, onSuccess, onCancel }: FaceV
                 ctx.strokeStyle = 'rgba(0, 255, 0, 0.6)'
                 ctx.lineWidth = 2
                 ctx.strokeRect(x, y, w, h)
-                const drawPoint = (px: number, py: number, color: string) => {
-                  ctx.fillStyle = color
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
+                allPoints.forEach((p: { x: number; y: number }) => {
                   ctx.beginPath()
-                  ctx.arc(mirrorX(px) * scaleX, py * scaleY, 2, 0, Math.PI * 2)
+                  ctx.arc(mirrorX(p.x) * scaleX, p.y * scaleY, 2, 0, Math.PI * 2)
                   ctx.fill()
-                }
-                leftEye.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 200, 0, 0.9)'))
-                rightEye.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 200, 0, 0.9)'))
-                nose.forEach((p) => drawPoint(p.x, p.y, 'rgba(100, 200, 255, 0.9)'))
-                if (allPoints.length > 20) {
-                  allPoints.forEach((p) => drawPoint(p.x, p.y, 'rgba(255, 255, 255, 0.4)'))
-                }
+                })
               }
             }
           }
