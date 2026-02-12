@@ -162,25 +162,6 @@ export default function LoginForm() {
   }, [godMode, godSplash, godUsers.length])
 
   useEffect(() => {
-    if (godMode !== 'menu' || godSplash) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setGodMenuSelectedIndex((i) => (i < godUsers.length - 1 ? i + 1 : i))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setGodMenuSelectedIndex((i) => (i > 0 ? i - 1 : i))
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        const u = godUsers[godMenuSelectedIndex]
-        if (u) handleGodImpersonate(u.id)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [godMode, godSplash, godUsers, godMenuSelectedIndex, handleGodImpersonate])
-
-  useEffect(() => {
     if (faceAuth || godMode) return
     const onKey = (e: KeyboardEvent) => {
       const key = e.key?.length === 1 ? e.key : ''
@@ -260,6 +241,25 @@ export default function LoginForm() {
       setGodKeyError('Ошибка входа')
     }
   }
+
+  useEffect(() => {
+    if (godMode !== 'menu' || godSplash) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setGodMenuSelectedIndex((i) => (i < godUsers.length - 1 ? i + 1 : i))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setGodMenuSelectedIndex((i) => (i > 0 ? i - 1 : i))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const u = godUsers[godMenuSelectedIndex]
+        if (u) handleGodImpersonate(u.id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [godMode, godSplash, godUsers, godMenuSelectedIndex, handleGodImpersonate])
 
   if (faceAuth) {
     return (
