@@ -49,6 +49,26 @@ export function verifyFaceVerifyToken(token: string): FaceVerifyPayload {
   return payload
 }
 
+export interface GodPayload {
+  purpose: 'god_mode'
+}
+
+const GOD_TOKEN_EXPIRES = '5m'
+
+export function generateGodToken(): string {
+  return jwt.sign(
+    { purpose: 'god_mode' } as GodPayload,
+    JWT_SECRET,
+    { expiresIn: GOD_TOKEN_EXPIRES } as jwt.SignOptions
+  )
+}
+
+export function verifyGodToken(token: string): GodPayload {
+  const payload = jwt.verify(token, JWT_SECRET) as GodPayload
+  if (payload.purpose !== 'god_mode') throw new Error('Invalid token purpose')
+  return payload
+}
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
 }

