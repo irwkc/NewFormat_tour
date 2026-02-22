@@ -15,7 +15,7 @@ export default function TermsPage() {
         </Link>
         <h1 className="text-2xl font-bold mb-2">Условия использования сервиса «Новый формат путешествий»</h1>
         <p className="text-white/70 text-sm mb-8">
-          ИП Коростелев Н.Д. (ИНН 410125118968). Сервис доступен по адресу nf-travel.ru.
+          ИП Коростелев Н.Д. (ИНН 410125118968, ОГРНИП 325410000007073). Сервис доступен по адресу nf-travel.ru.
         </p>
 
         <div className="bg-slate-800/50 rounded-lg p-6 overflow-x-auto">
@@ -25,7 +25,7 @@ export default function TermsPage() {
         </div>
 
         <p className="text-white/60 text-xs mt-8">
-          Дата публикации: 03.12.2025. ИП Коростелев Н.Д., ИНН 410125118968. Контакты: <a href="mailto:nf-travel@mail.ru" className="text-indigo-300">nf-travel@mail.ru</a>, 8 (911) 186 74-22.
+          Дата публикации: 03.12.2025. ИП Коростелев Н.Д., ИНН 410125118968, ОГРНИП 325410000007073. Контакты: <a href="mailto:nf-travel@mail.ru" className="text-indigo-300">nf-travel@mail.ru</a>, 8 (911) 186 74-22.
         </p>
       </div>
     </div>

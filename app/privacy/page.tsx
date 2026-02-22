@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         </Link>
         <h1 className="text-2xl font-bold mb-2">Политика конфиденциальности</h1>
         <p className="text-white/70 text-sm mb-8">
-          ИП Коростелев Никита Дмитриевич (ИНН 410125118968). Сайт nf-travel.ru, staff.nf-travel.ru.
+          ИП Коростелев Никита Дмитриевич (ИНН 410125118968, ОГРНИП 325410000007073). Сайт nf-travel.ru, staff.nf-travel.ru.
         </p>
 
         <section className="space-y-4 mb-8">
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
         </section>
 
         <p className="text-white/60 text-xs mt-8">
-          ИП Коростелев Н.Д., ИНН 410125118968. Контакты: <a href="mailto:nf-travel@mail.ru" className="text-indigo-300">nf-travel@mail.ru</a>, 8 (911) 186 74-22.
+          ИП Коростелев Н.Д., ИНН 410125118968, ОГРНИП 325410000007073. Контакты: <a href="mailto:nf-travel@mail.ru" className="text-indigo-300">nf-travel@mail.ru</a>, 8 (911) 186 74-22.
         </p>
       </div>
     </div>
