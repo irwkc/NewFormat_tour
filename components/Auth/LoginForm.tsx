@@ -486,6 +486,21 @@ export default function LoginForm() {
                 Забыли пароль?
               </a>
             </div>
+
+            <footer className="mt-8 pt-6 border-t border-white/10 text-center">
+              <p className="text-white/50 text-xs mb-3">ИП Коростелев Н.Д., ИНН 410125118968</p>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+                <a href="/rules" className="text-white/60 hover:text-white transition-colors">
+                  Правила продажи и возврата
+                </a>
+                <a href="/privacy" className="text-white/60 hover:text-white transition-colors">
+                  Политика конфиденциальности
+                </a>
+                <a href="/terms" className="text-white/60 hover:text-white transition-colors">
+                  Пользовательское соглашение
+                </a>
+              </div>
+            </footer>
           </form>
         </div>
       </div>

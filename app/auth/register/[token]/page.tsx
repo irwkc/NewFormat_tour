@@ -14,6 +14,9 @@ const registerSchema = z.object({
   confirm_password: z.string().min(6),
   photo: z.any().optional(),
   controller_password: z.string().min(6).optional(),
+  agreeToTerms: z.literal(true, {
+    errorMap: () => ({ message: 'Необходимо принять пользовательское соглашение' }),
+  }),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords don't match",
   path: ["confirm_password"],
@@ -334,6 +337,24 @@ export default function RegisterPage() {
               <div className="alert-error">
                 <p className="text-sm font-medium">{error}</p>
               </div>
+            )}
+
+            <div className="flex items-start gap-2">
+              <input
+                id="agreeToTerms"
+                type="checkbox"
+                {...register('agreeToTerms')}
+                className="mt-1 h-4 w-4 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-purple-500 focus:ring-offset-purple-200"
+              />
+              <label htmlFor="agreeToTerms" className="text-sm text-white/90">
+                Я согласен с{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-indigo-300 hover:text-indigo-200 underline">
+                  Пользовательским соглашением
+                </a>
+              </label>
+            </div>
+            {errors.agreeToTerms && (
+              <p className="text-red-300 text-xs mt-1">{errors.agreeToTerms.message}</p>
             )}
 
             <div>
