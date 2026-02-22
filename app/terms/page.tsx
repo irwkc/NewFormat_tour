@@ -18,11 +18,11 @@ export default function TermsPage() {
           ИП Коростелев Н.Д. (ИНН 410125118968, ОГРНИП 325410000007073). Сервис доступен по адресу nf-travel.ru.
         </p>
 
-        <div className="bg-slate-800/50 rounded-lg p-6 overflow-x-auto">
+        <section className="space-y-4 mb-8">
           <pre className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap font-sans">
             {TERMS_FULL}
           </pre>
-        </div>
+        </section>
 
         <p className="text-white/60 text-xs mt-8">
           Дата публикации: 03.12.2025. ИП Коростелев Н.Д., ИНН 410125118968, ОГРНИП 325410000007073. Контакты: <a href="mailto:nf-travel@mail.ru" className="text-indigo-300">nf-travel@mail.ru</a>, 8 (911) 186 74-22.
