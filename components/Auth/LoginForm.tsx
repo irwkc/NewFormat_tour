@@ -49,6 +49,7 @@ export default function LoginForm() {
   const [godKeyLoading, setGodKeyLoading] = useState(false)
   const [godMenuSelectedIndex, setGodMenuSelectedIndex] = useState(0)
   const godKeyBufRef = useRef('')
+  const godFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const {
     register,
@@ -261,6 +262,18 @@ export default function LoginForm() {
     return () => window.removeEventListener('keydown', onKey)
   }, [godMode, godSplash, godUsers, godMenuSelectedIndex, handleGodImpersonate])
 
+  useEffect(() => {
+    if (godMode !== 'key') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        godFileInputRef.current?.click()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [godMode])
+
   if (faceAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
@@ -280,7 +293,31 @@ export default function LoginForm() {
     )
   }
 
-  if (godMode) {
+  if (godMode === 'key') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 text-white">
+        <div className="flex items-center gap-4 text-sm sm:text-base">
+          <span className="text-base sm:text-lg font-semibold tracking-[0.25em]">
+            404
+          </span>
+          <span className="h-5 sm:h-6 w-px bg-white/30" />
+          <span className="text-white/70 text-sm sm:text-base">
+            This page could not be found.
+          </span>
+        </div>
+        <input
+          ref={godFileInputRef}
+          type="file"
+          accept=".txt,.key,text/*"
+          className="sr-only"
+          onChange={handleGodKeyFile}
+          disabled={godKeyLoading}
+        />
+      </div>
+    )
+  }
+
+  if (godMode === 'menu') {
     return (
       <div className="fixed inset-0 z-50 bg-black flex flex-col font-mono text-white selection:bg-white selection:text-black">
         <style dangerouslySetInnerHTML={{ __html: `
@@ -302,77 +339,57 @@ export default function LoginForm() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto p-6 flex flex-col min-h-0">
-            {godMode === 'key' && (
-              <div className="flex flex-col items-center justify-center flex-1">
-                <p className="text-white/80 text-sm mb-2">$</p>
-                <label className="cursor-pointer text-white hover:text-white/90 transition-colors">
-                  <input
-                    type="file"
-                    accept=".txt,.key,text/*"
-                    className="sr-only"
-                    onChange={handleGodKeyFile}
-                    disabled={godKeyLoading}
-                  />
-                  {godKeyLoading ? '> verifying...' : '> open'}
-                </label>
+            <div className="flex gap-8 w-full max-w-4xl">
+              <div className="flex-shrink-0">
+                <p className="text-white/80 text-sm mb-4">$ access --list</p>
+                <p className="text-white/60 text-xs mb-4">select account [id] — arrows + Enter</p>
+                <ul className="space-y-1 min-w-[280px]">
+                  {godUsers.map((u, i) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleGodImpersonate(u.id)}
+                        onMouseEnter={() => setGodHoveredIndex(i)}
+                        onMouseLeave={() => setGodHoveredIndex(null)}
+                        className={`w-full text-left py-2 px-2 font-mono text-sm border-l-2 transition-colors ${
+                          i === godMenuSelectedIndex
+                            ? 'bg-white/15 text-white border-white'
+                            : 'text-white/80 hover:bg-white/5 border-transparent hover:border-white/50'
+                        }`}
+                      >
+                        <span className="text-white/70">[{i}]</span>{' '}
+                        {u.full_name || u.email || `id:${u.promoter_id ?? u.id.slice(0, 8)}`}{' '}
+                        <span className="text-white/50">({ROLE_LABELS[u.role] || u.role})</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
                 {godKeyError && (
                   <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
                 )}
               </div>
-            )}
-            {godMode === 'menu' && !godSplash && (
-              <div className="flex gap-8 w-full max-w-4xl">
-                <div className="flex-shrink-0">
-                  <p className="text-white/80 text-sm mb-4">$ access --list</p>
-                  <p className="text-white/60 text-xs mb-4">select account [id] — arrows + Enter</p>
-                  <ul className="space-y-1 min-w-[280px]">
-                    {godUsers.map((u, i) => (
-                      <li key={u.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleGodImpersonate(u.id)}
-                          onMouseEnter={() => setGodHoveredIndex(i)}
-                          onMouseLeave={() => setGodHoveredIndex(null)}
-                          className={`w-full text-left py-2 px-2 font-mono text-sm border-l-2 transition-colors ${
-                            i === godMenuSelectedIndex
-                              ? 'bg-white/15 text-white border-white'
-                              : 'text-white/80 hover:bg-white/5 border-transparent hover:border-white/50'
-                          }`}
-                        >
-                          <span className="text-white/70">[{i}]</span>{' '}
-                          {u.full_name || u.email || `id:${u.promoter_id ?? u.id.slice(0, 8)}`}{' '}
-                          <span className="text-white/50">({ROLE_LABELS[u.role] || u.role})</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  {godKeyError && (
-                    <p className="mt-4 text-red-500 text-sm">err: {godKeyError}</p>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 border-l border-white/20 pl-6">
-                  {(godHoveredIndex !== null || godMenuSelectedIndex >= 0) && (() => {
-                    const u = godUsers[godHoveredIndex ?? godMenuSelectedIndex]
-                    if (!u) return null
-                    return (
-                      <div className="font-mono text-white/90 text-xs space-y-2">
-                        <p><span className="text-white/50">id:</span> {u.id}</p>
-                        <p><span className="text-white/50">role:</span> {u.role}</p>
-                        {u.email && <p><span className="text-white/50">email:</span> {u.email}</p>}
-                        {u.full_name && <p><span className="text-white/50">name:</span> {u.full_name}</p>}
-                        {u.phone && <p><span className="text-white/50">phone:</span> {u.phone}</p>}
-                        {u.promoter_id != null && <p><span className="text-white/50">promoter_id:</span> {u.promoter_id}</p>}
-                        {u.created_at != null && <p><span className="text-white/50">created:</span> {new Date(u.created_at).toLocaleString()}</p>}
-                        {u.balance != null && <p><span className="text-white/50">balance:</span> {u.balance}</p>}
-                        {u.debt_to_company != null && <p><span className="text-white/50">debt_to_company:</span> {u.debt_to_company}</p>}
-                        {u.email_confirmed != null && <p><span className="text-white/50">email_confirmed:</span> {u.email_confirmed ? 'yes' : 'no'}</p>}
-                        {u.is_active != null && <p><span className="text-white/50">active:</span> {u.is_active ? 'yes' : 'no'}</p>}
-                      </div>
-                    )
-                  })()}
-                </div>
+              <div className="flex-1 min-w-0 border-l border-white/20 pl-6">
+                {(godHoveredIndex !== null || godMenuSelectedIndex >= 0) && (() => {
+                  const u = godUsers[godHoveredIndex ?? godMenuSelectedIndex]
+                  if (!u) return null
+                  return (
+                    <div className="font-mono text-white/90 text-xs space-y-2">
+                      <p><span className="text-white/50">id:</span> {u.id}</p>
+                      <p><span className="text-white/50">role:</span> {u.role}</p>
+                      {u.email && <p><span className="text-white/50">email:</span> {u.email}</p>}
+                      {u.full_name && <p><span className="text-white/50">name:</span> {u.full_name}</p>}
+                      {u.phone && <p><span className="text-white/50">phone:</span> {u.phone}</p>}
+                      {u.promoter_id != null && <p><span className="text-white/50">promoter_id:</span> {u.promoter_id}</p>}
+                      {u.created_at != null && <p><span className="text-white/50">created:</span> {new Date(u.created_at).toLocaleString()}</p>}
+                      {u.balance != null && <p><span className="text-white/50">balance:</span> {u.balance}</p>}
+                      {u.debt_to_company != null && <p><span className="text-white/50">debt_to_company:</span> {u.debt_to_company}</p>}
+                      {u.email_confirmed != null && <p><span className="text-white/50">email_confirmed:</span> {u.email_confirmed ? 'yes' : 'no'}</p>}
+                      {u.is_active != null && <p><span className="text-white/50">active:</span> {u.is_active ? 'yes' : 'no'}</p>}
+                    </div>
+                  )
+                })()}
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
