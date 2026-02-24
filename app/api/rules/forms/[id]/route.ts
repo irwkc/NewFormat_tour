@@ -34,8 +34,12 @@ export async function GET(
   })
 
   const buffer = await Packer.toBuffer(doc)
+  const arrayBuffer = buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength
+  )
 
-  return new NextResponse(buffer, {
+  return new NextResponse(arrayBuffer, {
     status: 200,
     headers: {
       'Content-Type':
