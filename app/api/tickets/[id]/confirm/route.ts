@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { UserRole } from '@prisma/client'
 import { confirmTicketDomain } from '@/lib/domain/tickets'
+import { canConfirmTicket } from '@/lib/permissions'
 
 // POST /api/tickets/:id/confirm - подтверждение использования билета
 export async function POST(
@@ -12,8 +13,7 @@ export async function POST(
     request,
     async (req) => {
       try {
-        // Только партнеры и контролеры могут подтверждать билеты
-        if (req.user!.role !== UserRole.partner && req.user!.role !== UserRole.partner_controller) {
+        if (!canConfirmTicket({ id: req.user!.userId, role: req.user!.role as UserRole })) {
           return NextResponse.json(
             { success: false, error: 'Only partners can confirm tickets' },
             { status: 403 }
@@ -49,7 +49,6 @@ export async function POST(
           { status: 500 }
         )
       }
-    },
-    [UserRole.partner, UserRole.partner_controller]
+    }
   )
 }

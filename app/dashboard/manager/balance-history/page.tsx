@@ -49,16 +49,16 @@ export default function ManagerBalanceHistoryPage() {
     <DashboardLayout title="История баланса" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-xl font-bold mb-4 text-white">Текущие балансы</h2>
+          <h2 className="text-xl font-bold mb-4 text-white">Ваши кошельки</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-white/70">Баланс</div>
+              <div className="text-sm text-white/70">Доходы</div>
               <div className="text-2xl font-bold text-green-300">
                 {Number(user?.balance || 0).toFixed(2)}₽
               </div>
             </div>
             <div>
-              <div className="text-sm text-white/70">Долг компании</div>
+              <div className="text-sm text-white/70">Должен компании</div>
               <div className="text-2xl font-bold text-red-300">
                 {Number(user?.debt_to_company || 0).toFixed(2)}₽
               </div>

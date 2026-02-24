@@ -50,7 +50,7 @@ export default function PromoterBalanceHistoryPage() {
     <DashboardLayout title="История баланса" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-xl font-bold mb-4 text-white">Текущий баланс</h2>
+          <h2 className="text-xl font-bold mb-4 text-white">Кошелёк доходов</h2>
           <div className="text-3xl font-bold text-green-300">
             {Number(user?.balance || 0).toFixed(2)}₽
           </div>

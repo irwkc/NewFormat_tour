@@ -179,56 +179,93 @@ updated_at: DateTime
 - Категории используются для фильтрации и поиска экскурсий
 - При создании экскурсии обязательно выбирается категория
 
-### Таблица: tours (Экскурсии)
+### Таблица: tours (Экскурсии / продукт)
 ```
 id: UUID (Primary Key)
 created_by_user_id: UUID (Foreign Key → users.id) // только партнер (владелец не может создавать экскурсии)
 category_id: UUID (Foreign Key → categories.id) // категория экскурсии (обязательно)
-company: String
-departure_time: DateTime
-date: Date
-max_places: Integer
-partner_min_adult_price: Decimal // минимальная цена взрослого билета, которую установил партнер при создании
-partner_min_child_price: Decimal // минимальная цена детского билета, которую установил партнер при создании
-moderation_status: Enum (pending, approved, rejected) // статус модерации: pending (на модерации), approved (одобрена), rejected (отклонена)
+company: String // компания/судовладелец/организатор
+
+// Минимальные цены, которые задал партнёр при создании продукта
+partner_min_adult_price: Decimal
+partner_min_child_price: Decimal
+partner_min_concession_price: Decimal (nullable) // минимальная льготная цена, если используется
+
+// Модерация владельцем
+moderation_status: Enum (pending, approved, rejected)
 moderated_by_user_id: UUID (Foreign Key → users.id, nullable) // кто модерировал (всегда владелец)
-moderated_at: DateTime (nullable) // когда была пройдена модерация
-owner_min_adult_price: Decimal (nullable) // минимальная цена взрослого билета, которую установил владелец при модерации
-owner_min_child_price: Decimal (nullable) // минимальная цена детского билета, которую установил владелец при модерации
-commission_type: Enum (percentage, fixed) // тип комиссии: percentage (процент) или fixed (фиксированная сумма)
-commission_percentage: Decimal (nullable) // процент от продажи для промоутера/менеджера (например, 21)
-commission_fixed_amount: Decimal (nullable) // фиксированная сумма для промоутера/менеджера за продажу
-is_sale_stopped: Boolean (default: false)
-current_booked_places: Integer (default: 0) // количество билетов со статусом 'sold' (считается автоматически из таблицы tickets)
-flight_number: String
+moderated_at: DateTime (nullable)
+
+// Минимальные цены владельца (могут отличаться от партнёрских)
+owner_min_adult_price: Decimal (nullable)
+owner_min_child_price: Decimal (nullable)
+owner_min_concession_price: Decimal (nullable)
+
+// Комиссия для продавцов
+commission_type: Enum (percentage, fixed) (nullable)
+commission_percentage: Decimal (nullable)
+commission_fixed_amount: Decimal (nullable)
+
 created_at: DateTime
 updated_at: DateTime
 ```
 
 **Важно:**
-- При создании экскурсии обязательно выбирается категория
-- Экскурсию можно удалить только если на неё нет проданных билетов (нет записей в таблице tickets со статусом `sold` или `used`)
-- Удаление доступно владельцу (любые экскурсии) и партнеру (только свои экскурсии, не может удалить экскурсии других партнеров)
+- Tour — это именно «продукт» (маршрут, компания, правила цен и комиссии), в нём НЕТ дат/времени/мест.
+- Конкретные рейсы/слоты с датой, временем и количеством мест живут в отдельной таблице `flights`.
+- Экскурсию можно удалить только если на её рейсах нет проданных билетов (нет записей в таблице tickets со статусом `sold` или `used` для связанных flights).
+- Удаление доступно владельцу (любые экскурсии) и партнеру (только свои экскурсии, не может удалить экскурсии других партнеров).
+
+### Таблица: flights (Рейсы экскурсии)
+```
+id: UUID (Primary Key)
+tour_id: UUID (Foreign Key → tours.id) // к какому туру относится рейс
+flight_number: String // номер рейса/ходки
+departure_time: DateTime // время отправления
+date: Date // календарная дата рейса
+max_places: Integer // всего мест на рейсе
+current_booked_places: Integer (default: 0) // занятые места (по status='sold'/'used')
+is_sale_stopped: Boolean (default: false) // ручная остановка продаж по рейсу
+boarding_location_url: String (nullable) // ссылка на точку посадки (карта)
+created_at: DateTime
+updated_at: DateTime
+```
+
+**Важно:**
+- Менеджеры/промоутеры всегда выбирают сначала Tour, затем конкретный Flight.
+- Автостоп продаж основан на Flight.current_booked_places и max_places для этого рейса.
 
 ### Таблица: sales (Продажи)
 ```
 id: UUID (Primary Key)
-tour_id: UUID (Foreign Key → tours.id)
+tour_id: UUID (Foreign Key → tours.id)   // к какому продукту относится продажа
+flight_id: UUID (Foreign Key → flights.id) // конкретный рейс
+
 seller_user_id: UUID (Foreign Key → users.id) // кто продал (менеджер или промоутер)
-promoter_user_id: UUID (Foreign Key → users.id, nullable) // если менеджер продал за промоутера (промоутер сам пришел и попросил)
+promoter_user_id: UUID (Foreign Key → users.id, nullable) // если менеджер продал за промоутера
+
 adult_count: Integer
-child_count: Integer
+child_count: Integer (default: 0)
+concession_count: Integer (default: 0) // количество льготных мест
+
 adult_price: Decimal
-child_price: Decimal
+child_price: Decimal (nullable)
+concession_price: Decimal (nullable)
+
 total_amount: Decimal
+
 payment_method: Enum (online_yookassa, cash, acquiring)
 payment_status: Enum (pending, completed, failed)
+
 yookassa_payment_id: String (nullable)
 yookassa_payment_url: String (nullable)
+
 payment_link_token: String (Unique, nullable) // токен для публичной страницы заказа (QR и ссылка ведут сюда)
 payment_link_url: String (nullable) // публичная ссылка на страницу заказа (для QR и отправки клиенту)
+
 receipt_photo_url: String (nullable) // для эквайринга (фото чека эквайринга)
-customer_email: String (nullable) // для отправки PDF чека с QR (при онлайн оплате)
+customer_email: String (nullable) // для отправки PDF билета/чека с QR (при онлайн оплате)
+
 created_at: DateTime
 updated_at: DateTime
 ```
@@ -238,18 +275,25 @@ updated_at: DateTime
 id: UUID (Primary Key)
 sale_id: UUID (Foreign Key → sales.id, Unique) // один билет на одну продажу
 tour_id: UUID (Foreign Key → tours.id)
-adult_count: Integer // количество взрослых мест в билете (>= 1)
-child_count: Integer // количество детских мест в билете (>= 0, может быть 0 если только взрослые)
+
+adult_count: Integer        // количество взрослых мест в билете (>= 1)
+child_count: Integer        // количество детских мест (>= 0)
+concession_count: Integer   // количество льготных мест (>= 0)
+
 ticket_number: String (Unique, nullable) // номер билета для налички/эквайринга (формат: AA00000000 - 2 английские заглавные буквы + 8 цифр)
-ticket_photo_url: String (nullable) // фото пронумерованного бумажного билета (для налички/эквайринга)
-ticket_status: Enum (sold, used, cancelled) // статус билета: Продано (sold) - сразу после продажи, Использовано (used) - после сканирования на входе, Отменено (cancelled) - отменен владельцем (остается в этом статусе, не переходит в used)
-cancelled_at: DateTime (nullable) // когда билет был отменен владельцем
-cancelled_by_user_id: UUID (Foreign Key → users.id, nullable) // кто отменил билет (всегда владелец)
-qr_code_data: String (nullable) // данные для QR кода на входе (для онлайн билетов)
-qr_code_url: String (nullable) // URL для сканирования QR (публичная страница с информацией о билете)
-ticket_pdf_url: String (nullable) // ссылка на сгенерированный PDF с билетом и QR для контроля (для онлайн)
-used_at: DateTime (nullable) // когда билет был использован (при проверке на входе)
+ticket_photo_url: String (nullable)      // фото бумажного билета (для налички/эквайринга)
+
+ticket_status: Enum (sold, used, cancelled) // статус билета
+cancelled_at: DateTime (nullable)           // когда билет был отменен владельцем
+cancelled_by_user_id: UUID (Foreign Key → users.id, nullable) // кто отменил билет (владелец)
+
+qr_code_data: String (nullable) // данные для QR кода (онлайн билеты)
+qr_code_url: String (nullable)  // URL для проверки билета по QR
+ticket_pdf_url: String (nullable) // ссылка на сгенерированный PDF с билетом и QR
+
+used_at: DateTime (nullable)       // когда билет был использован
 used_by_user_id: UUID (Foreign Key → users.id, nullable) // кто проверил билет на входе (контролер)
+
 created_at: DateTime
 updated_at: DateTime
 ```

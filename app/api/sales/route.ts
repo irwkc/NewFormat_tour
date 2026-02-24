@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 import { createSaleSchema, createSaleDomain } from '@/lib/domain/sales'
+import { canCreateSale } from '@/lib/permissions'
 
 // GET /api/sales - список продаж
 export async function GET(request: NextRequest) {
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
     request,
     async (req) => {
       try {
-        if (req.user!.role !== UserRole.manager && req.user!.role !== UserRole.promoter) {
+        if (!canCreateSale({ id: req.user!.userId, role: req.user!.role as UserRole })) {
           return NextResponse.json(
             { success: false, error: 'Only managers and promoters can create sales' },
             { status: 403 }
@@ -197,7 +198,6 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
-    },
-    [UserRole.manager, UserRole.promoter]
+    }
   )
 }

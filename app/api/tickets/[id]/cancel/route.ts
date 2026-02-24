@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { UserRole } from '@prisma/client'
 import { cancelTicketDomain } from '@/lib/domain/tickets'
+import { canCancelTicket } from '@/lib/permissions'
 
 // POST /api/tickets/:id/cancel - отмена билета (только владелец)
 export async function POST(
@@ -12,7 +13,7 @@ export async function POST(
     request,
     async (req) => {
       try {
-        if (req.user!.role !== UserRole.owner) {
+        if (!canCancelTicket({ id: req.user!.userId, role: req.user!.role as UserRole })) {
           return NextResponse.json(
             { success: false, error: 'Only owner can cancel tickets' },
             { status: 403 }
@@ -48,7 +49,6 @@ export async function POST(
           { status: 500 }
         )
       }
-    },
-    [UserRole.owner]
+    }
   )
 }
