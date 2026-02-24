@@ -37,7 +37,7 @@ export async function GET(
   const arrayBuffer = buffer.buffer.slice(
     buffer.byteOffset,
     buffer.byteOffset + buffer.byteLength
-  )
+  ) as ArrayBuffer
 
   return new NextResponse(arrayBuffer, {
     status: 200,
