@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
-import { prisma } from '@/lib/prisma'
-import { UserRole, TicketStatus } from '@prisma/client'
-import { updateDebtOnTicketCancel } from '@/utils/balance'
+import { UserRole } from '@prisma/client'
+import { cancelTicketDomain } from '@/lib/domain/tickets'
 
 // POST /api/tickets/:id/cancel - отмена билета (только владелец)
 export async function POST(
@@ -22,70 +21,21 @@ export async function POST(
 
         const { id } = params
 
-        const ticket = await prisma.ticket.findUnique({
-          where: { id },
-          include: {
-            sale: {
-              include: {
-                tour: true,
-                flight: true,
-              },
-            },
-          },
-        })
+        const result = await cancelTicketDomain(id, req.user!.userId)
 
-        if (!ticket) {
+        if (result.status === 'not_found') {
           return NextResponse.json(
             { success: false, error: 'Ticket not found' },
             { status: 404 }
           )
         }
 
-        if (ticket.ticket_status === TicketStatus.cancelled) {
+        if (result.status === 'already_cancelled') {
           return NextResponse.json(
             { success: false, error: 'Ticket already cancelled' },
             { status: 400 }
           )
         }
-
-        const oldStatus = ticket.ticket_status
-
-        // Обновить статус билета
-        await prisma.ticket.update({
-          where: { id },
-          data: {
-            ticket_status: TicketStatus.cancelled,
-            cancelled_at: new Date(),
-            cancelled_by_user_id: req.user!.userId,
-          },
-        })
-
-        // Если билет был в статусе sold, освободить места на рейсе
-        if (oldStatus === TicketStatus.sold) {
-          const placesToFree = ticket.adult_count + ticket.child_count + ((ticket as any).concession_count || 0)
-          
-          const updatedFlight = await prisma.flight.update({
-            where: { id: ticket.sale.flight_id },
-            data: {
-              current_booked_places: {
-                decrement: placesToFree,
-              },
-            },
-          })
-
-          // Проверить, нужно ли возобновить продажи
-          if (updatedFlight.is_sale_stopped && updatedFlight.current_booked_places < updatedFlight.max_places) {
-            await prisma.flight.update({
-              where: { id: ticket.sale.flight_id },
-              data: {
-                is_sale_stopped: false,
-              },
-            })
-          }
-        }
-
-        // Обновить баланс "Должен компании" если это наличка/эквайринг
-        await updateDebtOnTicketCancel(id, req.user!.userId)
 
         return NextResponse.json({
           success: true,

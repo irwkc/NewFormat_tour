@@ -1,35 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { UserRole, PaymentMethod } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 import { z } from 'zod'
-import { generateRandomToken } from '@/lib/auth'
-
-const optionalPrice = z.preprocess((v) => {
-  if (v === '' || v === null || v === undefined) return undefined
-  const n = Number(v)
-  return Number.isFinite(n) ? n : undefined
-}, z.number().positive().optional())
-
-const createSaleSchema = z.object({
-  tour_id: z.string().uuid(),
-  flight_id: z.string().uuid(),
-  adult_count: z.number().int().positive(),
-  child_count: z.number().int().min(0).default(0),
-  concession_count: z.number().int().min(0).default(0),
-  adult_price: z.number().positive(),
-  child_price: optionalPrice,
-  concession_price: optionalPrice,
-  payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
-  promoter_user_id: z.string().uuid().optional(),
-}).refine((data) => {
-  if (data.child_count > 0) return data.child_price !== undefined
-  return true
-}, { message: 'child_price is required when child_count > 0', path: ['child_price'] })
-  .refine((data) => {
-    if (data.concession_count > 0) return data.concession_price !== undefined
-    return true
-  }, { message: 'concession_price is required when concession_count > 0', path: ['concession_price'] })
+import { createSaleSchema, createSaleDomain } from '@/lib/domain/sales'
 
 // GET /api/sales - список продаж
 export async function GET(request: NextRequest) {
@@ -131,163 +105,79 @@ export async function POST(request: NextRequest) {
         const data = createSaleSchema.parse(body)
 
         // Проверить экскурсию
-        const tour = await prisma.tour.findUnique({
-          where: { id: data.tour_id },
-        })
+        const result = await createSaleDomain(data, { id: req.user!.userId, role: req.user!.role as UserRole })
 
-        if (!tour) {
+        if (result.status === 'tour_not_found') {
           return NextResponse.json(
             { success: false, error: 'Tour not found' },
             { status: 404 }
           )
         }
-
-        if (tour.moderation_status !== 'approved') {
+        if (result.status === 'tour_not_approved') {
           return NextResponse.json(
             { success: false, error: 'Tour is not approved' },
             { status: 400 }
           )
         }
-
-        // Проверить рейс
-        const flight = await prisma.flight.findUnique({
-          where: { id: data.flight_id },
-        })
-
-        if (!flight) {
+        if (result.status === 'flight_not_found') {
           return NextResponse.json(
             { success: false, error: 'Flight not found' },
             { status: 404 }
           )
         }
-
-        if (flight.tour_id !== data.tour_id) {
+        if (result.status === 'flight_mismatch') {
           return NextResponse.json(
             { success: false, error: 'Flight does not belong to this tour' },
             { status: 400 }
           )
         }
-
-        if (flight.is_sale_stopped) {
+        if (result.status === 'flight_sales_stopped') {
           return NextResponse.json(
             { success: false, error: 'Sales are stopped for this flight' },
             { status: 400 }
           )
         }
-
-        // Проверить доступность мест
-        const totalPlaces = data.adult_count + data.child_count + (data.concession_count || 0)
-        const availablePlaces = flight.max_places - flight.current_booked_places
-        if (totalPlaces > availablePlaces) {
+        if (result.status === 'not_enough_places') {
           return NextResponse.json(
-            { success: false, error: `Not enough places available. Available: ${availablePlaces}, Requested: ${totalPlaces}` },
+            {
+              success: false,
+              error: `Not enough places available. Available: ${result.availablePlaces}, Requested: ${result.requestedPlaces}`,
+            },
             { status: 400 }
           )
         }
-
-        // Проверить минимальные цены
-        if (data.adult_price < Number(tour.owner_min_adult_price)) {
+        if (result.status === 'adult_price_too_low') {
           return NextResponse.json(
-            { success: false, error: `Adult price must be at least ${tour.owner_min_adult_price}` },
+            { success: false, error: `Adult price must be at least ${result.min}` },
             { status: 400 }
           )
         }
-
-        if (data.child_count > 0 && data.child_price) {
-          if (data.child_price < Number(tour.owner_min_child_price)) {
-            return NextResponse.json(
-              { success: false, error: `Child price must be at least ${tour.owner_min_child_price}` },
-              { status: 400 }
-            )
-          }
+        if (result.status === 'child_price_too_low') {
+          return NextResponse.json(
+            { success: false, error: `Child price must be at least ${result.min}` },
+            { status: 400 }
+          )
+        }
+        if (result.status === 'concession_price_too_low') {
+          return NextResponse.json(
+            { success: false, error: `Concession price must be at least ${result.min}` },
+            { status: 400 }
+          )
+        }
+        if (result.status === 'only_manager_can_sell_for_promoter') {
+          return NextResponse.json(
+            { success: false, error: 'Only managers can sell for promoters' },
+            { status: 403 }
+          )
+        }
+        if (result.status === 'promoter_not_found') {
+          return NextResponse.json(
+            { success: false, error: 'Promoter not found' },
+            { status: 404 }
+          )
         }
 
-        if (data.concession_count > 0 && data.concession_price) {
-          if (tour.owner_min_concession_price && data.concession_price < Number(tour.owner_min_concession_price)) {
-            return NextResponse.json(
-              { success: false, error: `Concession price must be at least ${tour.owner_min_concession_price}` },
-              { status: 400 }
-            )
-          }
-        }
-
-        // Проверить промоутера, если указан
-        if (data.promoter_user_id) {
-          if (req.user!.role !== UserRole.manager) {
-            return NextResponse.json(
-              { success: false, error: 'Only managers can sell for promoters' },
-              { status: 403 }
-            )
-          }
-
-          const promoter = await prisma.user.findUnique({
-            where: { id: data.promoter_user_id },
-          })
-
-          if (!promoter || promoter.role !== UserRole.promoter) {
-            return NextResponse.json(
-              { success: false, error: 'Promoter not found' },
-              { status: 404 }
-            )
-          }
-        }
-
-        // Вычислить общую сумму
-        const childPrice = data.child_count > 0 ? (data.child_price || 0) : 0
-        const concessionPrice = data.concession_count > 0 ? (data.concession_price || 0) : 0
-        const totalAmount = (data.adult_count * data.adult_price) + (data.child_count * childPrice) + ((data.concession_count || 0) * concessionPrice)
-
-        // Создать продажу
-        const sale = await prisma.sale.create({
-          data: {
-            tour_id: data.tour_id,
-            flight_id: data.flight_id,
-            seller_user_id: req.user!.userId,
-            promoter_user_id: data.promoter_user_id || null,
-            adult_count: data.adult_count,
-            child_count: data.child_count,
-            concession_count: data.concession_count,
-            adult_price: data.adult_price,
-            child_price: data.child_count > 0 ? (data.child_price || null) : null,
-            concession_price: data.concession_count > 0 ? (data.concession_price || null) : null,
-            total_amount: totalAmount,
-            payment_method: data.payment_method as PaymentMethod,
-            payment_status: 'pending',
-            payment_link_token: generateRandomToken(),
-          },
-          include: {
-            tour: {
-              include: {
-                category: true,
-              },
-            },
-            flight: true,
-            seller: {
-              select: {
-                id: true,
-                full_name: true,
-              },
-            },
-            promoter: {
-              select: {
-                id: true,
-                full_name: true,
-              },
-            },
-          },
-        })
-
-        // Если онлайн оплата - создать payment link
-        if (data.payment_method === 'online_yookassa') {
-          const paymentLinkUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/${sale.payment_link_token}`
-          
-          await prisma.sale.update({
-            where: { id: sale.id },
-            data: {
-              payment_link_url: paymentLinkUrl,
-            },
-          })
-        }
+        const sale = result.sale
 
         return NextResponse.json({
           success: true,

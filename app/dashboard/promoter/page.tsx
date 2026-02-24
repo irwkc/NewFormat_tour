@@ -62,16 +62,25 @@ export default function PromoterDashboard() {
   return (
     <DashboardLayout title="Панель промоутера" navItems={navItems}>
       <div className="space-y-6">
-        <div className="glass-card">
-          <h2 className="text-xl font-bold mb-2 text-white">Ваш баланс</h2>
-          <div className="text-4xl font-bold text-white mb-2">
-            {Number(user?.balance || 0).toFixed(2)}₽
-          </div>
-          {user?.promoter_id && (
-            <div className="mt-2 text-sm text-white/70">
-              Ваш ID: <strong className="text-white">{user.promoter_id}</strong>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="glass-card">
+            <h2 className="text-sm font-medium text-white/80 mb-1">Доходы</h2>
+            <div className="text-3xl sm:text-4xl font-bold text-green-300 mb-1">
+              {Number(user?.balance || 0).toFixed(2)}₽
             </div>
-          )}
+            <p className="text-xs text-white/60">
+              Сумма, которую вы заработали за подтверждённые билеты.
+            </p>
+          </div>
+          <div className="glass-card">
+            <h2 className="text-sm font-medium text-white/80 mb-1">Ваш промо‑ID</h2>
+            <div className="text-2xl font-bold text-white mb-1">
+              {user?.promoter_id ?? '—'}
+            </div>
+            <p className="text-xs text-white/60">
+              Показывайте этот ID менеджеру при продаже за вас.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

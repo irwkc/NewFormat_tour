@@ -62,16 +62,25 @@ export default function ManagerDashboard() {
   return (
     <DashboardLayout title="Панель менеджера" navItems={navItems}>
       <div className="space-y-6">
-        <div className="glass-card">
-          <h2 className="text-xl font-bold mb-2 text-white">Ваш баланс</h2>
-          <div className="text-4xl font-bold text-white mb-2">
-            {Number(user?.balance || 0).toFixed(2)}₽
-          </div>
-          {Number(user?.debt_to_company || 0) > 0 && (
-            <div className="text-lg text-red-300 font-medium">
-              Долг компании: {Number(user?.debt_to_company || 0).toFixed(2)}₽
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="glass-card">
+            <h2 className="text-sm font-medium text-white/80 mb-1">Доходы</h2>
+            <div className="text-3xl sm:text-4xl font-bold text-green-300 mb-1">
+              {Number(user?.balance || 0).toFixed(2)}₽
             </div>
-          )}
+            <p className="text-xs text-white/60">
+              Это сумма, которую вы заработали за подтверждённые билеты.
+            </p>
+          </div>
+          <div className="glass-card">
+            <h2 className="text-sm font-medium text-white/80 mb-1">Долг компании</h2>
+            <div className="text-3xl sm:text-4xl font-bold text-red-300 mb-1">
+              {Number(user?.debt_to_company || 0).toFixed(2)}₽
+            </div>
+            <p className="text-xs text-white/60">
+              Сумма, которую вы должны компании за продажи за наличные/эквайринг.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

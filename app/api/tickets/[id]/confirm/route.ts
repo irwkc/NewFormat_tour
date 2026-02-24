@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
-import { prisma } from '@/lib/prisma'
-import { UserRole, TicketStatus } from '@prisma/client'
-import { updateBalanceOnTicketConfirm } from '@/utils/balance'
+import { UserRole } from '@prisma/client'
+import { confirmTicketDomain } from '@/lib/domain/tickets'
 
 // POST /api/tickets/:id/confirm - подтверждение использования билета
 export async function POST(
@@ -23,39 +22,21 @@ export async function POST(
 
         const { id } = params
 
-        const ticket = await prisma.ticket.findUnique({
-          where: { id },
-          include: {
-            sale: true,
-          },
-        })
+        const result = await confirmTicketDomain(id, req.user!.userId)
 
-        if (!ticket) {
+        if (result.status === 'not_found') {
           return NextResponse.json(
             { success: false, error: 'Ticket not found' },
             { status: 404 }
           )
         }
 
-        if (ticket.ticket_status !== TicketStatus.sold) {
+        if (result.status === 'invalid_status') {
           return NextResponse.json(
             { success: false, error: 'Ticket already used or cancelled' },
             { status: 400 }
           )
         }
-
-        // Обновить статус билета
-        await prisma.ticket.update({
-          where: { id },
-          data: {
-            ticket_status: TicketStatus.used,
-            used_at: new Date(),
-            used_by_user_id: req.user!.userId,
-          },
-        })
-
-        // Обновить балансы
-        await updateBalanceOnTicketConfirm(id, req.user!.userId)
 
         return NextResponse.json({
           success: true,
