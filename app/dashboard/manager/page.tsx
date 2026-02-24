@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
+import { RoleOnboardingOverlay } from '@/components/Onboarding/RoleOnboardingOverlay'
 
 type DashboardFlight = {
   id: string
@@ -32,12 +33,23 @@ export default function ManagerDashboard() {
   const [sales, setSales] = useState<DashboardSale[]>([])
   const [balanceHistory, setBalanceHistory] = useState<unknown[]>([])
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     if (token) {
       fetchData()
     }
   }, [token])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const key = 'nf_onboarding_manager_seen'
+    const seen = window.localStorage.getItem(key)
+    if (!seen) {
+      setShowOnboarding(true)
+      window.localStorage.setItem(key, '1')
+    }
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -83,6 +95,12 @@ export default function ManagerDashboard() {
 
   return (
     <DashboardLayout title="Панель менеджера" navItems={navItems}>
+      {showOnboarding && (
+        <RoleOnboardingOverlay
+          role="manager"
+          onFinish={() => setShowOnboarding(false)}
+        />
+      )}
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="glass-card">
@@ -106,8 +124,13 @@ export default function ManagerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="glass-card">
-            <h3 className="text-lg font-semibold mb-4 text-white">Доступные экскурсии</h3>
+          <details className="glass-card open:shadow-xl sm:open:block" open>
+            <summary className="sm:hidden cursor-pointer list-none mb-2 text-sm font-semibold text-white">
+              Доступные экскурсии
+            </summary>
+            <div className="hidden sm:block">
+              <h3 className="text-lg font-semibold mb-4 text-white">Доступные экскурсии</h3>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -130,10 +153,15 @@ export default function ManagerDashboard() {
                 ))}
               </div>
             )}
-          </div>
+          </details>
 
-          <div className="glass-card">
-            <h3 className="text-lg font-semibold mb-4 text-white">Последние продажи</h3>
+          <details className="glass-card open:shadow-xl sm:open:block" open>
+            <summary className="sm:hidden cursor-pointer list-none mb-2 text-sm font-semibold text-white">
+              Последние продажи
+            </summary>
+            <div className="hidden sm:block">
+              <h3 className="text-lg font-semibold mb-4 text-white">Последние продажи</h3>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -152,7 +180,7 @@ export default function ManagerDashboard() {
                 ))}
               </div>
             )}
-          </div>
+          </details>
         </div>
       </div>
     </DashboardLayout>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
+import { RoleOnboardingOverlay } from '@/components/Onboarding/RoleOnboardingOverlay'
 
 type PartnerDashboardTour = {
   id: string
@@ -16,12 +17,23 @@ export default function PartnerDashboard() {
   const { token } = useAuthStore()
   const [tours, setTours] = useState<PartnerDashboardTour[]>([])
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     if (token) {
       fetchTours()
     }
   }, [token])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const key = 'nf_onboarding_partner_seen'
+    const seen = window.localStorage.getItem(key)
+    if (!seen) {
+      setShowOnboarding(true)
+      window.localStorage.setItem(key, '1')
+    }
+  }, [])
 
   const fetchTours = async () => {
     try {
@@ -51,6 +63,12 @@ export default function PartnerDashboard() {
 
   return (
     <DashboardLayout title="Панель партнера" navItems={navItems}>
+      {showOnboarding && (
+        <RoleOnboardingOverlay
+          role="partner"
+          onFinish={() => setShowOnboarding(false)}
+        />
+      )}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { RoleOnboardingOverlay } from '@/components/Onboarding/RoleOnboardingOverlay'
 
 type OwnerPromoterSummary = {
   id: string
@@ -23,12 +24,23 @@ export default function OwnerDashboard() {
   const [promoters, setPromoters] = useState<OwnerPromoterSummary[]>([])
   const [managers, setManagers] = useState<OwnerManagerSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     if (token) {
       fetchData()
     }
   }, [token])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const key = 'nf_onboarding_owner_seen'
+    const seen = window.localStorage.getItem(key)
+    if (!seen) {
+      setShowOnboarding(true)
+      window.localStorage.setItem(key, '1')
+    }
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -76,6 +88,12 @@ export default function OwnerDashboard() {
 
   return (
     <DashboardLayout title="Панель владельца" navItems={navItems}>
+      {showOnboarding && (
+        <RoleOnboardingOverlay
+          role="owner"
+          onFinish={() => setShowOnboarding(false)}
+        />
+      )}
       <div className="space-y-6">
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать{user?.full_name || user?.email ? `, ${user.full_name || user.email}` : ''}!</h2>
