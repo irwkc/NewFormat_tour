@@ -27,13 +27,13 @@ export default function PartnerDashboard() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const key = 'nf_onboarding_partner_seen'
-    const seen = window.localStorage.getItem(key)
-    if (!seen) {
-      setShowOnboarding(true)
-      window.localStorage.setItem(key, '1')
-    }
+    if (!window.localStorage.getItem('nf_onboarding_partner_seen')) setShowOnboarding(true)
   }, [])
+
+  const finishOnboarding = () => {
+    if (typeof window !== 'undefined') window.localStorage.setItem('nf_onboarding_partner_seen', '1')
+    setShowOnboarding(false)
+  }
 
   const fetchTours = async () => {
     try {
@@ -64,10 +64,7 @@ export default function PartnerDashboard() {
   return (
     <DashboardLayout title="Панель партнера" navItems={navItems}>
       {showOnboarding && (
-        <RoleOnboardingOverlay
-          role="partner"
-          onFinish={() => setShowOnboarding(false)}
-        />
+        <RoleOnboardingOverlay role="partner" onFinish={finishOnboarding} />
       )}
       <div className="space-y-6">
         <div className="flex justify-between items-center">

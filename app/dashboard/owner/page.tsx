@@ -35,12 +35,13 @@ export default function OwnerDashboard() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const key = 'nf_onboarding_owner_seen'
-    const seen = window.localStorage.getItem(key)
-    if (!seen) {
-      setShowOnboarding(true)
-      window.localStorage.setItem(key, '1')
-    }
+    if (!window.localStorage.getItem(key)) setShowOnboarding(true)
   }, [])
+
+  const finishOnboarding = () => {
+    if (typeof window !== 'undefined') window.localStorage.setItem('nf_onboarding_owner_seen', '1')
+    setShowOnboarding(false)
+  }
 
   const fetchData = async () => {
     try {
@@ -89,10 +90,7 @@ export default function OwnerDashboard() {
   return (
     <DashboardLayout title="Панель владельца" navItems={navItems}>
       {showOnboarding && (
-        <RoleOnboardingOverlay
-          role="owner"
-          onFinish={() => setShowOnboarding(false)}
-        />
+        <RoleOnboardingOverlay role="owner" onFinish={finishOnboarding} />
       )}
       <div className="space-y-6">
         <div className="glass-card">

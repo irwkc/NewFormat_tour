@@ -18,6 +18,26 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
   const { user, isAuthenticated, clearAuth } = useAuthStore()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const getHomeHref = () => {
+    const role = user?.role
+    switch (role) {
+      case 'owner':
+        return '/dashboard/owner'
+      case 'owner_assistant':
+        return '/dashboard/owner-assistant'
+      case 'partner':
+        return '/dashboard/partner'
+      case 'partner_controller':
+        return '/dashboard/partner-controller'
+      case 'manager':
+        return '/dashboard/manager'
+      case 'promoter':
+        return '/dashboard/promoter'
+      default:
+        return '/'
+    }
+  }
+
   useEffect(() => {
     // Проверяем токен при загрузке
     const checkAuth = async () => {
@@ -91,7 +111,7 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center flex-shrink-0">
-              <Link href="/dashboard/owner" className="flex items-center">
+              <Link href={getHomeHref()} className="flex items-center">
                 <Image 
                   src="/logo.png" 
                   alt="Logo" 
