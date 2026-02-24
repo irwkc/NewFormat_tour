@@ -11,6 +11,34 @@ const JWT_SECRET = (() => {
 })()
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
+export const AUTH_COOKIE_NAME = 'token'
+
+function parseExpiresToSeconds(exp: string): number {
+  const match = exp.match(/^(\d+)([smhd])$/)
+  if (!match) return 604800
+  const n = parseInt(match[1], 10)
+  const unit = match[2]
+  if (unit === 's') return n
+  if (unit === 'm') return n * 60
+  if (unit === 'h') return n * 3600
+  if (unit === 'd') return n * 86400
+  return 604800
+}
+
+export function getAuthCookieMaxAge(): number {
+  return parseExpiresToSeconds(JWT_EXPIRES_IN)
+}
+
+export function getAuthCookieHeader(token: string): string {
+  const maxAge = getAuthCookieMaxAge()
+  const isProd = process.env.NODE_ENV === 'production'
+  return `${AUTH_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAge}; SameSite=Lax${isProd ? '; Secure' : ''}; HttpOnly`
+}
+
+export function getAuthCookieClearHeader(): string {
+  return `${AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly`
+}
+
 export interface JWTPayload {
   userId: string
   role: UserRole

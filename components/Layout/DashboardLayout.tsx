@@ -88,6 +88,11 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
   }
 
   const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+    } catch {
+      // игнорируем ошибку сети
+    }
     clearAuth()
     router.push('/auth/login')
   }

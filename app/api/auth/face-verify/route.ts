@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyFaceVerifyToken, generateToken } from '@/lib/auth'
+import { verifyFaceVerifyToken, generateToken, getAuthCookieHeader } from '@/lib/auth'
 import { computeMinDistance, FACE_MATCH_THRESHOLD } from '@/utils/face-descriptor'
 import { sendNewLoginFromIpEmail } from '@/lib/email'
 
@@ -120,11 +120,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         authenticated: true,
         data: { user: userWithoutSensitive, token },
       })
+      res.headers.set('Set-Cookie', getAuthCookieHeader(token))
+      return res
     }
 
     const descriptorList: number[][] = Array.isArray(descriptors)
@@ -230,7 +232,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       authenticated: true,
       data: {
@@ -238,6 +240,8 @@ export async function POST(request: NextRequest) {
         token,
       },
     })
+    res.headers.set('Set-Cookie', getAuthCookieHeader(token))
+    return res
   } catch (e: any) {
     if (e?.name === 'TokenExpiredError') {
       return NextResponse.json(

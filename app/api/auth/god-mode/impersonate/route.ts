@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyGodToken, generateToken } from '@/lib/auth'
+import { verifyGodToken, generateToken, getAuthCookieHeader } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,13 +44,15 @@ export async function POST(request: NextRequest) {
       tokenVersion: user.token_version ?? 0,
     })
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       data: {
         user: userWithoutSensitive,
         token: authToken,
       },
     })
+    res.headers.set('Set-Cookie', getAuthCookieHeader(authToken))
+    return res
   } catch (e: any) {
     if (e?.name === 'TokenExpiredError' || e?.message === 'Invalid token purpose') {
       return NextResponse.json(

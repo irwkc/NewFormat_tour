@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { comparePassword, generateToken, generateFaceVerifyToken } from '@/lib/auth'
+import { comparePassword, generateToken, generateFaceVerifyToken, getAuthCookieHeader } from '@/lib/auth'
 import { sendNewLoginFromIpEmail } from '@/lib/email'
 import { z } from 'zod'
 
@@ -155,13 +155,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       data: {
         user: userWithoutPassword,
         token,
       },
     })
+    res.headers.set('Set-Cookie', getAuthCookieHeader(token))
+    return res
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

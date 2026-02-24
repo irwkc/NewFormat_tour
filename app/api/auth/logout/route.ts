@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getAuthCookieClearHeader } from '@/lib/auth'
 
-// POST /api/auth/logout - выход из системы
-export async function POST(request: NextRequest) {
-  // На клиенте очищается токен из store и localStorage
-  // Это просто подтверждение на сервере
-  return NextResponse.json({
+// POST /api/auth/logout - выход из системы (очистка cookie)
+export async function POST() {
+  const res = NextResponse.json({
     success: true,
     message: 'Logged out successfully',
   })
+  res.headers.set('Set-Cookie', getAuthCookieClearHeader())
+  return res
 }
