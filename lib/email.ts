@@ -69,3 +69,17 @@ export async function sendTicketEmail(email: string, pdfUrl: string): Promise<vo
     `<p>Ваш билет готов. <a href="${pdfUrl}">Скачать билет</a></p>`
   )
 }
+
+export async function sendNewLoginFromIpEmail(
+  email: string,
+  ip: string,
+  userAgent?: string | null
+): Promise<void> {
+  const agentSafe = userAgent || 'Неизвестное устройство'
+  await sendEmail(
+    email,
+    'Новый вход в систему',
+    `Обнаружен новый вход в систему с IP: ${ip}\nУстройство/браузер: ${agentSafe}`,
+    `<p>Обнаружен новый вход в систему.</p><p><strong>IP:</strong> ${ip}</p><p><strong>Устройство/браузер:</strong> ${agentSafe}</p>`
+  )
+}

@@ -59,27 +59,35 @@ enum TransactionType {
 }
 
 model User {
-  id                      String   @id @default(uuid())
-  email                   String?  @unique
-  promoter_id             Int?     @unique
-  full_name               String?
-  phone                   String?
-  password_hash           String
-  role                    UserRole
-  main_owner_id           String?  @map("main_owner_id")
-  email_confirmed         Boolean  @default(false)
+  id                       String   @id @default(uuid())
+  email                    String?  @unique
+  promoter_id              Int?     @unique
+  full_name                String?
+  phone                    String?
+  password_hash            String
+  role                     UserRole
+  main_owner_id            String?  @map("main_owner_id")
+  email_confirmed          Boolean  @default(false)
   email_confirmation_token String?
-  password_reset_token    String?
-  password_reset_expires  DateTime?
-  created_by_user_id      String?  @map("created_by_user_id")
-  main_partner_id         String?  @map("main_partner_id")
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
-  is_active               Boolean  @default(true)
-  photo_url               String?
-  balance                 Decimal  @default(0) @db.Decimal(10, 2)
-  debt_to_company         Decimal  @default(0) @db.Decimal(10, 2)
-  face_descriptors        Json?    @map("face_descriptors") // для владельца: массив дескрипторов лица (2FA)
+  password_reset_token     String?
+  password_reset_expires   DateTime?
+  created_by_user_id       String?  @map("created_by_user_id")
+  main_partner_id          String?  @map("main_partner_id")
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+  is_active                Boolean  @default(true)
+  photo_url                String?
+  balance                  Decimal  @default(0) @db.Decimal(10, 2)
+  debt_to_company          Decimal  @default(0) @db.Decimal(10, 2)
+  face_descriptors         Json?    @map("face_descriptors") // для владельца: массив дескрипторов лица (2FA)
+  token_version            Int      @default(0)
+
+  // Настройки уведомлений
+  notify_new_sale_email          Boolean @default(true)
+  notify_refund_email            Boolean @default(true)
+  notify_flight_change_email     Boolean @default(true)
+  notify_account_block_email     Boolean @default(true)
+  notify_promoter_report_email   Boolean @default(true)
 
   // Relations
   mainOwner               User?     @relation("OwnerAssistant", fields: [main_owner_id], references: [id])
@@ -87,29 +95,45 @@ model User {
   mainPartner             User?     @relation("PartnerController", fields: [main_partner_id], references: [id])
   controllers             User[]    @relation("PartnerController")
   createdBy               User?     @relation("CreatedBy", fields: [created_by_user_id], references: [id])
-  createdUsers            User[]    @relation("CreatedBy")
-  
-  categories              Category[]
-  toursCreated            Tour[]        @relation("TourCreatedBy")
-  toursModerated          Tour[]        @relation("TourModeratedBy")
-  salesAsSeller           Sale[]    @relation("SaleSeller")
-  salesAsPromoter         Sale[]    @relation("SalePromoter")
-  issuedItems             IssuedItem[]
-  issuedItemsReceived     IssuedItem[] @relation("IssuedToUser")
-  issuedItemsReturned     IssuedItem[] @relation("ReturnedByUser")
-  invitationsSent          InvitationToken[] @relation("InvitationInvitedBy")
-  invitationsUsed          InvitationToken[] @relation("InvitationUsedBy")
-  balanceHistory          BalanceHistory[]
-  ticketUsedBy            Ticket[]  @relation("UsedByUser")
-  ticketCancelledBy       Ticket[]  @relation("CancelledByUser")
-  balancePerformedBy      BalanceHistory[] @relation("PerformedByUser")
-  ticketRangesCreated     ManagerTicketRange[] @relation("TicketRangesCreatedBy")
-  ticketRangesReceived    ManagerTicketRange[] @relation("TicketRangesReceivedBy")
+  createdUsers             User[]             @relation("CreatedBy")
+
+  categories               Category[]
+  toursCreated             Tour[]             @relation("TourCreatedBy")
+  toursModerated           Tour[]             @relation("TourModeratedBy")
+  salesAsSeller            Sale[]             @relation("SaleSeller")
+  salesAsPromoter          Sale[]             @relation("SalePromoter")
+  issuedItems              IssuedItem[]
+  issuedItemsReceived      IssuedItem[]       @relation("IssuedToUser")
+  issuedItemsReturned      IssuedItem[]       @relation("ReturnedByUser")
+  invitationsSent          InvitationToken[]  @relation("InvitationInvitedBy")
+  invitationsUsed          InvitationToken[]  @relation("InvitationUsedBy")
+  balanceHistory           BalanceHistory[]
+  ticketUsedBy             Ticket[]           @relation("UsedByUser")
+  ticketCancelledBy        Ticket[]           @relation("CancelledByUser")
+  balancePerformedBy       BalanceHistory[]   @relation("PerformedByUser")
+  ticketRangesCreated      ManagerTicketRange[] @relation("TicketRangesCreatedBy")
+  ticketRangesReceived     ManagerTicketRange[] @relation("TicketRangesReceivedBy")
+  loginLogs                UserLoginLog[]
   
   @@index([email])
   @@index([promoter_id])
   @@index([role])
   @@map("users")
+}
+
+model UserLoginLog {
+  id          String   @id @default(uuid())
+  user_id     String   @map("user_id")
+  ip_address  String?
+  user_agent  String?
+  success     Boolean
+  created_at  DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, created_at])
+  @@map("user_login_logs")
 }
 
 model Category {

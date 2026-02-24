@@ -150,6 +150,14 @@ is_active: Boolean
 photo_url: String (nullable) // фото лица промоутера/менеджера (обязательно при регистрации)
 balance: Decimal (default: 0.00) // баланс промоутера/менеджера (пополняется только когда билет переходит из sold в used)
 debt_to_company: Decimal (default: 0.00) // баланс "Должен компании" только для менеджеров (пополняется при статусе used или cancelled)
+token_version: Integer (default: 0) // версия токенов, используется для выхода со всех устройств
+
+// Настройки уведомлений по email
+notify_new_sale_email: Boolean (default: true)          // уведомлять о новых продажах
+notify_refund_email: Boolean (default: true)            // уведомлять о возвратах
+notify_flight_change_email: Boolean (default: true)     // уведомлять об изменениях рейсов
+notify_account_block_email: Boolean (default: true)     // уведомлять о блокировке/разблокировке аккаунта
+notify_promoter_report_email: Boolean (default: true)   // отправлять периодические отчёты по промо‑ID (особенно для промоутеров)
 ```
 
 **Важно:**

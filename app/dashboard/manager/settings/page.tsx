@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
@@ -28,6 +28,31 @@ type ProfileFormData = z.infer<typeof profileSchema>
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 type ChangeEmailFormData = z.infer<typeof changeEmailSchema>
 
+type NotificationSettings = {
+  notify_new_sale_email: boolean
+  notify_refund_email: boolean
+  notify_flight_change_email: boolean
+  notify_account_block_email: boolean
+  notify_promoter_report_email: boolean
+}
+
+type LoginLog = {
+  id: string
+  ip_address: string | null
+  user_agent: string | null
+  success: boolean
+  created_at: string
+}
+
+type SessionSummary = {
+  id: string
+  ip_address: string | null
+  user_agent: string | null
+  last_seen_at: string
+  first_seen_at: string
+  attempts: number
+}
+
 export default function ManagerSettingsPage() {
   const { user, token, updateUser } = useAuthStore()
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -35,6 +60,12 @@ export default function ManagerSettingsPage() {
   const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [notifications, setNotifications] = useState<NotificationSettings | null>(null)
+  const [notificationsMessage, setNotificationsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [logins, setLogins] = useState<LoginLog[]>([])
+  const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [securityLoading, setSecurityLoading] = useState(false)
+  const [logoutAllMessage, setLogoutAllMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const {
     register: registerProfile,
@@ -68,6 +99,55 @@ export default function ManagerSettingsPage() {
       new_email: user?.email || '',
     },
   })
+
+  useEffect(() => {
+    if (!token) return
+
+    const fetchProfileExtras = async () => {
+      try {
+        setSecurityLoading(true)
+        const [profileRes, loginsRes, sessionsRes] = await Promise.all([
+          fetch('/api/profile', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/profile/security/logins', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/profile/security/sessions', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ])
+
+        const profileJson = await profileRes.json()
+        const loginsJson = await loginsRes.json()
+        const sessionsJson = await sessionsRes.json()
+
+        if (profileJson.success) {
+          setNotifications({
+            notify_new_sale_email: !!profileJson.data.notify_new_sale_email,
+            notify_refund_email: !!profileJson.data.notify_refund_email,
+            notify_flight_change_email: !!profileJson.data.notify_flight_change_email,
+            notify_account_block_email: !!profileJson.data.notify_account_block_email,
+            notify_promoter_report_email: !!profileJson.data.notify_promoter_report_email,
+          })
+        }
+
+        if (loginsJson.success) {
+          setLogins(loginsJson.data)
+        }
+
+        if (sessionsJson.success) {
+          setSessions(sessionsJson.data)
+        }
+      } catch {
+        // ignore errors, UI покажет пустые блоки
+      } finally {
+        setSecurityLoading(false)
+      }
+    }
+
+    fetchProfileExtras()
+  }, [token])
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -190,6 +270,68 @@ export default function ManagerSettingsPage() {
       setEmailMessage({
         type: 'error',
         text: 'Ошибка изменения email',
+      })
+    }
+  }
+
+  const onSaveNotifications = async () => {
+    if (!token || !notifications) return
+    try {
+      setNotificationsMessage(null)
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(notifications),
+      })
+      const result = await response.json()
+      if (result.success) {
+        setNotificationsMessage({
+          type: 'success',
+          text: 'Настройки уведомлений сохранены',
+        })
+      } else {
+        setNotificationsMessage({
+          type: 'error',
+          text: result.error || 'Ошибка сохранения уведомлений',
+        })
+      }
+    } catch {
+      setNotificationsMessage({
+        type: 'error',
+        text: 'Ошибка сохранения уведомлений',
+      })
+    }
+  }
+
+  const onLogoutAll = async () => {
+    if (!token) return
+    try {
+      setLogoutAllMessage(null)
+      const response = await fetch('/api/profile/security/logout-all', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const result = await response.json()
+      if (result.success) {
+        setLogoutAllMessage({
+          type: 'success',
+          text: 'Все сессии завершены. При следующем действии может потребоваться повторный вход.',
+        })
+      } else {
+        setLogoutAllMessage({
+          type: 'error',
+          text: result.error || 'Не удалось завершить сессии',
+        })
+      }
+    } catch {
+      setLogoutAllMessage({
+        type: 'error',
+        text: 'Не удалось завершить сессии',
       })
     }
   }
@@ -415,6 +557,208 @@ export default function ManagerSettingsPage() {
               {emailSubmitting ? 'Сохранение...' : 'Изменить email'}
             </button>
           </form>
+        </div>
+
+        <div className="glass-card p-6">
+          <h2 className="text-2xl font-bold mb-4 text-white">Уведомления по email</h2>
+          <p className="text-sm text-white/70 mb-4">
+            Выберите, о чём присылать письма на ваш email.
+          </p>
+
+          {notifications ? (
+            <div className="space-y-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={notifications.notify_new_sale_email}
+                  onChange={(e) =>
+                    setNotifications({
+                      ...notifications,
+                      notify_new_sale_email: e.target.checked,
+                    })
+                  }
+                />
+                <div>
+                  <div className="text-sm font-medium text-white">
+                    Новые продажи
+                  </div>
+                  <div className="text-xs text-white/60">
+                    Письмо при каждой новой продаже, где вы указаны продавцом.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={notifications.notify_refund_email}
+                  onChange={(e) =>
+                    setNotifications({
+                      ...notifications,
+                      notify_refund_email: e.target.checked,
+                    })
+                  }
+                />
+                <div>
+                  <div className="text-sm font-medium text-white">
+                    Возвраты
+                  </div>
+                  <div className="text-xs text-white/60">
+                    Уведомления о возвратах по вашим продажам.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={notifications.notify_flight_change_email}
+                  onChange={(e) =>
+                    setNotifications({
+                      ...notifications,
+                      notify_flight_change_email: e.target.checked,
+                    })
+                  }
+                />
+                <div>
+                  <div className="text-sm font-medium text-white">
+                    Изменения рейсов
+                  </div>
+                  <div className="text-xs text-white/60">
+                    Письма об изменениях времени/даты рейсов по вашим продажам.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={notifications.notify_account_block_email}
+                  onChange={(e) =>
+                    setNotifications({
+                      ...notifications,
+                      notify_account_block_email: e.target.checked,
+                    })
+                  }
+                />
+                <div>
+                  <div className="text-sm font-medium text-white">
+                    Блокировка аккаунта
+                  </div>
+                  <div className="text-xs text-white/60">
+                    Уведомления о блокировке и разблокировке вашего аккаунта.
+                  </div>
+                </div>
+              </label>
+
+              {notificationsMessage && (
+                <div
+                  className={
+                    notificationsMessage.type === 'success'
+                      ? 'alert-success'
+                      : 'alert-error'
+                  }
+                >
+                  <p className="text-sm font-medium">{notificationsMessage.text}</p>
+                </div>
+              )}
+
+              <button type="button" className="btn-primary" onClick={onSaveNotifications}>
+                Сохранить настройки уведомлений
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-white/60">Загрузка настроек...</p>
+          )}
+        </div>
+
+        <div className="glass-card p-6">
+          <h2 className="text-2xl font-bold mb-4 text-white">Безопасность и устройства</h2>
+          <p className="text-sm text-white/70 mb-4">
+            Управляйте сессиями входа и смотрите историю авторизаций.
+          </p>
+
+          <button
+            type="button"
+            className="btn-secondary mb-4"
+            onClick={onLogoutAll}
+            disabled={securityLoading}
+          >
+            Выйти на всех устройствах
+          </button>
+
+          {logoutAllMessage && (
+            <div
+              className={
+                logoutAllMessage.type === 'success' ? 'alert-success' : 'alert-error'
+              }
+            >
+              <p className="text-sm font-medium">{logoutAllMessage.text}</p>
+            </div>
+          )}
+
+          <div className="mt-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-2">
+                Активные устройства (последние входы)
+              </h3>
+              {securityLoading ? (
+                <p className="text-sm text-white/60">Загрузка...</p>
+              ) : sessions.length === 0 ? (
+                <p className="text-sm text-white/60">
+                  Пока нет данных о сеансах входа.
+                </p>
+              ) : (
+                <ul className="space-y-2 text-sm text-white/80">
+                  {sessions.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <div className="font-medium">
+                        {s.user_agent || 'Неизвестное устройство'}
+                      </div>
+                      <div className="text-xs text-white/60">
+                        IP: {s.ip_address || '—'} · Последний вход:{' '}
+                        {new Date(s.last_seen_at).toLocaleString('ru-RU')}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-2">
+                История входов
+              </h3>
+              {securityLoading ? (
+                <p className="text-sm text-white/60">Загрузка...</p>
+              ) : logins.length === 0 ? (
+                <p className="text-sm text-white/60">
+                  История входов пока пуста.
+                </p>
+              ) : (
+                <ul className="space-y-1 text-xs text-white/70 max-h-64 overflow-y-auto pr-1">
+                  {logins.map((l) => (
+                    <li key={l.id} className="flex justify-between gap-3">
+                      <span>
+                        {new Date(l.created_at).toLocaleString('ru-RU')} ·{' '}
+                        {l.success ? 'успешный вход' : 'ошибка входа'}
+                      </span>
+                      <span className="text-right">
+                        {l.ip_address || 'IP: —'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>

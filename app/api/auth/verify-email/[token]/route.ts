@@ -48,6 +48,7 @@ export async function GET(
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
+      tokenVersion: (user as any).token_version ?? 0,
     })
 
     return NextResponse.json({

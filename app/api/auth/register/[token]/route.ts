@@ -160,6 +160,7 @@ export async function POST(
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
+      tokenVersion: (user as any).token_version ?? 0,
     })
 
     const { password_hash, ...userWithoutPassword } = user

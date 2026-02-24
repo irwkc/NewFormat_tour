@@ -16,6 +16,7 @@ export interface JWTPayload {
   role: UserRole
   email?: string | null
   promoterId?: number | null
+  tokenVersion?: number
 }
 
 export function generateToken(payload: JWTPayload): string {

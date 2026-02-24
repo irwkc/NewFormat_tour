@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyFaceVerifyToken, generateToken } from '@/lib/auth'
 import { computeMinDistance, FACE_MATCH_THRESHOLD } from '@/utils/face-descriptor'
+import { sendNewLoginFromIpEmail } from '@/lib/email'
 
 const MIN_BLINKS = 2
 const MIN_HEAD_MOVEMENTS = 3
@@ -51,6 +52,12 @@ export async function POST(request: NextRequest) {
       k?: string
     }
 
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null
+    const userAgent = request.headers.get('user-agent') || null
+
     if (!tempToken) {
       return NextResponse.json(
         { success: false, error: 'Требуется tempToken' },
@@ -74,8 +81,45 @@ export async function POST(request: NextRequest) {
         role: user.role,
         email: user.email,
         promoterId: user.promoter_id,
+        tokenVersion: (user as any).token_version ?? 0,
       })
       const { password_hash, face_descriptors, ...userWithoutSensitive } = user
+
+      let isNewIp = false
+      if (ip) {
+        try {
+          const rows = await prisma.$queryRawUnsafe<{ count: string }[]>(
+            'SELECT COUNT(*)::text as count FROM "user_login_logs" WHERE user_id = $1 AND ip_address = $2 AND success = true',
+            user.id,
+            ip
+          )
+          const count = rows?.[0]?.count ? parseInt(rows[0].count, 10) : 0
+          isNewIp = count === 0
+        } catch {
+          isNewIp = false
+        }
+      }
+
+      try {
+        await prisma.$executeRawUnsafe(
+          'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
+          user.id,
+          ip,
+          userAgent,
+          true
+        )
+      } catch {
+        // ignore logging errors
+      }
+
+      if (isNewIp && ip && user.email) {
+        try {
+          await sendNewLoginFromIpEmail(user.email, ip, userAgent)
+        } catch {
+          // ignore email errors
+        }
+      }
+
       return NextResponse.json({
         success: true,
         authenticated: true,
@@ -146,9 +190,45 @@ export async function POST(request: NextRequest) {
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
+      tokenVersion: (user as any).token_version ?? 0,
     })
 
     const { password_hash, face_descriptors, ...userWithoutSensitive } = user
+
+    let isNewIp = false
+    if (ip) {
+      try {
+        const rows = await prisma.$queryRawUnsafe<{ count: string }[]>(
+          'SELECT COUNT(*)::text as count FROM "user_login_logs" WHERE user_id = $1 AND ip_address = $2 AND success = true',
+          user.id,
+          ip
+        )
+        const count = rows?.[0]?.count ? parseInt(rows[0].count, 10) : 0
+        isNewIp = count === 0
+      } catch {
+        isNewIp = false
+      }
+    }
+
+    try {
+      await prisma.$executeRawUnsafe(
+        'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
+        user.id,
+        ip,
+        userAgent,
+        true
+      )
+    } catch {
+      // ignore logging errors
+    }
+
+    if (isNewIp && ip && user.email) {
+      try {
+        await sendNewLoginFromIpEmail(user.email, ip, userAgent)
+      } catch {
+        // ignore email errors
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: userId },
     })
     if (!user || !user.is_active) {
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
+      tokenVersion: user.token_version ?? 0,
     })
 
     return NextResponse.json({

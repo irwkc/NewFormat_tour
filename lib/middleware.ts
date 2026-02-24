@@ -26,14 +26,23 @@ export async function withAuth(
     const payload = verifyToken(token)
     
     // Проверка существования пользователя
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, role: true, is_active: true }
+      select: { id: true, role: true, is_active: true, token_version: true } as any
     })
 
     if (!user || !user.is_active) {
       return NextResponse.json(
         { success: false, error: 'User not found or inactive' },
+        { status: 401 }
+      )
+    }
+
+    // Проверка актуальности токена (поддержка "выйти на всех устройствах")
+    const payloadTokenVersion = payload.tokenVersion ?? 0
+    if (user.token_version !== payloadTokenVersion) {
+      return NextResponse.json(
+        { success: false, error: 'Token expired' },
         { status: 401 }
       )
     }

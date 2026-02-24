@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { comparePassword, generateToken, generateFaceVerifyToken } from '@/lib/auth'
+import { sendNewLoginFromIpEmail } from '@/lib/email'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, promoter_id, password } = loginSchema.parse(body)
+
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null
+    const userAgent = request.headers.get('user-agent') || null
 
     // Найти пользователей по email или promoter_id
     // Если email - может быть несколько пользователей (owner и owner_assistant с одним email)
@@ -48,6 +55,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
+      // Логируем неуспешную попытку для первого найденного пользователя (если есть)
+      try {
+        await prisma.$executeRawUnsafe(
+          'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
+          users[0].id,
+          ip,
+          userAgent,
+          false
+        )
+      } catch {
+        // не блокируем вход при ошибке логирования
+      }
+
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -56,6 +76,18 @@ export async function POST(request: NextRequest) {
 
     // Проверить активность пользователя
     if (!user.is_active) {
+      try {
+        await prisma.$executeRawUnsafe(
+          'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
+          user.id,
+          ip,
+          userAgent,
+          false
+        )
+      } catch {
+        // ignore logging errors
+      }
+
       return NextResponse.json(
         { success: false, error: 'User is inactive' },
         { status: 403 }
@@ -85,7 +117,43 @@ export async function POST(request: NextRequest) {
       role: user.role,
       email: user.email,
       promoterId: user.promoter_id,
+      tokenVersion: (user as any).token_version ?? 0,
     })
+
+    let isNewIp = false
+    if (ip) {
+      try {
+        const rows = await prisma.$queryRawUnsafe<{ count: string }[]>(
+          'SELECT COUNT(*)::text as count FROM "user_login_logs" WHERE user_id = $1 AND ip_address = $2 AND success = true',
+          user.id,
+          ip
+        )
+        const count = rows?.[0]?.count ? parseInt(rows[0].count, 10) : 0
+        isNewIp = count === 0
+      } catch {
+        isNewIp = false
+      }
+    }
+
+    try {
+      await prisma.$executeRawUnsafe(
+        'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
+        user.id,
+        ip,
+        userAgent,
+        true
+      )
+    } catch {
+      // ignore logging errors
+    }
+
+    if (isNewIp && ip && user.email) {
+      try {
+        await sendNewLoginFromIpEmail(user.email, ip, userAgent)
+      } catch {
+        // не блокируем логин, если письмо не отправилось
+      }
+    }
 
     return NextResponse.json({
       success: true,
