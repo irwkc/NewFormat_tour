@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { comparePassword, generateToken, generateFaceVerifyToken, getAuthCookieHeader } from '@/lib/auth'
 import { sendNewLoginFromIpEmail } from '@/lib/email'
+import { verifyPuzzle } from '@/lib/captcha-puzzle'
+import { requiresCaptcha as ipRequiresCaptcha, recordFail, recordSuccess } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const loginSchema = z.object({
   email: z.string().email().optional(),
   promoter_id: z.number().optional(),
   password: z.string().min(6),
+  captchaId: z.string().uuid().optional(),
+  captchaPosition: z.number().optional(),
 }).refine((data) => data.email || data.promoter_id, {
   message: "Either email or promoter_id is required",
 })
@@ -15,13 +19,31 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, promoter_id, password } = loginSchema.parse(body)
+    const parsed = loginSchema.parse(body)
+    const { email, promoter_id, password, captchaId, captchaPosition } = parsed
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
-      null
+      ''
     const userAgent = request.headers.get('user-agent') || null
+
+    if (ipRequiresCaptcha(ip)) {
+      if (typeof captchaId !== 'string' || typeof captchaPosition !== 'number') {
+        return NextResponse.json({
+          success: false,
+          requiresCaptcha: true,
+          error: 'Решите пазл для продолжения',
+        }, { status: 400 })
+      }
+      if (!verifyPuzzle(captchaId, captchaPosition)) {
+        return NextResponse.json({
+          success: false,
+          requiresCaptcha: true,
+          error: 'Пазл решён неверно. Попробуйте снова.',
+        }, { status: 400 })
+      }
+    }
 
     // Найти пользователей по email или promoter_id
     // Если email - может быть несколько пользователей (owner и owner_assistant с одним email)
@@ -38,6 +60,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (users.length === 0) {
+      recordFail(ip)
+      if (ipRequiresCaptcha(ip)) {
+        return NextResponse.json({
+          success: false,
+          requiresCaptcha: true,
+          error: 'Неверный email или пароль. Решите пазл и попробуйте снова.',
+        }, { status: 401 })
+      }
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -55,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // Логируем неуспешную попытку для первого найденного пользователя (если есть)
+      recordFail(ip)
       try {
         await prisma.$executeRawUnsafe(
           'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
@@ -67,7 +97,13 @@ export async function POST(request: NextRequest) {
       } catch {
         // не блокируем вход при ошибке логирования
       }
-
+      if (ipRequiresCaptcha(ip)) {
+        return NextResponse.json({
+          success: false,
+          requiresCaptcha: true,
+          error: 'Неверный пароль. Решите пазл и попробуйте снова.',
+        }, { status: 401 })
+      }
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -162,6 +198,7 @@ export async function POST(request: NextRequest) {
         token,
       },
     })
+    recordSuccess(ip)
     res.headers.set('Set-Cookie', getAuthCookieHeader(token))
     return res
   } catch (error: any) {
