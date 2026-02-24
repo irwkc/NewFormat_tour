@@ -78,6 +78,7 @@ export default function ManagerDashboard() {
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
     { label: 'Приглашения', href: '/dashboard/manager/invitations' },
+    { label: 'Настройки', href: '/dashboard/manager/settings' },
   ]
 
   return (

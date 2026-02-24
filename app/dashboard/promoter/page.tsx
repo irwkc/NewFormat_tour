@@ -78,6 +78,7 @@ export default function PromoterDashboard() {
     { label: 'История баланса', href: '/dashboard/promoter/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/promoter/issued-items' },
     { label: 'Реферальная программа', href: '/dashboard/promoter/invitations' },
+    { label: 'Настройки', href: '/dashboard/promoter/settings' },
   ]
 
   return (
