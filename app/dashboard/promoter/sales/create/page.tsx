@@ -284,45 +284,35 @@ export default function CreateSalePage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <select
+                    {...register('flight_id')}
+                    className="input-glass"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Выберите рейс
+                    </option>
                     {selectedTour.flights
                       .filter((flight: any) => !flight.is_sale_stopped && (flight.max_places - flight.current_booked_places > 0))
                       .map((flight: any) => {
                         const availablePlaces = flight.max_places - flight.current_booked_places
                         const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
                         const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-                        const isSelected = selectedFlightId === flight.id
                         return (
-                          <button
-                            key={flight.id}
-                            type="button"
-                            onClick={() => setValue('flight_id', flight.id, { shouldValidate: true })}
-                            className={`text-left glass rounded-2xl p-4 border transition-all ${
-                              isSelected ? 'border-white/60 bg-white/10' : 'border-white/20 hover:bg-white/10'
-                            }`}
-                          >
-                            <div className="text-white font-semibold">{flight.flight_number}</div>
-                            <div className="text-xs text-white/70 mt-1">{dateStr} {timeStr}</div>
-                            <div className="text-xs text-white/70 mt-1">Свободно мест: {availablePlaces}</div>
-                          </button>
+                          <option key={flight.id} value={flight.id}>
+                            {flight.flight_number} · {dateStr} {timeStr} · свободно {availablePlaces}
+                          </option>
                         )
                       })}
-                  </div>
+                  </select>
 
-                  <input type="hidden" {...register('flight_id')} />
-                </div>
-              )}
-
-              {minPrices && (
-                <div className="glass p-4 rounded-xl border border-white/10">
-                  <div className="text-sm text-white/90 font-medium mb-2">Прайс (минимальные цены)</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-white/80">
-                    <div>Взрослый: <span className="text-white font-semibold">{minPrices.minAdult.toFixed(2)}₽</span></div>
-                    <div>Детский: <span className="text-white font-semibold">{minPrices.minChild.toFixed(2)}₽</span></div>
-                    <div>Льготный: <span className="text-white font-semibold">{minPrices.minConcession ? `${minPrices.minConcession.toFixed(2)}₽` : '—'}</span></div>
-                  </div>
                   {selectedFlight?.boarding_location_url && (
-                    <a className="inline-block mt-2 text-sm text-blue-300 hover:text-blue-200 underline" href={selectedFlight.boarding_location_url} target="_blank" rel="noreferrer">
+                    <a
+                      className="inline-block mt-2 text-sm text-blue-300 hover:text-blue-200 underline"
+                      href={selectedFlight.boarding_location_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Точка посадки на карте
                     </a>
                   )}
@@ -387,6 +377,7 @@ export default function CreateSalePage() {
                     step="0.01"
                     min="0"
                     className="input-glass"
+                    placeholder={minPrices ? `мин. ${minPrices.minAdult.toFixed(2)}` : undefined}
                   />
                   {errors.adult_price && (
                     <p className="text-red-300 text-xs mt-1">{errors.adult_price.message}</p>
