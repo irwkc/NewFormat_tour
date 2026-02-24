@@ -27,7 +27,7 @@ export default function RulesPage() {
         <section className="space-y-4 mb-8">
           <h2 className="text-lg font-semibold">Бланки заявлений о возврате</h2>
           <p className="text-white/90 text-sm">
-            По нажатию ссылки сразу загрузится файл бланка (HTML). Откройте его и при необходимости сохраните в PDF через Печать → Сохранить как PDF.
+            По нажатию ссылки сразу загрузится файл бланка в формате Word (.docx). Откройте в Word или аналоге, при необходимости сохраните в PDF через Файл → Сохранить как PDF.
           </p>
           <ul className="text-white/90 text-sm space-y-2 list-none pl-0">
             <li>
