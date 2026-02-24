@@ -14,9 +14,15 @@ const categorySchema = z.object({
 
 type CategoryFormData = z.infer<typeof categorySchema>
 
+type CategoryRow = {
+  id: string
+  name: string
+  created_at: string
+}
+
 export default function OwnerCategoriesPage() {
   const { token } = useAuthStore()
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<CategoryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 

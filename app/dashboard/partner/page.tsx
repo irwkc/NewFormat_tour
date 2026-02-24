@@ -5,9 +5,16 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 
+type PartnerDashboardTour = {
+  id: string
+  company: string
+  flights?: { id: string }[]
+  moderation_status: 'approved' | 'pending' | 'rejected'
+}
+
 export default function PartnerDashboard() {
   const { token } = useAuthStore()
-  const [tours, setTours] = useState<any[]>([])
+  const [tours, setTours] = useState<PartnerDashboardTour[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

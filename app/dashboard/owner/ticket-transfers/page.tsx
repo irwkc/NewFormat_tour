@@ -4,11 +4,29 @@ import { useEffect, useState, useCallback } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type TicketTransfer = {
+  id: string
+  ticket_number_start: string
+  ticket_number_end: string
+  created_at: string
+  manager?: {
+    id: string
+    full_name?: string | null
+    email?: string | null
+  } | null
+  createdBy?: {
+    id: string
+    full_name?: string | null
+    email?: string | null
+  } | null
+  manager_user_id?: string
+}
+
 const TICKET_REGEX = /^[A-Za-z]{2}\d{8}$/
 
 export default function TicketTransfersPage() {
   const { token, user } = useAuthStore()
-  const [transfers, setTransfers] = useState<any[]>([])
+  const [transfers, setTransfers] = useState<TicketTransfer[]>([])
   const [loading, setLoading] = useState(true)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

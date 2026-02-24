@@ -4,9 +4,15 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type PartnerStats = {
+  total_sales?: number
+  total_amount?: number | string
+  total_tickets?: number
+}
+
 export default function PartnerStatisticsPage() {
   const { token, user } = useAuthStore()
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<PartnerStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

@@ -10,6 +10,36 @@ import { useAuthStore } from '@/store/auth'
 import QRCode from 'qrcode'
 import { customAlert } from '@/utils/modals'
 
+type CreateSaleFlight = {
+  id: string
+  flight_number: string
+  date: string
+  departure_time: string
+  max_places: number
+  current_booked_places: number
+  is_sale_stopped: boolean
+  boarding_location_url?: string | null
+}
+
+type CreateSaleTour = {
+  id: string
+  company: string
+  category?: { name: string }
+  flights?: CreateSaleFlight[]
+  owner_min_adult_price?: number | string | null
+  owner_min_child_price?: number | string | null
+  owner_min_concession_price?: number | string | null
+  partner_min_adult_price?: number | string | null
+  partner_min_child_price?: number | string | null
+  partner_min_concession_price?: number | string | null
+}
+
+type PromoterInfo = {
+  exists: boolean
+  full_name?: string
+  user_id?: string
+}
+
 const optionalNumber = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
   if (typeof v === 'number' && Number.isNaN(v)) return undefined
@@ -55,11 +85,11 @@ type CreateSaleFormData = z.infer<typeof createSaleSchema>
 export default function CreateSalePage() {
   const router = useRouter()
   const { token } = useAuthStore()
-  const [tours, setTours] = useState<any[]>([])
-  const [selectedTour, setSelectedTour] = useState<any>(null)
+  const [tours, setTours] = useState<CreateSaleTour[]>([])
+  const [selectedTour, setSelectedTour] = useState<CreateSaleTour | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [promoterInfo, setPromoterInfo] = useState<any>(null)
+  const [promoterInfo, setPromoterInfo] = useState<PromoterInfo | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [paymentLink, setPaymentLink] = useState<string | null>(null)
   const [saleId, setSaleId] = useState<string | null>(null)
@@ -89,7 +119,7 @@ export default function CreateSalePage() {
 
   const selectedFlight = useMemo(() => {
     if (!selectedTour || !selectedFlightId) return null
-    return selectedTour.flights?.find((f: any) => f.id === selectedFlightId) || null
+    return selectedTour.flights?.find((f) => f.id === selectedFlightId) || null
   }, [selectedTour, selectedFlightId])
 
   useEffect(() => {

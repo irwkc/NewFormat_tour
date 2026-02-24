@@ -15,9 +15,22 @@ const createInvitationSchema = z.object({
 
 type CreateInvitationFormData = z.infer<typeof createInvitationSchema>
 
+type OwnerInvitation = {
+  id: string
+  target_role: 'manager' | 'promoter' | 'partner'
+  created_at: string
+  expires_at: string
+  is_used: boolean
+  token: string
+  usedBy?: {
+    full_name?: string | null
+    email?: string | null
+  } | null
+}
+
 export default function InvitationsPage() {
   const { token } = useAuthStore()
-  const [invitations, setInvitations] = useState<any[]>([])
+  const [invitations, setInvitations] = useState<OwnerInvitation[]>([])
   const [loading, setLoading] = useState(true)
 
   const {

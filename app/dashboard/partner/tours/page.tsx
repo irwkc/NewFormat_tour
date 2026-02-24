@@ -6,9 +6,25 @@ import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 import { customConfirm, customAlert } from '@/utils/modals'
 
+type PartnerFlightRow = {
+  id: string
+  date: string
+  departure_time: string
+  max_places: number
+  current_booked_places: number
+  is_sale_stopped: boolean
+}
+
+type PartnerTourRow = {
+  id: string
+  company: string
+  moderation_status: 'approved' | 'pending' | 'rejected'
+  flights?: PartnerFlightRow[]
+}
+
 export default function PartnerToursPage() {
   const { token } = useAuthStore()
-  const [tours, setTours] = useState<any[]>([])
+  const [tours, setTours] = useState<PartnerTourRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -125,10 +141,14 @@ export default function PartnerToursPage() {
                 </thead>
                 <tbody>
                   {tours.map((tour) => {
-                    const totalMaxPlaces = tour.flights?.reduce((sum: number, flight: any) => sum + flight.max_places, 0) || 0
-                    const totalBookedPlaces = tour.flights?.reduce((sum: number, flight: any) => sum + flight.current_booked_places, 0) || 0
-                    const hasStoppedFlights = tour.flights?.some((flight: any) => flight.is_sale_stopped) || false
-                    const allFlightsStopped = tour.flights?.every((flight: any) => flight.is_sale_stopped) || false
+                    const totalMaxPlaces =
+                      tour.flights?.reduce((sum, flight) => sum + flight.max_places, 0) || 0
+                    const totalBookedPlaces =
+                      tour.flights?.reduce((sum, flight) => sum + flight.current_booked_places, 0) || 0
+                    const hasStoppedFlights =
+                      tour.flights?.some((flight) => flight.is_sale_stopped) || false
+                    const allFlightsStopped =
+                      tour.flights?.every((flight) => flight.is_sale_stopped) || false
                     
                     return (
                       <tr key={tour.id}>

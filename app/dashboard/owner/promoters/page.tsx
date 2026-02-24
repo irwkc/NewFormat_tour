@@ -5,9 +5,18 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { customConfirm, customAlert } from '@/utils/modals'
 
+type OwnerPromoterRow = {
+  id: string
+  promoter_id: number | null
+  full_name?: string | null
+  email?: string | null
+  balance: number | string
+  is_active: boolean
+}
+
 export default function OwnerPromotersPage() {
   const { token } = useAuthStore()
-  const [promoters, setPromoters] = useState<any[]>([])
+  const [promoters, setPromoters] = useState<OwnerPromoterRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

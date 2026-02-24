@@ -4,12 +4,42 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type ReferralItem = {
+  id: string
+  full_name?: string | null
+  promoter_id?: number | null
+  email?: string | null
+  invitedBy?: {
+    full_name?: string | null
+    promoter_id?: number | null
+  } | null
+  created_at: string
+  balance?: number | string
+}
+
+type ReferralBalanceHistoryItem = {
+  id: string
+  description: string
+  created_at: string
+  amount: number | string
+  balance_after: number | string
+  transaction_type: 'credit' | 'debit'
+  ticket?: {
+    tour?: {
+      company?: string
+    }
+    flight?: {
+      flight_number?: string
+    }
+  } | null
+}
+
 export default function ReferralsPage() {
   const { token } = useAuthStore()
-  const [referrals, setReferrals] = useState<any[]>([])
+  const [referrals, setReferrals] = useState<ReferralItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedReferralId, setSelectedReferralId] = useState<string | null>(null)
-  const [balanceHistory, setBalanceHistory] = useState<any[]>([])
+  const [balanceHistory, setBalanceHistory] = useState<ReferralBalanceHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
   useEffect(() => {

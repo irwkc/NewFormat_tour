@@ -5,9 +5,27 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 
+type PromoterSalesRow = {
+  id: string
+  tour: {
+    company: string
+  }
+  flight?: {
+    flight_number: string
+    date: string
+    departure_time: string
+  }
+  created_at: string
+  adult_count: number
+  child_count: number
+  concession_count: number
+  total_amount: number | string
+  payment_status: 'pending' | 'completed' | 'failed'
+}
+
 export default function PromoterSalesPage() {
   const { token } = useAuthStore()
-  const [sales, setSales] = useState<any[]>([])
+  const [sales, setSales] = useState<PromoterSalesRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

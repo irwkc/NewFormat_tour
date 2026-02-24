@@ -5,11 +5,32 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 
+type DashboardFlight = {
+  id: string
+}
+
+type DashboardTour = {
+  id: string
+  company: string
+  flights?: DashboardFlight[]
+}
+
+type DashboardSale = {
+  id: string
+  tour?: {
+    company?: string
+  }
+  adult_count: number
+  child_count: number
+  concession_count: number
+  total_amount: number | string
+}
+
 export default function PromoterDashboard() {
   const { token, user } = useAuthStore()
-  const [tours, setTours] = useState<any[]>([])
-  const [sales, setSales] = useState<any[]>([])
-  const [balanceHistory, setBalanceHistory] = useState<any[]>([])
+  const [tours, setTours] = useState<DashboardTour[]>([])
+  const [sales, setSales] = useState<DashboardSale[]>([])
+  const [balanceHistory, setBalanceHistory] = useState<unknown[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

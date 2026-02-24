@@ -5,9 +5,31 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 
+type ManagerSalesRow = {
+  id: string
+  tour: {
+    company: string
+  }
+  flight?: {
+    flight_number: string
+    date: string
+    departure_time: string
+  }
+  created_at: string
+  adult_count: number
+  child_count: number
+  concession_count: number
+  total_amount: number | string
+  payment_method: 'online_yookassa' | 'cash' | 'acquiring'
+  payment_status: 'pending' | 'completed' | 'failed'
+  promoter?: {
+    full_name?: string | null
+  } | null
+}
+
 export default function ManagerSalesPage() {
   const { token } = useAuthStore()
-  const [sales, setSales] = useState<any[]>([])
+  const [sales, setSales] = useState<ManagerSalesRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

@@ -5,9 +5,19 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 
+type ModerationTourRow = {
+  id: string
+  company: string
+  category: { name: string }
+  partner_min_adult_price: number | string
+  partner_min_child_price: number | string
+  partner_min_concession_price?: number | string | null
+  flights?: { id: string }[]
+}
+
 export default function ModerationPage() {
   const { token } = useAuthStore()
-  const [tours, setTours] = useState<any[]>([])
+  const [tours, setTours] = useState<ModerationTourRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

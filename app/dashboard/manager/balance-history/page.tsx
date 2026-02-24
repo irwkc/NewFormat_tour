@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type BalanceHistoryItem = {
+  id: string
+  balance_type: 'balance' | 'debt_to_company'
+  transaction_type: 'credit' | 'debit'
+  amount: number | string
+  balance_before: number | string
+  balance_after: number | string
+  description: string
+  created_at: string
+}
+
 export default function ManagerBalanceHistoryPage() {
   const { token, user } = useAuthStore()
-  const [history, setHistory] = useState<any[]>([])
+  const [history, setHistory] = useState<BalanceHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<{ balance_type?: string; transaction_type?: string }>({})
 

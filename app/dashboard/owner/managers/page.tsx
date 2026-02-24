@@ -5,9 +5,18 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { customConfirm, customAlert } from '@/utils/modals'
 
+type OwnerManagerRow = {
+  id: string
+  email: string
+  full_name?: string | null
+  balance: number | string
+  debt_to_company: number | string
+  is_active: boolean
+}
+
 export default function OwnerManagersPage() {
   const { token } = useAuthStore()
-  const [managers, setManagers] = useState<any[]>([])
+  const [managers, setManagers] = useState<OwnerManagerRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

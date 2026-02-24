@@ -8,6 +8,11 @@ import { z } from 'zod'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type CategoryOption = {
+  id: string
+  name: string
+}
+
 const flightSchema = z.object({
   flight_number: z.string().min(1, 'Номер рейса обязателен'),
   departure_time: z.string().min(1, 'Время отправления обязательно'),
@@ -30,7 +35,7 @@ type CreateTourFormData = z.infer<typeof createTourSchema>
 export default function CreateTourPage() {
   const router = useRouter()
   const { token } = useAuthStore()
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<CategoryOption[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 

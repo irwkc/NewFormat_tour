@@ -4,11 +4,24 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type OwnerPromoterSummary = {
+  id: string
+  full_name: string
+  promoter_id: number | null
+  balance: number | string
+}
+
+type OwnerManagerSummary = {
+  id: string
+  full_name: string
+  balance: number | string
+  debt_to_company: number | string
+}
+
 export default function OwnerDashboard() {
   const { token, user } = useAuthStore()
-  const [stats, setStats] = useState<any>(null)
-  const [promoters, setPromoters] = useState<any[]>([])
-  const [managers, setManagers] = useState<any[]>([])
+  const [promoters, setPromoters] = useState<OwnerPromoterSummary[]>([])
+  const [managers, setManagers] = useState<OwnerManagerSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

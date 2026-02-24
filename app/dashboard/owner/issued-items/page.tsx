@@ -17,9 +17,24 @@ const issueItemSchema = z.object({
 
 type IssueItemFormData = z.infer<typeof issueItemSchema>
 
+type IssuedItem = {
+  id: string
+  item_name: string
+  item_description?: string | null
+  item_photo_url: string
+  created_at: string
+  is_returned: boolean
+  returned_at?: string | null
+  issuedTo: {
+    full_name: string
+    email?: string | null
+    promoter_id?: number | null
+  }
+}
+
 export default function OwnerIssuedItemsPage() {
   const { token } = useAuthStore()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<IssuedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [userType, setUserType] = useState<'promoter' | 'manager'>('promoter')

@@ -5,12 +5,40 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { customAlert } from '@/utils/modals'
 
+type OverviewStats = {
+  total_sales?: number
+  total_amount?: number | string
+  total_tickets?: number
+}
+
+type TourStat = {
+  tour?: {
+    company?: string
+    flight_number?: string
+  }
+  count?: number
+  total?: number | string
+}
+
+type SellerStat = {
+  seller?: { full_name?: string | null }
+  promoter?: { full_name?: string | null }
+  count?: number
+  total?: number | string
+}
+
+type PaymentStat = {
+  payment_method: 'online_yookassa' | 'cash' | 'acquiring'
+  count?: number
+  total?: number | string
+}
+
 export default function OwnerStatisticsPage() {
   const { token } = useAuthStore()
-  const [overview, setOverview] = useState<any>(null)
+  const [overview, setOverview] = useState<OverviewStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'by-tour' | 'by-seller' | 'by-payment'>('overview')
-  const [stats, setStats] = useState<any[]>([])
+  const [stats, setStats] = useState<(TourStat | SellerStat | PaymentStat)[]>([])
 
   useEffect(() => {
     if (token) {
@@ -199,7 +227,7 @@ export default function OwnerStatisticsPage() {
                 <tbody>
                   {stats.map((stat, index) => (
                     <tr key={index}>
-                      {activeTab === 'by-tour' && (
+                      {activeTab === 'by-tour' && 'tour' in stat && (
                         <>
                           <td className="text-sm text-white whitespace-nowrap">
                             {stat.tour?.company} - {stat.tour?.flight_number}
@@ -212,7 +240,7 @@ export default function OwnerStatisticsPage() {
                           </td>
                         </>
                       )}
-                      {activeTab === 'by-seller' && (
+                      {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
                         <>
                           <td className="text-sm text-white whitespace-nowrap">
                             {stat.seller?.full_name || stat.promoter?.full_name || '-'}
@@ -225,7 +253,7 @@ export default function OwnerStatisticsPage() {
                           </td>
                         </>
                       )}
-                      {activeTab === 'by-payment' && (
+                      {activeTab === 'by-payment' && 'payment_method' in stat && (
                         <>
                           <td className="text-sm text-white whitespace-nowrap">
                             {stat.payment_method === 'online_yookassa' ? 'Онлайн' :

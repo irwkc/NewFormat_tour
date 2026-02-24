@@ -4,9 +4,18 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
+type IssuedItem = {
+  id: string
+  item_name: string
+  item_description?: string | null
+  item_photo_url: string
+  created_at: string
+  is_returned: boolean
+}
+
 export default function ManagerIssuedItemsPage() {
   const { token } = useAuthStore()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<IssuedItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

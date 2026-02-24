@@ -5,11 +5,40 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { customAlert } from '@/utils/modals'
 
+type TicketInfo = {
+  is_valid: boolean
+  message?: string
+  can_confirm: boolean
+  ticket: {
+    id: string
+    tour: {
+      company: string
+      category?: string
+    }
+    flight?: {
+      flight_number: string
+      date: string
+      departure_time: string
+    }
+    adult_count: number
+    child_count: number
+    concession_count: number
+    ticket_status: 'sold' | 'used' | 'cancelled'
+    used_at?: string | null
+    cancelled_at?: string | null
+    ticket_number?: string | null
+    ticket_photo_url?: string | null
+    usedBy?: {
+      full_name: string
+    } | null
+  }
+}
+
 export default function TicketCheckPage() {
   const { token } = useAuthStore()
   const [ticketNumber, setTicketNumber] = useState('')
   const [qrData, setQrData] = useState('')
-  const [ticketInfo, setTicketInfo] = useState<any>(null)
+  const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [method, setMethod] = useState<'qr' | 'number'>('qr')

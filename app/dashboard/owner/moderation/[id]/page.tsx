@@ -8,6 +8,33 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
+type ModerateFlight = {
+  id: string
+  flight_number: string
+  date: string
+  departure_time: string
+  max_places: number
+  current_booked_places: number
+  boarding_location_url?: string | null
+}
+
+type ModerateTour = {
+  id: string
+  company: string
+  category?: { name: string }
+  partner_min_adult_price: number | string
+  partner_min_child_price: number | string
+  partner_min_concession_price?: number | string | null
+  owner_min_adult_price?: number | string | null
+  owner_min_child_price?: number | string | null
+  owner_min_concession_price?: number | string | null
+   commission_type?: 'percentage' | 'fixed' | null
+   commission_percentage?: number | string | null
+   commission_fixed_amount?: number | string | null
+  createdBy?: { full_name?: string | null }
+  flights?: ModerateFlight[]
+}
+
 const optionalNumber = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
   const n = Number(v)
@@ -42,7 +69,7 @@ export default function ModerateTourPage() {
   const { token } = useAuthStore()
   const tourId = params.id as string
   
-  const [tour, setTour] = useState<any>(null)
+  const [tour, setTour] = useState<ModerateTour | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
