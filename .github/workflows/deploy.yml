@@ -64,7 +64,7 @@ jobs:
             if [ "$PACKAGE_CHANGED" = true ] || [ ! -d node_modules ]; then
               echo "📦 Установка зависимостей..."
               rm -rf node_modules 2>/dev/null || true
-              npm ci --silent --no-audit --no-fund 2>&1 | grep -v "^npm WARN" || true
+              npm ci --silent --no-audit --no-fund --prefer-offline 2>&1 | grep -v "^npm WARN" || true
             else
               echo "✅ Зависимости не изменились, пропускаем установку"
             fi
@@ -77,10 +77,8 @@ jobs:
               echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
             
-            # Генерация Prisma Client (всегда после обновления кода и миграций)
+            # Генерация Prisma Client (после npm ci он уже в node_modules, только генерируем код)
             echo "🔧 Генерация Prisma Client..."
-            rm -rf node_modules/.prisma node_modules/@prisma/client 2>/dev/null || true
-            npm install @prisma/client 2>&1 | grep -v "^npm WARN" || true
             npx prisma generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
             # Сборка проекта
