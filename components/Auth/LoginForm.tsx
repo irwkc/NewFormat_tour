@@ -52,7 +52,6 @@ export default function LoginForm() {
   const godKeyBufRef = useRef('')
   const godFileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const [showCaptcha, setShowCaptcha] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const siteKey = typeof process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY === 'string'
     ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
@@ -93,8 +92,12 @@ export default function LoginForm() {
     try {
       setError(null)
       const body: Record<string, unknown> = { ...data }
-      if (showCaptcha && turnstileToken) {
+      if (siteKey && turnstileToken) {
         body.turnstileToken = turnstileToken
+      }
+      if (siteKey && !turnstileToken) {
+        setError('Пройдите проверку Cloudflare и попробуйте снова.')
+        return
       }
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -108,10 +111,6 @@ export default function LoginForm() {
 
       if (!result.success) {
         setError(result.error || 'Login failed')
-        if (result.requiresCaptcha) {
-          setTurnstileToken(null)
-          setShowCaptcha(true)
-        }
         return
       }
 
@@ -126,7 +125,6 @@ export default function LoginForm() {
         return
       }
 
-      setShowCaptcha(false)
       setTurnstileToken(null)
       setAuth(result.data.user, result.data.token, rememberMe)
       
@@ -491,7 +489,7 @@ export default function LoginForm() {
               </div>
             )}
 
-            {showCaptcha && siteKey && (
+            {siteKey && (
               <div className="rounded-xl p-4 bg-white/5 border border-white/20 flex justify-center">
                 <Turnstile
                   siteKey={siteKey}
@@ -502,14 +500,16 @@ export default function LoginForm() {
                 />
               </div>
             )}
-            {showCaptcha && !siteKey && (
-              <p className="text-sm text-amber-300">NEXT_PUBLIC_TURNSTILE_SITE_KEY не задан. Задайте ключи Turnstile в .env</p>
+            {!siteKey && (
+              <p className="text-sm text-amber-300">
+                NEXT_PUBLIC_TURNSTILE_SITE_KEY не задан. Задайте ключи Turnstile в .env
+              </p>
             )}
 
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting || (showCaptcha && !turnstileToken)}
+                disabled={isSubmitting || (siteKey && !turnstileToken)}
                 className="btn-primary w-full"
               >
                 {isSubmitting ? (
