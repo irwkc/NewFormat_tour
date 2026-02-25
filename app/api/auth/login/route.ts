@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { comparePassword, generateToken, generateFaceVerifyToken, getAuthCookieHeader } from '@/lib/auth'
 import { sendNewLoginFromIpEmail } from '@/lib/email'
 import { verifyTurnstile } from '@/lib/turnstile'
+import { requiresCaptcha as ipRequiresCaptcha, recordFail, recordSuccess } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -26,11 +27,12 @@ export async function POST(request: NextRequest) {
       ''
     const userAgent = request.headers.get('user-agent') || null
 
-    if (process.env.TURNSTILE_SECRET_KEY) {
+    if (ipRequiresCaptcha(ip) && process.env.TURNSTILE_SECRET_KEY) {
       if (!turnstileToken || typeof turnstileToken !== 'string') {
         return NextResponse.json(
           {
             success: false,
+            requiresCaptcha: true,
             error: 'Пройдите проверку Cloudflare для продолжения.',
           },
           { status: 400 }
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
+            requiresCaptcha: true,
             error: 'Проверка не пройдена. Обновите страницу и попробуйте снова.',
           },
           { status: 400 }
@@ -63,6 +66,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (users.length === 0) {
+      recordFail(ip)
+      if (ipRequiresCaptcha(ip)) {
+        return NextResponse.json(
+          {
+            success: false,
+            requiresCaptcha: true,
+            error: 'Неверный email или пароль. Пройдите проверку и попробуйте снова.',
+          },
+          { status: 401 }
+        )
+      }
       return NextResponse.json(
         { success: false, error: 'Неверный email или пароль' },
         { status: 401 }
@@ -80,6 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
+      recordFail(ip)
       try {
         await prisma.$executeRawUnsafe(
           'INSERT INTO "user_login_logs" ("user_id","ip_address","user_agent","success","created_at") VALUES ($1,$2,$3,$4,NOW())',
@@ -90,6 +105,16 @@ export async function POST(request: NextRequest) {
         )
       } catch {
         // не блокируем вход при ошибке логирования
+      }
+      if (ipRequiresCaptcha(ip)) {
+        return NextResponse.json(
+          {
+            success: false,
+            requiresCaptcha: true,
+            error: 'Неверный пароль. Пройдите проверку и попробуйте снова.',
+          },
+          { status: 401 }
+        )
       }
       return NextResponse.json(
         { success: false, error: 'Неверный пароль' },
@@ -185,6 +210,7 @@ export async function POST(request: NextRequest) {
         token,
       },
     })
+    recordSuccess(ip)
     res.headers.set('Set-Cookie', getAuthCookieHeader(token))
     return res
   } catch (error: any) {
