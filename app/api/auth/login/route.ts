@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { comparePassword, generateToken, generateFaceVerifyToken, getAuthCookieHeader } from '@/lib/auth'
 import { sendNewLoginFromIpEmail } from '@/lib/email'
-import { verifyPuzzle } from '@/lib/captcha-puzzle'
+import { verifyTurnstile } from '@/lib/turnstile'
 import { requiresCaptcha as ipRequiresCaptcha, recordFail, recordSuccess } from '@/lib/rate-limit'
 import { z } from 'zod'
 
@@ -10,8 +10,7 @@ const loginSchema = z.object({
   email: z.string().email().optional(),
   promoter_id: z.number().optional(),
   password: z.string().min(6),
-  captchaId: z.string().uuid().optional(),
-  captchaPosition: z.number().optional(),
+  turnstileToken: z.string().optional(),
 }).refine((data) => data.email || data.promoter_id, {
   message: "Either email or promoter_id is required",
 })
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const parsed = loginSchema.parse(body)
-    const { email, promoter_id, password, captchaId, captchaPosition } = parsed
+    const { email, promoter_id, password, turnstileToken } = parsed
 
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -29,18 +28,19 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || null
 
     if (ipRequiresCaptcha(ip)) {
-      if (typeof captchaId !== 'string' || typeof captchaPosition !== 'number') {
+      if (!turnstileToken || typeof turnstileToken !== 'string') {
         return NextResponse.json({
           success: false,
           requiresCaptcha: true,
-          error: 'Решите пазл для продолжения',
+          error: 'Пройдите проверку Cloudflare для продолжения',
         }, { status: 400 })
       }
-      if (!verifyPuzzle(captchaId, captchaPosition)) {
+      const verify = await verifyTurnstile(turnstileToken, ip || undefined)
+      if (!verify.success) {
         return NextResponse.json({
           success: false,
           requiresCaptcha: true,
-          error: 'Пазл решён неверно. Попробуйте снова.',
+          error: 'Проверка не пройдена. Обновите страницу и попробуйте снова.',
         }, { status: 400 })
       }
     }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           requiresCaptcha: true,
-          error: 'Неверный email или пароль. Решите пазл и попробуйте снова.',
+          error: 'Неверный email или пароль. Пройдите проверку и попробуйте снова.',
         }, { status: 401 })
       }
       return NextResponse.json(
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           requiresCaptcha: true,
-          error: 'Неверный пароль. Решите пазл и попробуйте снова.',
+          error: 'Неверный пароль. Пройдите проверку и попробуйте снова.',
         }, { status: 401 })
       }
       return NextResponse.json(

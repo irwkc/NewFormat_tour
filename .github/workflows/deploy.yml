@@ -107,5 +107,5 @@ jobs:
         timeout-minutes: 2
         run: |
           sleep 5
-          curl -f --max-time 10 https://new-format-spb.ru || exit 1
+          curl -f --max-time 10 https://staff.nf-travel.ru || exit 1
           echo "✅ Сайт работает!"

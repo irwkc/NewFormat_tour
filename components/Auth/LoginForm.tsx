@@ -8,7 +8,7 @@ import { z } from 'zod'
 import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 import FaceVerifyStep from './FaceVerifyStep'
-import PuzzleCaptcha from './PuzzleCaptcha'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 const GOD_KEY_SEQUENCE = 'irwkcgod'
 
@@ -52,36 +52,11 @@ export default function LoginForm() {
   const godKeyBufRef = useRef('')
   const godFileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const [showPuzzleCaptcha, setShowPuzzleCaptcha] = useState(false)
-  const [captchaData, setCaptchaData] = useState<{
-    captchaId: string
-    backgroundImage: string
-    pieceImage: string
-    config: { width: number; height: number; pieceWidth: number; pieceHeight: number; pieceY: number }
-  } | null>(null)
-  const [captchaPosition, setCaptchaPosition] = useState(0)
-
-  const fetchCaptcha = async () => {
-    try {
-      const res = await fetch('/api/auth/captcha')
-      const json = await res.json()
-      if (json.success && json.data) {
-        setCaptchaData({
-          captchaId: json.data.captchaId,
-          backgroundImage: json.data.backgroundImage,
-          pieceImage: json.data.pieceImage,
-          config: json.data.config,
-        })
-        setCaptchaPosition(0)
-      }
-    } catch {
-      setError('Не удалось загрузить капчу')
-    }
-  }
-
-  useEffect(() => {
-    if (showPuzzleCaptcha && !captchaData) fetchCaptcha()
-  }, [showPuzzleCaptcha])
+  const [showCaptcha, setShowCaptcha] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const siteKey = typeof process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY === 'string'
+    ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+    : ''
 
   const {
     register,
@@ -118,9 +93,8 @@ export default function LoginForm() {
     try {
       setError(null)
       const body: Record<string, unknown> = { ...data }
-      if (showPuzzleCaptcha && captchaData) {
-        body.captchaId = captchaData.captchaId
-        body.captchaPosition = Math.round(captchaPosition)
+      if (showCaptcha && turnstileToken) {
+        body.turnstileToken = turnstileToken
       }
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -135,8 +109,8 @@ export default function LoginForm() {
       if (!result.success) {
         setError(result.error || 'Login failed')
         if (result.requiresCaptcha) {
-          setCaptchaData(null)
-          setShowPuzzleCaptcha(true)
+          setTurnstileToken(null)
+          setShowCaptcha(true)
         }
         return
       }
@@ -152,8 +126,8 @@ export default function LoginForm() {
         return
       }
 
-      setShowPuzzleCaptcha(false)
-      setCaptchaData(null)
+      setShowCaptcha(false)
+      setTurnstileToken(null)
       setAuth(result.data.user, result.data.token, rememberMe)
       
       const role = result.data.user.role
@@ -517,28 +491,25 @@ export default function LoginForm() {
               </div>
             )}
 
-            {showPuzzleCaptcha && (
-              <div className="rounded-xl p-4 bg-white/5 border border-white/20">
-                {!captchaData ? (
-                  <p className="text-sm text-white/70">Загрузка капчи...</p>
-                ) : (
-                  <PuzzleCaptcha
-                    captchaId={captchaData.captchaId}
-                    backgroundImage={captchaData.backgroundImage}
-                    pieceImage={captchaData.pieceImage}
-                    config={captchaData.config}
-                    onPositionChange={setCaptchaPosition}
-                    onRefresh={fetchCaptcha}
-                    disabled={isSubmitting}
-                  />
-                )}
+            {showCaptcha && siteKey && (
+              <div className="rounded-xl p-4 bg-white/5 border border-white/20 flex justify-center">
+                <Turnstile
+                  siteKey={siteKey}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                  options={{ theme: 'dark', size: 'normal' }}
+                />
               </div>
+            )}
+            {showCaptcha && !siteKey && (
+              <p className="text-sm text-amber-300">NEXT_PUBLIC_TURNSTILE_SITE_KEY не задан. Задайте ключи Turnstile в .env</p>
             )}
 
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (showCaptcha && !turnstileToken)}
                 className="btn-primary w-full"
               >
                 {isSubmitting ? (
