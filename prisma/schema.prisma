@@ -114,6 +114,7 @@ model User {
   ticketRangesCreated      ManagerTicketRange[] @relation("TicketRangesCreatedBy")
   ticketRangesReceived     ManagerTicketRange[] @relation("TicketRangesReceivedBy")
   loginLogs                UserLoginLog[]
+  pushSubscriptions        PushSubscription[]
   
   @@index([email])
   @@index([promoter_id])
