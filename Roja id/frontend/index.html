@@ -33,6 +33,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('register', this)">Регистрация</button>
             <button class="tab-btn" onclick="showTab('login', this)">Вход</button>
+            <button class="tab-btn" onclick="showTab('settings', this)">Настройки</button>
         </div>
 
         <!-- Регистрация -->
@@ -84,9 +85,18 @@
             <div id="login-status" class="status"></div>
         </div>
 
-        <div id="notifications-banner" class="notifications-banner" style="display: none;">
-            <span class="notifications-text">Включить уведомления о событиях входа и безопасности?</span>
-            <button id="enable-notifications-btn" class="notifications-button">Включить</button>
+        <!-- Настройки -->
+        <div id="settings-tab" class="tab-content">
+            <h2>Настройки</h2>
+
+            <div class="form-group">
+                <label>Уведомления о событиях входа</label>
+                <p style="margin-bottom: 10px; color: #555; font-size: 14px;">
+                    Включите системные уведомления, чтобы получать сообщения о результатах аутентификации и важных событиях безопасности.
+                </p>
+                <button id="notifications-settings-btn">Включить уведомления</button>
+                <div id="notifications-status" class="status info" style="margin-top: 12px;"></div>
+            </div>
         </div>
     </div>
 

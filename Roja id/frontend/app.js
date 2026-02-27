@@ -1153,20 +1153,27 @@ function isStandaloneMode() {
 }
 
 function initNotificationsUI() {
-    const banner = document.getElementById('notifications-banner');
-    const button = document.getElementById('enable-notifications-btn');
+    const button = document.getElementById('notifications-settings-btn');
+    const status = document.getElementById('notifications-status');
 
-    if (!banner || !button) {
+    if (!button) {
         return;
     }
 
-    // Если уведомления уже разрешены, баннер не нужен
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        return;
+    // Текущее состояние при загрузке
+    if (typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted') {
+            if (status) {
+                status.textContent = 'Уведомления уже включены в браузере.';
+                status.className = 'status success';
+            }
+        } else if (Notification.permission === 'denied') {
+            if (status) {
+                status.textContent = 'Уведомления заблокированы в настройках браузера. Разрешите их вручную в настройках системы/браузера.';
+                status.className = 'status error';
+            }
+        }
     }
-
-    // Показываем баннер всегда, а внутри клика уже проверяем поддержку
-    banner.style.display = 'flex';
 
     button.addEventListener('click', () => {
         const notificationsSupported = typeof Notification !== 'undefined';
@@ -1175,11 +1182,22 @@ function initNotificationsUI() {
         if (!notificationsSupported || !swSupported) {
             alert('Уведомления на этом устройстве/в этом браузере не поддерживаются или требуют HTTPS и установленное веб‑приложение.');
         } else {
-            requestNotificationsPermission();
-        }
+            requestNotificationsPermission().then(() => {
+                if (!status) return;
 
-        banner.style.display = 'none';
-    }, { once: true });
+                if (Notification.permission === 'granted') {
+                    status.textContent = 'Уведомления успешно включены.';
+                    status.className = 'status success';
+                } else if (Notification.permission === 'denied') {
+                    status.textContent = 'Доступ к уведомлениям отклонён. Разрешите их в настройках браузера или системы.';
+                    status.className = 'status error';
+                } else {
+                    status.textContent = 'Состояние уведомлений не изменилось.';
+                    status.className = 'status info';
+                }
+            });
+        }
+    });
 }
 
 async function requestNotificationsPermission() {
