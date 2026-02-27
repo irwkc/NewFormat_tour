@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     interactiveWidget: 'resizes-content',
   },
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#6366f1' },
-    { media: '(prefers-color-scheme: dark)', color: '#9333ea' },
+    { media: '(prefers-color-scheme: light)', color: '#020617' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
   ],
   manifest: '/manifest.webmanifest',
   icons: {

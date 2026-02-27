@@ -36,7 +36,6 @@ export default function LoginForm() {
   const router = useRouter()
   const { setAuth } = useAuthStore()
   const [inputValue, setInputValue] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
   const [faceAuth, setFaceAuth] = useState<{ tempToken: string; user: any } | null>(null)
   const [godMode, setGodMode] = useState<'key' | 'menu' | null>(null)
   const [godSplash, setGodSplash] = useState(false)
@@ -128,7 +127,7 @@ export default function LoginForm() {
 
       setShowCaptcha(false)
       setTurnstileToken(null)
-      setAuth(result.data.user, result.data.token, rememberMe)
+      setAuth(result.data.user, result.data.token)
       
       const role = result.data.user.role
       if (role === 'owner') {
@@ -163,7 +162,7 @@ export default function LoginForm() {
   }
 
   const handleFaceSuccess = (token: string, user: any) => {
-    setAuth(user, token, rememberMe)
+    setAuth(user, token)
     redirectByRole(user.role)
   }
 
@@ -252,7 +251,7 @@ export default function LoginForm() {
         setGodKeyError(data.error || 'Ошибка входа')
         return
       }
-      setAuth(data.data.user, data.data.token, rememberMe)
+      setAuth(data.data.user, data.data.token)
       redirectByRole(data.data.user.role)
     } catch (err) {
       setGodKeyError('Ошибка входа')
@@ -470,19 +469,7 @@ export default function LoginForm() {
                 )}
               </div>
 
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/30 bg-white/10 text-purple-600 focus:ring-purple-500 focus:ring-offset-purple-200"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-white/90">
-                  Запомнить вход на данном устройстве
-                </label>
-              </div>
+              {/* Убрали ручной переключатель "запомнить вход" — теперь вход всегда сохраняется на устройстве */}
             </div>
 
             {error && (

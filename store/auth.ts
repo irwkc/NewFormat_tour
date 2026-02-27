@@ -18,7 +18,7 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   rememberMe: boolean
-  setAuth: (user: User, token: string, rememberMe?: boolean) => void
+  setAuth: (user: User, token: string) => void
   clearAuth: () => void
   updateUser: (user: Partial<User>) => void
 }
@@ -59,23 +59,15 @@ export const useAuthStore = create<AuthState>()(
         user: initialState?.user || null,
         token: initialState?.token || null,
         isAuthenticated: initialState?.isAuthenticated || false,
-        rememberMe: initialState?.rememberMe || false,
-        setAuth: (user, token, rememberMe = false) => {
-          set({ user, token, isAuthenticated: true, rememberMe })
-          // Сохраняем токен для долгосрочного хранения
+        rememberMe: true,
+        setAuth: (user, token) => {
+          // Всегда запоминаем вход на устройстве (локальное хранение)
+          set({ user, token, isAuthenticated: true, rememberMe: true })
           if (typeof window !== 'undefined') {
-            if (rememberMe) {
-              localStorage.setItem('auth-token', token)
-              localStorage.setItem('auth-user', JSON.stringify(user))
-              sessionStorage.removeItem('auth-token') // Убираем из sessionStorage если был там
-              sessionStorage.removeItem('auth-user')
-            } else {
-              // Используем sessionStorage для временного хранения (только на сессию)
-              sessionStorage.setItem('auth-token', token)
-              sessionStorage.setItem('auth-user', JSON.stringify(user))
-              localStorage.removeItem('auth-token') // Убираем из localStorage если был там
-              localStorage.removeItem('auth-user')
-            }
+            localStorage.setItem('auth-token', token)
+            localStorage.setItem('auth-user', JSON.stringify(user))
+            sessionStorage.removeItem('auth-token')
+            sessionStorage.removeItem('auth-user')
           }
         },
         clearAuth: () => {
@@ -107,10 +99,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.rememberMe ? state.user : null,
-        token: state.rememberMe ? state.token : null,
-        isAuthenticated: state.rememberMe ? state.isAuthenticated : false,
-        rememberMe: state.rememberMe,
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        rememberMe: true,
       }),
       onRehydrateStorage: () => (state) => {
         // При восстановлении из persist storage, проверяем токены в localStorage/sessionStorage

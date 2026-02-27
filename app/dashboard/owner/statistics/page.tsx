@@ -117,7 +117,7 @@ export default function OwnerStatisticsPage() {
   return (
     <DashboardLayout title="Статистика" navItems={navItems}>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3 flex-wrap">
           <h2 className="text-2xl font-bold text-white">Статистика продаж</h2>
           <button
             onClick={handleExport}
@@ -128,7 +128,7 @@ export default function OwnerStatisticsPage() {
         </div>
 
         <div className="glass-card">
-          <div className="flex space-x-4 border-b border-white/10 pb-4">
+          <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-4 py-2 rounded-xl transition-all ${
@@ -196,83 +196,155 @@ export default function OwnerStatisticsPage() {
             </div>
           </div>
         ) : (
-          <div className="table-container">
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    {activeTab === 'by-tour' && (
-                      <>
-                        <th>Экскурсия</th>
-                        <th>Продаж</th>
-                        <th>Сумма</th>
-                      </>
-                    )}
-                    {activeTab === 'by-seller' && (
-                      <>
-                        <th>Продавец</th>
-                        <th>Продаж</th>
-                        <th>Сумма</th>
-                      </>
-                    )}
-                    {activeTab === 'by-payment' && (
-                      <>
-                        <th>Способ оплаты</th>
-                        <th>Продаж</th>
-                        <th>Сумма</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.map((stat, index) => (
-                    <tr key={index}>
-                      {activeTab === 'by-tour' && 'tour' in stat && (
+          <>
+            {/* Мобильный вид: карточки без горизонтального скролла */}
+            <div className="space-y-3 md:hidden">
+              {stats.map((stat, index) => (
+                <div key={index} className="glass-card">
+                  {activeTab === 'by-tour' && 'tour' in stat && (
+                    <div className="space-y-1 text-sm">
+                      <div className="text-white/70">Экскурсия</div>
+                      <div className="text-white font-medium">
+                        {stat.tour?.company} — {stat.tour?.flight_number}
+                      </div>
+                      <div className="flex justify-between pt-2 text-sm">
+                        <span className="text-white/60">Продаж</span>
+                        <span className="text-white">{stat.count || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Сумма</span>
+                        <span className="text-green-300 font-semibold">
+                          {Number(stat.total || 0).toFixed(2)}₽
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
+                    <div className="space-y-1 text-sm">
+                      <div className="text-white/70">Продавец</div>
+                      <div className="text-white font-medium">
+                        {stat.seller?.full_name || stat.promoter?.full_name || '-'}
+                      </div>
+                      <div className="flex justify-between pt-2 text-sm">
+                        <span className="text-white/60">Продаж</span>
+                        <span className="text-white">{stat.count || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Сумма</span>
+                        <span className="text-green-300 font-semibold">
+                          {Number(stat.total || 0).toFixed(2)}₽
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {activeTab === 'by-payment' && 'payment_method' in stat && (
+                    <div className="space-y-1 text-sm">
+                      <div className="text-white/70">Способ оплаты</div>
+                      <div className="text-white font-medium">
+                        {stat.payment_method === 'online_yookassa'
+                          ? 'Онлайн'
+                          : stat.payment_method === 'cash'
+                          ? 'Наличные'
+                          : 'Эквайринг'}
+                      </div>
+                      <div className="flex justify-between pt-2 text-sm">
+                        <span className="text-white/60">Продаж</span>
+                        <span className="text-white">{stat.count || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/60">Сумма</span>
+                        <span className="text-green-300 font-semibold">
+                          {Number(stat.total || 0).toFixed(2)}₽
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Десктопный вид: таблица как раньше */}
+            <div className="hidden md:block table-container">
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      {activeTab === 'by-tour' && (
                         <>
-                          <td className="text-sm text-white whitespace-nowrap">
-                            {stat.tour?.company} - {stat.tour?.flight_number}
-                          </td>
-                          <td className="text-sm text-white/70 whitespace-nowrap">
-                            {stat.count || 0}
-                          </td>
-                          <td className="text-sm font-medium text-white whitespace-nowrap">
-                            {Number(stat.total || 0).toFixed(2)}₽
-                          </td>
+                          <th>Экскурсия</th>
+                          <th>Продаж</th>
+                          <th>Сумма</th>
                         </>
                       )}
-                      {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
+                      {activeTab === 'by-seller' && (
                         <>
-                          <td className="text-sm text-white whitespace-nowrap">
-                            {stat.seller?.full_name || stat.promoter?.full_name || '-'}
-                          </td>
-                          <td className="text-sm text-white/70 whitespace-nowrap">
-                            {stat.count || 0}
-                          </td>
-                          <td className="text-sm font-medium text-white whitespace-nowrap">
-                            {Number(stat.total || 0).toFixed(2)}₽
-                          </td>
+                          <th>Продавец</th>
+                          <th>Продаж</th>
+                          <th>Сумма</th>
                         </>
                       )}
-                      {activeTab === 'by-payment' && 'payment_method' in stat && (
+                      {activeTab === 'by-payment' && (
                         <>
-                          <td className="text-sm text-white whitespace-nowrap">
-                            {stat.payment_method === 'online_yookassa' ? 'Онлайн' :
-                             stat.payment_method === 'cash' ? 'Наличные' : 'Эквайринг'}
-                          </td>
-                          <td className="text-sm text-white/70 whitespace-nowrap">
-                            {stat.count || 0}
-                          </td>
-                          <td className="text-sm font-medium text-white whitespace-nowrap">
-                            {Number(stat.total || 0).toFixed(2)}₽
-                          </td>
+                          <th>Способ оплаты</th>
+                          <th>Продаж</th>
+                          <th>Сумма</th>
                         </>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {stats.map((stat, index) => (
+                      <tr key={index}>
+                        {activeTab === 'by-tour' && 'tour' in stat && (
+                          <>
+                            <td className="text-sm text-white whitespace-nowrap">
+                              {stat.tour?.company} - {stat.tour?.flight_number}
+                            </td>
+                            <td className="text-sm text-white/70 whitespace-nowrap">
+                              {stat.count || 0}
+                            </td>
+                            <td className="text-sm font-medium text-white whitespace-nowrap">
+                              {Number(stat.total || 0).toFixed(2)}₽
+                            </td>
+                          </>
+                        )}
+                        {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
+                          <>
+                            <td className="text-sm text-white whitespace-nowrap">
+                              {stat.seller?.full_name || stat.promoter?.full_name || '-'}
+                            </td>
+                            <td className="text-sm text-white/70 whitespace-nowrap">
+                              {stat.count || 0}
+                            </td>
+                            <td className="text-sm font-medium text-white whitespace-nowrap">
+                              {Number(stat.total || 0).toFixed(2)}₽
+                            </td>
+                          </>
+                        )}
+                        {activeTab === 'by-payment' && 'payment_method' in stat && (
+                          <>
+                            <td className="text-sm text-white whitespace-nowrap">
+                              {stat.payment_method === 'online_yookassa'
+                                ? 'Онлайн'
+                                : stat.payment_method === 'cash'
+                                ? 'Наличные'
+                                : 'Эквайринг'}
+                            </td>
+                            <td className="text-sm text-white/70 whitespace-nowrap">
+                              {stat.count || 0}
+                            </td>
+                            <td className="text-sm font-medium text-white whitespace-nowrap">
+                              {Number(stat.total || 0).toFixed(2)}₽
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </DashboardLayout>
