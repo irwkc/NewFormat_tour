@@ -4,6 +4,7 @@ import { comparePassword, generateToken, generateFaceVerifyToken, getAuthCookieH
 import { sendNewLoginFromIpEmail } from '@/lib/email'
 import { verifyTurnstile } from '@/lib/turnstile'
 import { requiresCaptcha as ipRequiresCaptcha, recordFail, recordSuccess } from '@/lib/rate-limit'
+import { sendPushToUser } from '@/lib/push'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -198,6 +199,11 @@ export async function POST(request: NextRequest) {
     if (isNewIp && ip && user.email) {
       try {
         await sendNewLoginFromIpEmail(user.email, ip, userAgent)
+        await sendPushToUser(user.id, {
+          title: 'Новый вход в систему',
+          body: `Новый вход с IP ${ip}`,
+          data: { url: '/dashboard' },
+        })
       } catch {
         // не блокируем логин, если письмо не отправилось
       }

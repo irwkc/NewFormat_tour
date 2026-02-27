@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
 import { ModalProvider } from '@/components/Providers/ModalProvider'
+import { PushProvider } from '@/components/Providers/PushProvider'
 
 const inter = Inter({ 
   subsets: ['latin', 'cyrillic'],
@@ -32,6 +33,16 @@ export const metadata: Metadata = {
     { media: '(prefers-color-scheme: light)', color: '#6366f1' },
     { media: '(prefers-color-scheme: dark)', color: '#9333ea' },
   ],
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/logo.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/logo.svg', type: 'image/svg+xml' }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'NF Staff',
+  },
 }
 
 export default function RootLayout({
@@ -43,7 +54,9 @@ export default function RootLayout({
     <html lang="ru" className={`${inter.variable} ${poppins.variable}`} style={{ height: '100%', margin: 0, padding: 0 }}>
       <body className="font-sans antialiased" style={{ height: '100%', margin: 0, padding: 0, overflowX: 'hidden' }}>
         <ModalProvider>
-          {children}
+          <PushProvider>
+            {children}
+          </PushProvider>
         </ModalProvider>
       </body>
     </html>
