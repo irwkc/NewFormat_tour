@@ -1,7 +1,8 @@
 {
   "name": "Новый формат путешествий — Staff",
   "short_name": "NF Staff",
-  "start_url": "/auth/login",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#4f46e5",
