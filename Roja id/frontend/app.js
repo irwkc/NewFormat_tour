@@ -1153,18 +1153,6 @@ function isStandaloneMode() {
 }
 
 function initNotificationsUI() {
-    if (typeof Notification === 'undefined') {
-        return;
-    }
-
-    if (!('serviceWorker' in navigator)) {
-        return;
-    }
-
-    if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-        return;
-    }
-
     const banner = document.getElementById('notifications-banner');
     const button = document.getElementById('enable-notifications-btn');
 
@@ -1172,13 +1160,25 @@ function initNotificationsUI() {
         return;
     }
 
-    // Для iOS web-app особенно важно вызывать запрос из обработчика клика
+    // Если уведомления уже разрешены, баннер не нужен
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        return;
+    }
+
+    // Показываем баннер всегда, а внутри клика уже проверяем поддержку
     banner.style.display = 'flex';
 
     button.addEventListener('click', () => {
-        requestNotificationsPermission().finally(() => {
-            banner.style.display = 'none';
-        });
+        const notificationsSupported = typeof Notification !== 'undefined';
+        const swSupported = 'serviceWorker' in navigator;
+
+        if (!notificationsSupported || !swSupported) {
+            alert('Уведомления на этом устройстве/в этом браузере не поддерживаются или требуют HTTPS и установленное веб‑приложение.');
+        } else {
+            requestNotificationsPermission();
+        }
+
+        banner.style.display = 'none';
     }, { once: true });
 }
 
