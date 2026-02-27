@@ -15,7 +15,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, title, navItems = [] }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, isAuthenticated, clearAuth } = useAuthStore()
+  const { user, isAuthenticated, clearAuth, hydrated } = useAuthStore()
   const [menuOpen, setMenuOpen] = useState(false)
 
   const getHomeHref = () => {
@@ -40,6 +40,8 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
 
   useEffect(() => {
     // Проверяем токен при загрузке
+    if (!hydrated) return
+
     const checkAuth = async () => {
       if (!isAuthenticated) {
         // Проверяем токены в storage
@@ -76,12 +78,16 @@ export default function DashboardLayout({ children, title, navItems = [] }: Dash
     }
     
     checkAuth()
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router, hydrated])
 
   useEffect(() => {
     // Закрывать меню при смене страницы
     setMenuOpen(false)
   }, [pathname])
+
+  if (!hydrated) {
+    return null
+  }
 
   if (!isAuthenticated) {
     return null

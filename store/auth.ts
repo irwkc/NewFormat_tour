@@ -18,6 +18,7 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   rememberMe: boolean
+  hydrated: boolean
   setAuth: (user: User, token: string) => void
   clearAuth: () => void
   updateUser: (user: Partial<User>) => void
@@ -60,6 +61,7 @@ export const useAuthStore = create<AuthState>()(
         token: initialState?.token || null,
         isAuthenticated: initialState?.isAuthenticated || false,
         rememberMe: true,
+        hydrated: typeof window === 'undefined' ? true : !!initialState,
         setAuth: (user, token) => {
           // Всегда запоминаем вход на устройстве (локальное хранение)
           set({ user, token, isAuthenticated: true, rememberMe: true })
@@ -103,6 +105,7 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         rememberMe: true,
+        hydrated: state.hydrated,
       }),
       onRehydrateStorage: () => (state) => {
         // При восстановлении из persist storage, проверяем токены в localStorage/sessionStorage
@@ -136,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
             state.isAuthenticated = false
             state.rememberMe = false
           }
+          state.hydrated = true
         }
       },
     }
