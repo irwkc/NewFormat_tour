@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аутентификация по лицу</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FaceAuth">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="illuminationHelper.js"></script>
+    <script src="qualityAnalyzer.js"></script>
+    <script>
+        // Проверка протокола при загрузке страницы
+        window.addEventListener('load', function() {
+            if (window.location.protocol === 'file:') {
+                const warning = document.createElement('div');
+                warning.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #ff6b6b; color: white; padding: 15px; text-align: center; z-index: 10000; font-weight: bold;';
+                warning.innerHTML = '⚠️ ВНИМАНИЕ: Откройте через <a href="http://localhost:8000" style="color: white; text-decoration: underline;">http://localhost:8000</a> (не file://). Камера не работает через file:// протокол!';
+                document.body.insertBefore(warning, document.body.firstChild);
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Аутентификация по лицу</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('register', this)">Регистрация</button>
+            <button class="tab-btn" onclick="showTab('login', this)">Вход</button>
+        </div>
+
+        <!-- Регистрация -->
+        <div id="register-tab" class="tab-content active">
+            <h2>Регистрация нового пользователя</h2>
+            <div class="form-group">
+                <label for="register-userId">ID пользователя:</label>
+                <input type="text" id="register-userId" placeholder="Введите ваш ID" required>
+            </div>
+            <div class="video-container">
+                <video id="register-video" autoplay playsinline></video>
+                <canvas id="register-overlay" class="face-overlay"></canvas>
+                <canvas id="register-canvas" style="display: none;"></canvas>
+            </div>
+            <div class="controls">
+                <button id="register-start-btn" onclick="startRegister()">Начать регистрацию</button>
+                <button id="register-capture-btn" onclick="captureRegister()" style="display: none;">Захватить лицо (1/1)</button>
+                <button id="register-stop-btn" onclick="stopRegister()" style="display: none;">Остановить</button>
+            </div>
+            <div id="register-multiple-info" style="display: none; margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 8px; font-size: 14px;">
+                <p><strong>💡 Совет:</strong> Для лучшей точности можно сделать несколько снимков с разным освещением.</p>
+            </div>
+            <div id="register-status" class="status"></div>
+        </div>
+
+        <!-- Вход -->
+        <div id="login-tab" class="tab-content">
+            <h2>Вход по лицу</h2>
+            <div class="form-group">
+                <label for="login-userId">ID пользователя:</label>
+                <input type="text" id="login-userId" placeholder="Введите ваш ID" required>
+            </div>
+            <div class="video-container">
+                <video id="login-video" autoplay playsinline></video>
+                <canvas id="login-overlay" class="face-overlay"></canvas>
+                <canvas id="login-canvas" style="display: none;"></canvas>
+            </div>
+            <div class="liveness-instructions" id="liveness-instructions" style="display: none;">
+                <div style="display: flex; justify-content: center; gap: 15px; align-items: center; padding: 20px;">
+                    <div id="liveness-dot-1" class="liveness-dot"></div>
+                    <div id="liveness-dot-2" class="liveness-dot"></div>
+                    <div id="liveness-dot-3" class="liveness-dot"></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="login-start-btn" onclick="startLogin()">Начать вход</button>
+                <button id="login-stop-btn" onclick="stopLogin()" style="display: none;">Остановить</button>
+            </div>
+            <div id="login-status" class="status"></div>
+        </div>
+
+        <div id="notifications-banner" class="notifications-banner" style="display: none;">
+            <span class="notifications-text">Включить уведомления о событиях входа и безопасности?</span>
+            <button id="enable-notifications-btn" class="notifications-button">Включить</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
