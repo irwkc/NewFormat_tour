@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, ModerationStatus, CommissionType } from '@prisma/client'
 import { z } from 'zod'
+import { calcIncomeSplit, getPreviewScenarios } from '@/lib/domain/commission-calc'
 
 const optionalNumber = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
@@ -12,6 +13,13 @@ const optionalNumber = z.preprocess((v) => {
 
 const requiredPrice = z.preprocess((v) => Number(v), z.number().min(0.01))
 
+const ruleSchema = z.object({
+  threshold_amount: z.number().min(0),
+  commission_type: z.enum(['percentage', 'fixed']),
+  commission_percentage: optionalNumber,
+  commission_fixed_amount: optionalNumber,
+})
+
 const moderateSchema = z.object({
   moderation_status: z.enum(['approved', 'rejected']),
   owner_min_adult_price: requiredPrice,
@@ -20,6 +28,7 @@ const moderateSchema = z.object({
   commission_type: z.enum(['percentage', 'fixed']),
   commission_percentage: optionalNumber,
   commission_fixed_amount: optionalNumber,
+  commission_rules: z.array(ruleSchema).optional(),
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
@@ -49,6 +58,43 @@ export async function POST(
         const { id } = params
         const body = await request.json()
         const data = moderateSchema.parse(body)
+
+        if (data.moderation_status === 'approved') {
+          const existing = await prisma.tour.findUnique({ where: { id } })
+          if (!existing) {
+            return NextResponse.json({ success: false, error: 'Tour not found' }, { status: 404 })
+          }
+          const rules = (data.commission_rules || []).filter((r: { threshold_amount: number }) => r.threshold_amount > 0)
+          const tourParams = {
+            partner_min_adult_price: Number(existing.partner_min_adult_price),
+            partner_min_child_price: Number(existing.partner_min_child_price),
+            partner_min_concession_price: existing.partner_min_concession_price != null ? Number(existing.partner_min_concession_price) : 0,
+            partner_commission_percentage: existing.partner_commission_percentage != null ? Number(existing.partner_commission_percentage) : null,
+            owner_min_adult_price: data.owner_min_adult_price,
+            owner_min_child_price: data.owner_min_child_price,
+            owner_min_concession_price: data.owner_min_concession_price ?? 0,
+            commission_type: data.commission_type,
+            commission_percentage: data.commission_percentage,
+            commission_fixed_amount: data.commission_fixed_amount,
+            commission_rules: rules.length ? rules.map((r: { threshold_amount: number; commission_type: string; commission_percentage?: number; commission_fixed_amount?: number }) => ({
+              threshold_amount: r.threshold_amount,
+              commission_type: r.commission_type as 'percentage' | 'fixed',
+              commission_percentage: r.commission_percentage,
+              commission_fixed_amount: r.commission_fixed_amount,
+            })) : undefined,
+          }
+          const scenarios = getPreviewScenarios(tourParams)
+          const badScenario = scenarios.find((s) => {
+            const split = calcIncomeSplit(s, tourParams)
+            return split.owner <= 0
+          })
+          if (badScenario) {
+            return NextResponse.json(
+              { success: false, error: 'Нельзя одобрить: при этих параметрах владелец не зарабатывает (доход ≤ 0). Уменьшите комиссию промоутера или увеличьте минимальные цены.' },
+              { status: 400 }
+            )
+          }
+        }
 
         const tour = await prisma.tour.update({
           where: { id },

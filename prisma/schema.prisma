@@ -171,6 +171,7 @@ model Tour {
   partner_min_adult_price Decimal       @map("partner_min_adult_price") @db.Decimal(10, 2)
   partner_min_child_price Decimal       @map("partner_min_child_price") @db.Decimal(10, 2)
   partner_min_concession_price Decimal? @map("partner_min_concession_price") @db.Decimal(10, 2)
+  partner_commission_percentage Decimal? @map("partner_commission_percentage") @db.Decimal(5, 2)
   moderation_status     ModerationStatus @default(pending)
   moderated_by_user_id  String?         @map("moderated_by_user_id")
   moderated_at          DateTime?

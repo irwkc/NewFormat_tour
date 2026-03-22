@@ -17,7 +17,16 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Раздаём frontend-статические файлы (index.html, app.js, service-worker и т.д.)
+// Иначе PWA/уведомления не смогут корректно загрузиться.
+const frontendDir = path.join(__dirname, '..', 'frontend');
+app.use(express.static(frontendDir));
+
+// Корневая страница: отдаём index.html из frontend/
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
 
 // Создаем директорию для временных файлов
 const uploadDir = path.join(__dirname, 'uploads');

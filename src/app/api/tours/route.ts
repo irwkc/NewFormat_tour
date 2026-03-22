@@ -16,9 +16,11 @@ const flightSchema = z.object({
 const createTourSchema = z.object({
   category_id: z.string().uuid(),
   company: z.string().min(1),
-  partner_min_adult_price: z.number().positive(),
-  partner_min_child_price: z.number().positive(),
-  partner_min_concession_price: z.number().positive().optional(),
+  partner_pricing_type: z.enum(['min_prices', 'percentage']).optional().default('min_prices'),
+  partner_min_adult_price: z.number().min(0),
+  partner_min_child_price: z.number().min(0),
+  partner_min_concession_price: z.number().min(0).optional(),
+  partner_commission_percentage: z.number().min(0).max(100).optional().nullable(),
   flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
 })
 
@@ -144,9 +146,10 @@ export async function POST(request: NextRequest) {
             created_by_user_id: req.user!.userId,
             category_id: data.category_id,
             company: data.company,
-            partner_min_adult_price: data.partner_min_adult_price,
-            partner_min_child_price: data.partner_min_child_price,
-            partner_min_concession_price: data.partner_min_concession_price || null,
+            partner_min_adult_price: data.partner_min_adult_price ?? 0,
+            partner_min_child_price: data.partner_min_child_price ?? 0,
+            partner_min_concession_price: data.partner_min_concession_price ?? null,
+            partner_commission_percentage: data.partner_pricing_type === 'percentage' && data.partner_commission_percentage != null ? data.partner_commission_percentage : null,
             moderation_status: ModerationStatus.pending,
             flights: {
               create: data.flights.map(flight => ({

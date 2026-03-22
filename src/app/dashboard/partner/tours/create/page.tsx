@@ -25,11 +25,18 @@ const flightSchema = z.object({
 const createTourSchema = z.object({
   category_id: z.string().uuid('Выберите категорию'),
   company: z.string().min(1, 'Название компании обязательно'),
-  partner_min_adult_price: z.number().positive('Цена должна быть положительной'),
-  partner_min_child_price: z.number().positive('Цена должна быть положительной'),
-  partner_min_concession_price: z.number().positive().optional(),
+  partner_pricing_type: z.enum(['min_prices', 'percentage']),
+  partner_min_adult_price: z.number().min(0),
+  partner_min_child_price: z.number().min(0),
+  partner_min_concession_price: z.number().min(0).optional(),
+  partner_commission_percentage: z.number().min(0).max(100).optional(),
   flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
-})
+}).refine((data) => {
+  if (data.partner_pricing_type === 'min_prices') {
+    return data.partner_min_adult_price > 0 && data.partner_min_child_price > 0
+  }
+  return (data.partner_commission_percentage ?? 0) > 0
+}, { message: 'Укажите мин. цены или процент партнёра' })
 
 type CreateTourFormData = z.infer<typeof createTourSchema>
 
@@ -44,10 +51,12 @@ export default function CreateTourPage() {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<CreateTourFormData>({
     resolver: zodResolver(createTourSchema),
     defaultValues: {
+      partner_pricing_type: 'min_prices',
       flights: [
         {
           flight_number: '',
@@ -103,9 +112,11 @@ export default function CreateTourPage() {
         body: JSON.stringify({
           category_id: data.category_id,
           company: data.company,
-          partner_min_adult_price: data.partner_min_adult_price,
-          partner_min_child_price: data.partner_min_child_price,
-          partner_min_concession_price: data.partner_min_concession_price,
+          partner_pricing_type: data.partner_pricing_type,
+          partner_min_adult_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_adult_price : 0,
+          partner_min_child_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_child_price : 0,
+          partner_min_concession_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_concession_price : 0,
+          partner_commission_percentage: data.partner_pricing_type === 'percentage' ? data.partner_commission_percentage : null,
           flights: formattedFlights,
         }),
       })
@@ -188,54 +199,87 @@ export default function CreateTourPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-2">
-                    Минимальная цена взрослого билета (₽) *
+              <div>
+                <label className="block text-sm font-medium text-white/90 mb-2">
+                  Модель дохода партнёра *
+                </label>
+                <div className="flex gap-4 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      {...register('partner_pricing_type')}
+                      value="min_prices"
+                      className="rounded"
+                    />
+                    <span className="text-white/90">Минимальные цены за билет</span>
                   </label>
-                  <input
-                    {...register('partner_min_adult_price', { valueAsNumber: true })}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input-glass"
-                  />
-                  {errors.partner_min_adult_price && (
-                    <p className="text-red-300 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
-                  )}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      {...register('partner_pricing_type')}
+                      value="percentage"
+                      className="rounded"
+                    />
+                    <span className="text-white/90">Процент от суммы продаж</span>
+                  </label>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-2">
-                    Минимальная цена детского билета (₽) *
-                  </label>
-                  <input
-                    {...register('partner_min_child_price', { valueAsNumber: true })}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input-glass"
-                  />
-                  {errors.partner_min_child_price && (
-                    <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-2">
-                    Минимальная цена льготного билета (₽)
-                  </label>
-                  <input
-                    {...register('partner_min_concession_price', { valueAsNumber: true })}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input-glass"
-                  />
-                  {errors.partner_min_concession_price && (
-                    <p className="text-red-300 text-xs mt-1">{errors.partner_min_concession_price.message}</p>
-                  )}
-                </div>
+                {watch('partner_pricing_type') === 'min_prices' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена взрослого (₽) *</label>
+                      <input
+                        {...register('partner_min_adult_price', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-glass"
+                      />
+                      {errors.partner_min_adult_price && (
+                        <p className="text-red-300 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена детского (₽) *</label>
+                      <input
+                        {...register('partner_min_child_price', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-glass"
+                      />
+                      {errors.partner_min_child_price && (
+                        <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена льготного (₽)</label>
+                      <input
+                        {...register('partner_min_concession_price', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-glass"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-xs">
+                    <label className="block text-sm font-medium text-white/70 mb-2">Процент партнёра от продаж (%) *</label>
+                    <input
+                      {...register('partner_commission_percentage', { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      className="input-glass"
+                      placeholder="60"
+                    />
+                    {errors.partner_commission_percentage && (
+                      <p className="text-red-300 text-xs mt-1">{errors.partner_commission_percentage.message}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

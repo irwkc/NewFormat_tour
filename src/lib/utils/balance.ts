@@ -29,12 +29,10 @@ export async function updateBalanceOnTicketConfirm(
   const tour = sale.tour
   const paymentMethod = sale.payment_method
 
-  // Определить продавца
   const seller = sale.promoter || sale.seller
   const isPromoterSale = !!sale.promoter_user_id
   const isManagerSaleForPromoter = sale.seller.role === 'manager' && isPromoterSale
 
-  // Вычислить сумму комиссии (с учётом дополнительных правил по порогу)
   const totalAmount = Number(sale.total_amount)
   let commissionAmount = 0
 
@@ -58,18 +56,14 @@ export async function updateBalanceOnTicketConfirm(
     commissionAmount = Number(tour.commission_fixed_amount)
   }
 
-  // Обновить баланс продавца (промоутера или менеджера)
   const balanceBefore = Number(seller.balance)
   const balanceAfter = balanceBefore + commissionAmount
 
   await prisma.user.update({
     where: { id: seller.id },
-    data: {
-      balance: balanceAfter,
-    },
+    data: { balance: balanceAfter },
   })
 
-  // Записать историю баланса
   await prisma.balanceHistory.create({
     data: {
       user_id: seller.id,
@@ -85,25 +79,19 @@ export async function updateBalanceOnTicketConfirm(
     },
   })
 
-  // Если это продажа менеджером за наличку/эквайринг
   if (
     (paymentMethod === PaymentMethod.cash || paymentMethod === PaymentMethod.acquiring) &&
     sale.seller.role === 'manager'
   ) {
     const manager = sale.seller
-    
-    // Если продажа за себя
+
     if (!isPromoterSale) {
       const debtBefore = Number(manager.debt_to_company)
       const debtAfter = debtBefore + Number(sale.total_amount)
-
       await prisma.user.update({
         where: { id: manager.id },
-        data: {
-          debt_to_company: debtAfter,
-        },
+        data: { debt_to_company: debtAfter },
       })
-
       await prisma.balanceHistory.create({
         data: {
           user_id: manager.id,
@@ -118,19 +106,13 @@ export async function updateBalanceOnTicketConfirm(
           performed_by_user_id: performedByUserId,
         },
       })
-    }
-    // Если продажа за промоутера
-    else if (isManagerSaleForPromoter) {
+    } else if (isManagerSaleForPromoter) {
       const debtBefore = Number(manager.debt_to_company)
       const debtAfter = debtBefore + Number(sale.total_amount)
-
       await prisma.user.update({
         where: { id: manager.id },
-        data: {
-          debt_to_company: debtAfter,
-        },
+        data: { debt_to_company: debtAfter },
       })
-
       await prisma.balanceHistory.create({
         data: {
           user_id: manager.id,
@@ -177,25 +159,19 @@ export async function updateDebtOnTicketCancel(
   const isPromoterSale = !!sale.promoter_user_id
   const isManagerSaleForPromoter = sale.seller.role === 'manager' && isPromoterSale
 
-  // Если это продажа менеджером за наличку/эквайринг
   if (
     (paymentMethod === PaymentMethod.cash || paymentMethod === PaymentMethod.acquiring) &&
     sale.seller.role === 'manager'
   ) {
     const manager = sale.seller
 
-    // Если продажа за себя
     if (!isPromoterSale) {
       const debtBefore = Number(manager.debt_to_company)
       const debtAfter = debtBefore + Number(sale.total_amount)
-
       await prisma.user.update({
         where: { id: manager.id },
-        data: {
-          debt_to_company: debtAfter,
-        },
+        data: { debt_to_company: debtAfter },
       })
-
       await prisma.balanceHistory.create({
         data: {
           user_id: manager.id,
@@ -210,19 +186,13 @@ export async function updateDebtOnTicketCancel(
           performed_by_user_id: performedByUserId,
         },
       })
-    }
-    // Если продажа за промоутера
-    else if (isManagerSaleForPromoter) {
+    } else if (isManagerSaleForPromoter) {
       const debtBefore = Number(manager.debt_to_company)
       const debtAfter = debtBefore + Number(sale.total_amount)
-
       await prisma.user.update({
         where: { id: manager.id },
-        data: {
-          debt_to_company: debtAfter,
-        },
+        data: { debt_to_company: debtAfter },
       })
-
       await prisma.balanceHistory.create({
         data: {
           user_id: manager.id,

@@ -1,5 +1,4 @@
 // Утилиты для работы с ЮКассой
-// Примечание: ЮКасса SDK нужно будет установить отдельно
 
 export interface YooKassaPayment {
   id: string
@@ -16,9 +15,6 @@ export interface YooKassaPayment {
   metadata?: Record<string, string>
 }
 
-/**
- * Создание платежа в ЮКассе
- */
 export async function createYooKassaPayment(
   amount: number,
   description: string,
@@ -32,9 +28,6 @@ export async function createYooKassaPayment(
     throw new Error('YooKassa credentials not configured')
   }
 
-  // TODO: Реализовать создание платежа через ЮКасса API
-  // Это заглушка - нужно будет установить правильный SDK или использовать fetch
-  
   const response = await fetch('https://api.yookassa.ru/v3/payments', {
     method: 'POST',
     headers: {
@@ -63,9 +56,6 @@ export async function createYooKassaPayment(
   return response.json()
 }
 
-/**
- * Проверка статуса платежа в ЮКассе
- */
 export async function checkYooKassaPayment(paymentId: string): Promise<any> {
   const shopId = process.env.YOOKASSA_SHOP_ID
   const secretKey = process.env.YOOKASSA_SECRET_KEY

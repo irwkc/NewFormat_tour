@@ -16,7 +16,11 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "create-owner": "tsx scripts/create-owner.ts",
-    "create-test-owner": "tsx scripts/create-test-owner.ts"
+    "create-test-owner": "tsx scripts/create-test-owner.ts",
+    "e2e:explore": "tsx e2e/explore-app.ts",
+    "e2e:explore:auth": "tsx e2e/explore-app.ts --auth",
+    "e2e:explore:headed": "tsx e2e/explore-app.ts --headed",
+    "e2e:explore:auth:headed": "tsx e2e/explore-app.ts --auth --headed"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
@@ -66,6 +70,7 @@
     "tailwindcss": "^3.4.0",
     "ts-jest": "^29.1.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "@playwright/test": "^1.40.0"
   }
 }

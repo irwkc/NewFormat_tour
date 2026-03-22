@@ -28,6 +28,32 @@
 
 ---
 
+## 📁 Структура проекта
+
+```
+├── src/                    # Исходный код
+│   ├── app/                # Next.js App Router: страницы и API
+│   │   ├── api/            # REST API (auth, tickets, sales, tours, …)
+│   │   ├── auth/           # Страницы входа, регистрации
+│   │   └── dashboard/      # Дашборды по ролям (owner, partner, manager, promoter)
+│   ├── components/         # React-компоненты (Auth, Layout, UI, Tickets)
+│   ├── lib/                # Логика и утилиты
+│   │   ├── domain/         # Бизнес-логика (sales, tickets)
+│   │   ├── utils/          # Утилиты (modals, qr, pdf, balance, face-*, yookassa)
+│   │   ├── auth.ts         # JWT, хеширование, cookies
+│   │   └── prisma.ts       # Клиент Prisma
+│   ├── store/              # Zustand store
+│   └── types/              # TypeScript типы
+├── integrations/           # Внешние интеграции
+│   └── roja-id/            # Модуль распознавания лиц (отдельный проект)
+├── prisma/                 # Схема БД и миграции
+├── public/                 # Статика
+├── scripts/                # Скрипты (create-owner и др.)
+└── e2e/                    # E2E-тесты (Playwright)
+```
+
+---
+
 ## 📄 Лицензия
 
 См. файл LICENSE для подробной информации о лицензионных ограничениях.

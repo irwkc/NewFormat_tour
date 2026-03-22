@@ -26,6 +26,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# Server config (SSH credentials — never commit)
+.cursor/server-config/
+
 # Vercel
 .vercel
 
