@@ -20,6 +20,9 @@ type CreateSaleFlight = {
   current_booked_places: number
   is_sale_stopped: boolean
   boarding_location_url?: string | null
+  partner_min_adult_price?: number | string | null
+  partner_min_child_price?: number | string | null
+  partner_min_concession_price?: number | string | null
 }
 
 type CreateSaleTour = {
@@ -288,11 +291,14 @@ export default function CreateSalePage() {
 
   const minPrices = useMemo(() => {
     if (!selectedTour) return null
-    const minAdult = Number(selectedTour.owner_min_adult_price ?? selectedTour.partner_min_adult_price ?? 0)
-    const minChild = Number(selectedTour.owner_min_child_price ?? selectedTour.partner_min_child_price ?? 0)
-    const minConcession = Number(selectedTour.owner_min_concession_price ?? selectedTour.partner_min_concession_price ?? 0)
+    const flightAdult = selectedFlight?.partner_min_adult_price != null ? Number(selectedFlight.partner_min_adult_price) : null
+    const flightChild = selectedFlight?.partner_min_child_price != null ? Number(selectedFlight.partner_min_child_price) : null
+    const flightConcession = selectedFlight?.partner_min_concession_price != null ? Number(selectedFlight.partner_min_concession_price) : null
+    const minAdult = Number(selectedTour.owner_min_adult_price ?? flightAdult ?? selectedTour.partner_min_adult_price ?? 0)
+    const minChild = Number(selectedTour.owner_min_child_price ?? flightChild ?? selectedTour.partner_min_child_price ?? 0)
+    const minConcession = Number(selectedTour.owner_min_concession_price ?? flightConcession ?? selectedTour.partner_min_concession_price ?? 0)
     return { minAdult, minChild, minConcession }
-  }, [selectedTour])
+  }, [selectedTour, selectedFlight])
 
   return (
     <DashboardLayout title="Создание продажи" navItems={navItems}>

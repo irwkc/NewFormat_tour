@@ -101,6 +101,11 @@ export async function POST(
         }
 
         const created: { id: string; date: string; flight_number: string }[] = []
+        const flightPriceData = data.prices ? {
+          partner_min_adult_price: data.prices.partner_min_adult_price,
+          partner_min_child_price: data.prices.partner_min_child_price ?? null,
+          partner_min_concession_price: data.prices.partner_min_concession_price ?? null,
+        } : {}
 
         for (const dateStr of data.dates) {
           const dateObj = new Date(dateStr + 'T12:00:00+03:00')
@@ -116,6 +121,7 @@ export async function POST(
                 max_places: f.max_places,
                 duration_minutes: f.duration_minutes ?? null,
                 boarding_location_url: f.boarding_location_url || null,
+                ...flightPriceData,
               },
             })
             created.push({

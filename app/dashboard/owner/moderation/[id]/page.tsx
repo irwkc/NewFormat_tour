@@ -18,6 +18,9 @@ type ModerateFlight = {
   current_booked_places: number
   is_moderated?: boolean
   boarding_location_url?: string | null
+  partner_min_adult_price?: number | string | null
+  partner_min_child_price?: number | string | null
+  partner_min_concession_price?: number | string | null
 }
 
 type ModerateTour = {
@@ -458,7 +461,19 @@ export default function ModerateTourPage() {
                   {tour.partner_commission_type === 'percentage' && tour.partner_commission_percentage != null && Number(tour.partner_commission_percentage) > 0
                     ? `${Number(tour.partner_commission_percentage)}% от суммы продаж`
                     : `Фикс с билета: взр. ${Number(tour.partner_fixed_adult_price ?? tour.partner_min_adult_price).toFixed(0)}₽, дет. ${Number(tour.partner_fixed_child_price ?? tour.partner_min_child_price).toFixed(0)}₽${(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price) ? `, льг. ${Number(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price).toFixed(0)}₽` : ''}`}
-                  . Мин. цены: взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}
+                  . Мин. цены партнёра: {(() => {
+                    const flights = tour.flights || []
+                    if (flights.length === 0) {
+                      return <>взр. {Number(tour.partner_min_adult_price ?? 0).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price ?? 0).toFixed(0)}₽{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}</>
+                    }
+                    const flightPrices = flights.map((f: ModerateFlight) => Number(f.partner_min_adult_price ?? tour.partner_min_adult_price ?? 0))
+                    const uniqAdult = [...new Set(flightPrices)]
+                    const adultStr = uniqAdult.length === 1 ? `${uniqAdult[0].toFixed(0)}₽` : `от ${Math.min(...uniqAdult).toFixed(0)}₽ (по дням)`
+                    const childPrices = flights.map((f: ModerateFlight) => Number(f.partner_min_child_price ?? tour.partner_min_child_price ?? 0))
+                    const uniqChild = [...new Set(childPrices)]
+                    const childStr = uniqChild.length === 1 ? `${uniqChild[0].toFixed(0)}₽` : `от ${Math.min(...uniqChild).toFixed(0)}₽`
+                    return <>взр. {adultStr}, дет. {childStr}{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}</>
+                  })()}
                 </span>
               </div>
               <div className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5 sm:col-span-2">
@@ -482,12 +497,16 @@ export default function ModerateTourPage() {
               </button>
               {flightsExpanded && (
                 <div className="mt-4 space-y-4">
-                  {groupFlightsByDate(tour.flights as ModerateFlight[]).map(([dateStr, dayFlights]) => (
+                  {groupFlightsByDate(tour.flights as ModerateFlight[]).map(([dateStr, dayFlights]) => {
+                    const firstFlight = dayFlights[0]
+                    const adultPrice = Number(firstFlight?.partner_min_adult_price ?? tour.partner_min_adult_price ?? 0)
+                    const childPrice = Number(firstFlight?.partner_min_child_price ?? tour.partner_min_child_price ?? 0)
+                    return (
                     <div key={dateStr} className="border border-white/10 rounded-lg overflow-hidden">
                       <div className="px-3 py-2 bg-white/5 text-sm font-medium text-white flex items-center justify-between">
                         <span>{new Date(dateStr + 'T12:00:00').toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                         <span className="text-white/70 text-xs">
-                          взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽
+                          взр. {adultPrice.toFixed(0)}₽, дет. {childPrice.toFixed(0)}₽
                         </span>
                       </div>
                       <div className="divide-y divide-white/5">
@@ -510,7 +529,7 @@ export default function ModerateTourPage() {
                         ))}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

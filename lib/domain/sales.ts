@@ -73,18 +73,24 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     } as const
   }
 
-  // Проверить минимальные цены (owner_min или partner_min если ещё не модерировано)
-  const minAdult = Number(tour.owner_min_adult_price ?? tour.partner_min_adult_price ?? 0)
+  // Проверить минимальные цены: owner_min (floor) vs partner_min (flight или tour)
+  const flightAdult = flight.partner_min_adult_price != null ? Number(flight.partner_min_adult_price) : null
+  const flightChild = flight.partner_min_child_price != null ? Number(flight.partner_min_child_price) : null
+  const flightConcession = flight.partner_min_concession_price != null ? Number(flight.partner_min_concession_price) : null
+  const partnerMinAdult = flightAdult ?? Number(tour.partner_min_adult_price ?? 0)
+  const partnerMinChild = flightChild ?? Number(tour.partner_min_child_price ?? 0)
+  const partnerMinConcession = flightConcession ?? Number(tour.partner_min_concession_price ?? 0)
+  const minAdult = Number((tour.owner_min_adult_price ?? partnerMinAdult) || 0)
   if (minAdult > 0 && input.adult_price < minAdult) {
     return { status: 'adult_price_too_low', min: minAdult } as const
   }
 
-  const minChild = Number(tour.owner_min_child_price ?? tour.partner_min_child_price ?? 0)
+  const minChild = Number((tour.owner_min_child_price ?? partnerMinChild) || 0)
   if (input.child_count > 0 && input.child_price && minChild > 0 && input.child_price < minChild) {
     return { status: 'child_price_too_low', min: minChild } as const
   }
 
-  const minConcession = Number(tour.owner_min_concession_price ?? tour.partner_min_concession_price ?? 0)
+  const minConcession = Number((tour.owner_min_concession_price ?? partnerMinConcession) || 0)
   if (input.concession_count > 0 && input.concession_price && minConcession > 0 && input.concession_price < minConcession) {
     return { status: 'concession_price_too_low', min: minConcession } as const
   }

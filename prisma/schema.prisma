@@ -227,24 +227,27 @@ model TourCommissionRule {
 }
 
 model Flight {
-  id                    String          @id @default(uuid())
-  tour_id               String          @map("tour_id")
-  flight_number         String
-  departure_time        DateTime
-  date                  DateTime        @db.Date
-  duration_minutes      Int?
-  max_places            Int
-  current_booked_places Int             @default(0)
-  reserved_for_partner  Int             @default(0) @map("reserved_for_partner")
-  is_sale_stopped       Boolean         @default(false)
-  is_moderated          Boolean         @default(false) @map("is_moderated")
-  boarding_location_url String?         @map("boarding_location_url")
-  created_at            DateTime        @default(now())
-  updated_at            DateTime        @updatedAt
+  id                       String          @id @default(uuid())
+  tour_id                  String          @map("tour_id")
+  flight_number            String
+  departure_time           DateTime
+  date                     DateTime        @db.Date
+  duration_minutes         Int?
+  max_places               Int
+  current_booked_places    Int             @default(0)
+  reserved_for_partner     Int             @default(0) @map("reserved_for_partner")
+  is_sale_stopped          Boolean         @default(false)
+  is_moderated             Boolean         @default(false) @map("is_moderated")
+  boarding_location_url    String?         @map("boarding_location_url")
+  partner_min_adult_price  Decimal?        @map("partner_min_adult_price") @db.Decimal(10, 2)
+  partner_min_child_price    Decimal?        @map("partner_min_child_price") @db.Decimal(10, 2)
+  partner_min_concession_price Decimal?    @map("partner_min_concession_price") @db.Decimal(10, 2)
+  created_at               DateTime        @default(now())
+  updated_at               DateTime        @updatedAt
 
   // Relations
-  tour                  Tour            @relation(fields: [tour_id], references: [id], onDelete: Cascade)
-  sales                 Sale[]
+  tour                     Tour            @relation(fields: [tour_id], references: [id], onDelete: Cascade)
+  sales                    Sale[]
 
   @@index([tour_id])
   @@index([date])
