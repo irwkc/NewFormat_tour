@@ -98,3 +98,75 @@ export async function PATCH(
     [UserRole.partner]
   )
 }
+
+// DELETE /api/flights/:id — удаление рейса (партнёр, только если нет продаж)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(
+    request,
+    async (req) => {
+      try {
+        if (req.user!.role !== UserRole.partner) {
+          return NextResponse.json(
+            { success: false, error: 'Only partners can delete flights' },
+            { status: 403 }
+          )
+        }
+
+        const { id } = params
+
+        const flight = await prisma.flight.findUnique({
+          where: { id },
+          include: { tour: true },
+        })
+
+        if (!flight) {
+          return NextResponse.json(
+            { success: false, error: 'Flight not found' },
+            { status: 404 }
+          )
+        }
+
+        if (flight.tour.created_by_user_id !== req.user!.userId) {
+          return NextResponse.json(
+            { success: false, error: 'You can only delete flights of your tours' },
+            { status: 403 }
+          )
+        }
+
+        if (flight.current_booked_places > 0) {
+          return NextResponse.json(
+            { success: false, error: 'Нельзя удалить рейс с проданными билетами' },
+            { status: 400 }
+          )
+        }
+
+        const dateStr = flight.date.toISOString().split('T')[0]
+        if (!isInCurrentMoscowWeek(dateStr)) {
+          return NextResponse.json(
+            { success: false, error: 'Можно удалять только рейсы текущей недели' },
+            { status: 400 }
+          )
+        }
+
+        await prisma.flight.delete({
+          where: { id },
+        })
+
+        return NextResponse.json({
+          success: true,
+          message: 'Flight deleted',
+        })
+      } catch (error) {
+        console.error('Delete flight error:', error)
+        return NextResponse.json(
+          { success: false, error: 'Internal server error' },
+          { status: 500 }
+        )
+      }
+    },
+    [UserRole.partner]
+  )
+}
