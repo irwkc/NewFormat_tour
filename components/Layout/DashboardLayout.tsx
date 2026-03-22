@@ -5,18 +5,21 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getNavForRole } from '@/lib/dashboard-nav'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
   title: string
+  /** @deprecated Используется централизованное меню из lib/dashboard-nav — пункты одинаковы на всех страницах */
   navItems?: { label: string; href: string }[]
 }
 
-export default function DashboardLayout({ children, title, navItems = [] }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { user, isAuthenticated, clearAuth, hydrated } = useAuthStore()
   const [menuOpen, setMenuOpen] = useState(false)
+  const navItems = getNavForRole(user?.role || '')
 
   const getHomeHref = () => {
     const role = user?.role
