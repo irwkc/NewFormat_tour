@@ -297,8 +297,8 @@ export async function completeSaleFromYookassaDomain(payment: any) {
 
   if (sale.customer_email && correctPdfUrl) {
     try {
-      const fullPdfUrl = `${appUrl}${correctPdfUrl}`
-      await sendTicketEmail(sale.customer_email, fullPdfUrl)
+      const pdfDownloadUrl = `${appUrl}/api/tickets/${ticket.id}/pdf`
+      await sendTicketEmail(sale.customer_email, pdfDownloadUrl)
     } catch (emailError) {
       console.error('Error sending ticket email:', emailError)
     }

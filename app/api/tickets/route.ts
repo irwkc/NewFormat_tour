@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
             })
             try {
               const { sendTicketEmail } = await import('@/lib/email')
-              await sendTicketEmail(emailToUse, `${appUrl}${correctPdfUrl}`)
+              await sendTicketEmail(emailToUse, `${appUrl}/api/tickets/${ticket.id}/pdf`)
             } catch (emailErr) {
               console.error('Error sending ticket email:', emailErr)
             }
@@ -327,7 +327,7 @@ export async function POST(request: NextRequest) {
             })
             try {
               const { sendTicketEmail } = await import('@/lib/email')
-              await sendTicketEmail(emailToUse, `${appUrl}${pdfUrl}`)
+              await sendTicketEmail(emailToUse, `${appUrl}/api/tickets/${ticket.id}/pdf`)
             } catch (emailErr) {
               console.error('Error sending ticket email:', emailErr)
             }
