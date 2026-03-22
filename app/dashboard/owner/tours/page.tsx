@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
-import { customConfirm, customAlert } from '@/utils/modals'
 import { getNavForRole } from '@/lib/dashboard-nav'
 
 type OwnerFlightRow = {
@@ -14,7 +13,6 @@ type OwnerFlightRow = {
   departure_time: string
   max_places: number
   current_booked_places: number
-  is_sale_stopped: boolean
 }
 
 type OwnerTourRow = {
@@ -55,26 +53,6 @@ export default function OwnerToursPage() {
       console.error('Error fetching tours:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleStopSales = async (tourId: string) => {
-    const confirmed = await customConfirm('Остановить продажи на эту экскурсию?')
-    if (!confirmed) return
-
-    try {
-      const response = await fetch(`/api/tours/${tourId}/stop-sales`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const result = await response.json()
-      if (result.success) {
-        fetchTours()
-      } else {
-        await customAlert(result.error || 'Ошибка остановки продаж')
-      }
-    } catch {
-      await customAlert('Ошибка остановки продаж')
     }
   }
 
@@ -119,7 +97,6 @@ export default function OwnerToursPage() {
                     <th>Дата / Время</th>
                     <th>Места</th>
                     <th>Статус</th>
-                    <th>Продажи</th>
                     <th>Действия</th>
                   </tr>
                 </thead>
@@ -127,9 +104,6 @@ export default function OwnerToursPage() {
                   {tours.map((tour) => {
                     const totalMaxPlaces = tour.flights?.reduce((s, f) => s + f.max_places, 0) || 0
                     const totalBookedPlaces = tour.flights?.reduce((s, f) => s + f.current_booked_places, 0) || 0
-                    const hasStoppedFlights = tour.flights?.some((f) => f.is_sale_stopped) || false
-                    const allFlightsStopped = tour.flights?.every((f) => f.is_sale_stopped) || false
-
                     return (
                       <>
                         <tr key={tour.id}>
@@ -189,19 +163,6 @@ export default function OwnerToursPage() {
                                     : 'Отклонена'}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full border ${
-                                allFlightsStopped
-                                  ? 'bg-red-300/30 text-red-200 border-red-400/30'
-                                  : hasStoppedFlights
-                                    ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30'
-                                    : 'bg-green-300/30 text-green-200 border-green-400/30'
-                              }`}
-                            >
-                              {allFlightsStopped ? 'Остановлены' : hasStoppedFlights ? 'Частично' : 'Активны'}
-                            </span>
-                          </td>
                           <td className="whitespace-nowrap text-sm space-x-2">
                             {tour.moderation_status === 'approved' && (
                               <Link
@@ -219,20 +180,11 @@ export default function OwnerToursPage() {
                                 Модерация
                               </Link>
                             )}
-                            {tour.moderation_status === 'approved' && !allFlightsStopped && (
-                              <button
-                                type="button"
-                                onClick={() => handleStopSales(tour.id)}
-                                className="btn-warning text-xs px-3 py-1"
-                              >
-                                Стоп продаж
-                              </button>
-                            )}
                           </td>
                         </tr>
                         {expandedTourId === tour.id && tour.flights && tour.flights.length > 0 && (
                           <tr key={`${tour.id}-flights`}>
-                            <td colSpan={7} className="bg-white/5 p-4">
+                            <td colSpan={6} className="bg-white/5 p-4">
                               <div className="space-y-2">
                                 <h4 className="text-sm font-semibold text-white">Рейсы</h4>
                                 {tour.flights.map((flight) => (
@@ -247,11 +199,6 @@ export default function OwnerToursPage() {
                                     <span className="text-white/70">
                                       мест: {flight.max_places}, забронировано: {flight.current_booked_places}
                                     </span>
-                                    {flight.is_sale_stopped && (
-                                      <span className="px-2 py-0.5 bg-red-500/30 text-red-200 rounded text-xs">
-                                        Продажи остановлены
-                                      </span>
-                                    )}
                                   </div>
                                 ))}
                               </div>

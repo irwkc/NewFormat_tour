@@ -28,18 +28,10 @@ export async function PATCH(
           )
         }
 
-        // Владелец может остановить продажи на любую экскурсию
-        // Партнер может остановить продажи только на свои экскурсии
-        if (req.user!.role === UserRole.partner && tour.created_by_user_id !== req.user!.userId) {
+        // Только партнёр может остановить продажи (владелец — нет)
+        if (req.user!.role !== UserRole.partner || tour.created_by_user_id !== req.user!.userId) {
           return NextResponse.json(
-            { success: false, error: 'You can only stop sales for your own tours' },
-            { status: 403 }
-          )
-        }
-
-        if (req.user!.role !== UserRole.owner && req.user!.role !== UserRole.partner) {
-          return NextResponse.json(
-            { success: false, error: 'Only owner and partner can stop sales' },
+            { success: false, error: 'Only partner can stop sales for their tours' },
             { status: 403 }
           )
         }
@@ -80,6 +72,6 @@ export async function PATCH(
         )
       }
     },
-    [UserRole.owner, UserRole.partner]
+    [UserRole.partner]
   )
 }
