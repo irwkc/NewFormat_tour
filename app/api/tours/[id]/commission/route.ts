@@ -4,18 +4,26 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, CommissionType } from '@prisma/client'
 import { z } from 'zod'
 
+const optionalNumber = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().min(0).optional())
+
 const updateCommissionSchema = z.object({
   commission_type: z.enum(['percentage', 'fixed']),
-  commission_percentage: z.number().positive().optional(),
-  commission_fixed_amount: z.number().positive().optional(),
+  commission_percentage: optionalNumber,
+  commission_fixed_amount: optionalNumber,
+  commission_fixed_adult: optionalNumber,
+  commission_fixed_child: optionalNumber,
+  commission_fixed_concession: optionalNumber,
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
-  } else {
-    return data.commission_fixed_amount !== undefined
   }
+  return (data.commission_fixed_adult ?? data.commission_fixed_child ?? data.commission_fixed_concession ?? data.commission_fixed_amount) !== undefined
 }, {
-  message: "commission_percentage or commission_fixed_amount is required based on commission_type"
+  message: "commission_percentage or commission_fixed_amount / commission_fixed_* is required based on commission_type"
 })
 
 // PATCH /api/tours/:id/commission - изменение процента промоутера (только владелец)
@@ -42,8 +50,11 @@ export async function PATCH(
           where: { id },
           data: {
             commission_type: data.commission_type as CommissionType,
-            commission_percentage: data.commission_percentage || null,
-            commission_fixed_amount: data.commission_fixed_amount || null,
+            commission_percentage: data.commission_percentage ?? null,
+            commission_fixed_amount: data.commission_fixed_amount ?? null,
+            commission_fixed_adult: data.commission_fixed_adult ?? null,
+            commission_fixed_child: data.commission_fixed_child ?? null,
+            commission_fixed_concession: data.commission_fixed_concession ?? null,
           },
           include: {
             category: true,

@@ -71,6 +71,9 @@ export async function updateBalanceOnTicketConfirm(
     commission_type: tour.commission_type as 'percentage' | 'fixed',
     commission_percentage: tour.commission_percentage != null ? Number(tour.commission_percentage) : undefined,
     commission_fixed_amount: tour.commission_fixed_amount != null ? Number(tour.commission_fixed_amount) : undefined,
+    commission_fixed_adult: tour.commission_fixed_adult != null ? Number(tour.commission_fixed_adult) : null,
+    commission_fixed_child: tour.commission_fixed_child != null ? Number(tour.commission_fixed_child) : null,
+    commission_fixed_concession: tour.commission_fixed_concession != null ? Number(tour.commission_fixed_concession) : null,
     commission_rules: rules.map((r) => ({
       threshold_adult: Number((r as any).threshold_adult ?? r.threshold_amount ?? 0),
       threshold_child: Number((r as any).threshold_child ?? r.threshold_amount ?? 0),

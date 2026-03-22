@@ -28,15 +28,17 @@ const moderateSchema = z.object({
   commission_type: z.enum(['percentage', 'fixed']),
   commission_percentage: optionalNumber,
   commission_fixed_amount: optionalNumber,
+  commission_fixed_adult: optionalNumber,
+  commission_fixed_child: optionalNumber,
+  commission_fixed_concession: optionalNumber,
   commission_rules: z.array(ruleSchema).optional(),
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
-  } else {
-    return data.commission_fixed_amount !== undefined
   }
+  return (data.commission_fixed_adult ?? data.commission_fixed_child ?? data.commission_fixed_concession ?? data.commission_fixed_amount) !== undefined
 }, {
-  message: "commission_percentage or commission_fixed_amount is required based on commission_type"
+  message: "Укажите процент или фикс. суммы по типам билетов",
 })
 
 // POST /api/tours/:id/moderate - модерация экскурсии (только владелец)
@@ -80,6 +82,9 @@ export async function POST(
             commission_type: data.commission_type,
             commission_percentage: data.commission_percentage,
             commission_fixed_amount: data.commission_fixed_amount,
+            commission_fixed_adult: data.commission_fixed_adult,
+            commission_fixed_child: data.commission_fixed_child,
+            commission_fixed_concession: data.commission_fixed_concession,
             commission_rules: rules.length ? rules.map((r: { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }) => ({
               threshold_adult: Number(r.threshold_adult ?? 0),
               threshold_child: Number(r.threshold_child ?? 0),
@@ -110,8 +115,11 @@ export async function POST(
             owner_min_child_price: data.owner_min_child_price,
             owner_min_concession_price: data.owner_min_concession_price || null,
             commission_type: data.commission_type as CommissionType,
-            commission_percentage: data.commission_percentage || null,
-            commission_fixed_amount: data.commission_fixed_amount || null,
+            commission_percentage: data.commission_percentage ?? null,
+            commission_fixed_amount: data.commission_fixed_amount ?? null,
+            commission_fixed_adult: data.commission_fixed_adult ?? null,
+            commission_fixed_child: data.commission_fixed_child ?? null,
+            commission_fixed_concession: data.commission_fixed_concession ?? null,
           },
           include: {
             category: true,

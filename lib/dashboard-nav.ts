@@ -8,12 +8,12 @@ export type NavItem = { label: string; href: string }
 export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   owner: [
     { label: 'Категории', href: '/dashboard/owner/categories' },
+    { label: 'Экскурсии', href: '/dashboard/owner/tours' },
     { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
     { label: 'Менеджеры', href: '/dashboard/owner/managers' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
+    { label: 'Приглашения и рефералы', href: '/dashboard/owner/invitations' },
     { label: 'Настройки', href: '/dashboard/owner/settings' },
   ],
   owner_assistant: [

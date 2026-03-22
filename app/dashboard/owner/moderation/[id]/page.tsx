@@ -37,6 +37,9 @@ type ModerateTour = {
   commission_type?: 'percentage' | 'fixed' | null
   commission_percentage?: number | string | null
   commission_fixed_amount?: number | string | null
+  commission_fixed_adult?: number | string | null
+  commission_fixed_child?: number | string | null
+  commission_fixed_concession?: number | string | null
   createdBy?: { full_name?: string | null }
   flights?: ModerateFlight[]
 }
@@ -64,14 +67,17 @@ const moderateSchema = z.object({
   commission_type: z.enum(['percentage', 'fixed']),
   commission_percentage: optionalNumber,
   commission_fixed_amount: optionalNumber,
+  commission_fixed_adult: optionalNumber,
+  commission_fixed_child: optionalNumber,
+  commission_fixed_concession: optionalNumber,
   commission_rules: z.array(ruleSchema).optional(),
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
   }
-  return data.commission_fixed_amount !== undefined
+  return (data.commission_fixed_adult ?? data.commission_fixed_child ?? data.commission_fixed_concession ?? data.commission_fixed_amount) !== undefined
 }, {
-  message: "commission_percentage or commission_fixed_amount is required",
+  message: "Укажите процент или фикс. суммы по типам билетов",
 })
 
 type ModerateFormData = z.infer<typeof moderateSchema>
@@ -84,6 +90,9 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
   const commissionType = (data.commission_type as string) || tour.commission_type || 'percentage'
   const commissionPercent = data.commission_percentage != null ? Number(data.commission_percentage) : Number(tour.commission_percentage) || 0
   const commissionFixed = data.commission_fixed_amount != null ? Number(data.commission_fixed_amount) : Number(tour.commission_fixed_amount) || 0
+  const commissionFixedAdult = data.commission_fixed_adult != null ? Number(data.commission_fixed_adult) : tour.commission_fixed_adult != null ? Number(tour.commission_fixed_adult) : null
+  const commissionFixedChild = data.commission_fixed_child != null ? Number(data.commission_fixed_child) : tour.commission_fixed_child != null ? Number(tour.commission_fixed_child) : null
+  const commissionFixedConcession = data.commission_fixed_concession != null ? Number(data.commission_fixed_concession) : tour.commission_fixed_concession != null ? Number(tour.commission_fixed_concession) : null
   const rulesRaw = (data.commission_rules as Array<{ threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }>) || []
   const rules = rulesRaw.filter(r => r && (r.commission_percentage ?? 0) >= 0).map(r => ({
     threshold_adult: Number(r.threshold_adult ?? 0),
@@ -106,7 +115,10 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
     owner_min_concession_price: ownerMinConcession,
     commission_type: commissionType as 'percentage' | 'fixed',
     commission_percentage: commissionType === 'percentage' ? commissionPercent : undefined,
-    commission_fixed_amount: commissionType === 'fixed' ? commissionFixed : undefined,
+    commission_fixed_amount: commissionType === 'fixed' && !commissionFixedAdult && !commissionFixedChild && !commissionFixedConcession ? commissionFixed : undefined,
+    commission_fixed_adult: commissionType === 'fixed' ? commissionFixedAdult : undefined,
+    commission_fixed_child: commissionType === 'fixed' ? commissionFixedChild : undefined,
+    commission_fixed_concession: commissionType === 'fixed' ? commissionFixedConcession : undefined,
     commission_rules: rules.length ? rules : undefined,
   }
 
@@ -157,29 +169,29 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
         </div>
       )}
 
-      {rules.length > 0 ? (
-        <div className="space-y-6">
-          {rules.map((rule, ruleIdx) => {
-            const scenarios = getPreviewScenariosForRule(tourParams, rule)
-            const paramsForRule = { ...tourParams, commission_rules: [rule] }
-            const rows = scenarios.map(s => ({ sale: s, split: calcIncomeSplit(s, paramsForRule) }))
-            return (
-              <div key={ruleIdx} className="border border-white/10 rounded-lg p-3 bg-white/5">
-                <p className="text-sm text-white/90 mb-2">
-                  Порог: взр. {Number(rule.threshold_adult).toFixed(0)}₽, дет. {Number(rule.threshold_child).toFixed(0)}₽, льг. {Number(rule.threshold_concession).toFixed(0)}₽ → {Number(rule.commission_percentage).toFixed(0)}%
-                </p>
-                <div className="overflow-x-auto">{renderTable(rows)}</div>
-              </div>
-            )
-          })}
+      <div className="space-y-6">
+        <div>
+          <p className="text-sm text-white/70 mb-2">По мин. ценам</p>
+          <div className="overflow-x-auto">
+            {renderTable(
+              getPreviewScenarios(tourParams).map(s => ({ sale: s, split: calcIncomeSplit(s, tourParams) }))
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          {renderTable(
-            getPreviewScenarios(tourParams).map(s => ({ sale: s, split: calcIncomeSplit(s, tourParams) }))
-          )}
-        </div>
-      )}
+        {rules.length > 0 && rules.map((rule, ruleIdx) => {
+          const scenarios = getPreviewScenariosForRule(tourParams, rule)
+          const paramsForRule = { ...tourParams, commission_rules: [rule] }
+          const rows = scenarios.map(s => ({ sale: s, split: calcIncomeSplit(s, paramsForRule) }))
+          return (
+            <div key={ruleIdx} className="border border-white/10 rounded-lg p-3 bg-white/5">
+              <p className="text-sm text-white/90 mb-2">
+                Порог: взр. {Number(rule.threshold_adult).toFixed(0)}₽, дет. {Number(rule.threshold_child).toFixed(0)}₽, льг. {Number(rule.threshold_concession).toFixed(0)}₽ → {Number(rule.commission_percentage).toFixed(0)}%
+              </p>
+              <div className="overflow-x-auto">{renderTable(rows)}</div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -207,6 +219,9 @@ function buildTourParams(data: ModerateFormData, tour?: ModerateTour | null): To
     commission_type: data.commission_type,
     commission_percentage: data.commission_percentage,
     commission_fixed_amount: data.commission_fixed_amount,
+    commission_fixed_adult: data.commission_fixed_adult,
+    commission_fixed_child: data.commission_fixed_child,
+    commission_fixed_concession: data.commission_fixed_concession,
     commission_rules: rules.length ? rules.map((r: { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }) => ({
       threshold_adult: Number(r.threshold_adult ?? 0),
       threshold_child: Number(r.threshold_child ?? 0),
@@ -497,14 +512,14 @@ export default function ModerateTourPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Тип процента промоутера *
+                    Модель оплаты промоутеру *
                   </label>
                   <select
                     {...register('commission_type')}
                     className="input-glass"
                   >
                     <option value="percentage">Процент от суммы продажи</option>
-                    <option value="fixed">Фиксированная сумма (₽) с продажи</option>
+                    <option value="fixed">Фикс. сумма за билет каждого типа</option>
                   </select>
                   {errors.commission_type && (
                     <p className="text-red-300 text-xs mt-1">{errors.commission_type.message}</p>
@@ -530,21 +545,40 @@ export default function ModerateTourPage() {
                     )}
                   </div>
                 ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-2">
-                      Фиксированная сумма (₽) с каждой продажи *
-                    </label>
-                <input
-                  {...register('commission_fixed_amount', { valueAsNumber: true })}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={Number(tour.commission_fixed_amount) || 0}
-                  className="input-glass"
-                />
-                    {errors.commission_fixed_amount && (
-                      <p className="text-red-300 text-xs mt-1">{errors.commission_fixed_amount.message}</p>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">Взрослый (₽) *</label>
+                      <input
+                        {...register('commission_fixed_adult', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={Number(tour.commission_fixed_adult ?? tour.commission_fixed_amount) || 0}
+                        className="input-glass"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">Детский (₽) *</label>
+                      <input
+                        {...register('commission_fixed_child', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={Number(tour.commission_fixed_child ?? tour.commission_fixed_amount) || 0}
+                        className="input-glass"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">Льготный (₽)</label>
+                      <input
+                        {...register('commission_fixed_concession', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={Number(tour.commission_fixed_concession ?? tour.commission_fixed_amount) ?? ''}
+                        className="input-glass"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
+import { getNavForRole } from '@/lib/dashboard-nav'
 import { customConfirm, customAlert } from '@/utils/modals'
 
 type OwnerPromoterRow = {
@@ -15,7 +16,7 @@ type OwnerPromoterRow = {
 }
 
 export default function OwnerPromotersPage() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [promoters, setPromoters] = useState<OwnerPromoterRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -90,17 +91,7 @@ export default function OwnerPromotersPage() {
     }
   }
 
-  const navItems = [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
-    { label: 'Категории', href: '/dashboard/owner/categories' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
-    { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
-    { label: 'Настройки', href: '/dashboard/owner/settings' },
-  ]
+  const navItems = getNavForRole(user?.role || 'owner')
 
   return (
     <DashboardLayout title="Промоутеры" navItems={navItems}>

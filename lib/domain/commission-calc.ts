@@ -39,6 +39,9 @@ export type TourParams = {
   commission_type: 'percentage' | 'fixed'
   commission_percentage?: number | null
   commission_fixed_amount?: number | null
+  commission_fixed_adult?: number | null
+  commission_fixed_child?: number | null
+  commission_fixed_concession?: number | null
   commission_rules?: CommissionRule[]
 }
 
@@ -109,6 +112,9 @@ function calcPromoterShare(
   commissionType: 'percentage' | 'fixed',
   commissionPercent: number | null | undefined,
   commissionFixed: number | null | undefined,
+  commissionFixedAdult: number | null | undefined,
+  commissionFixedChild: number | null | undefined,
+  commissionFixedConcession: number | null | undefined,
   rules: CommissionRule[] | undefined
 ): number {
   const childPrice = sale.child_price || 0
@@ -126,9 +132,15 @@ function calcPromoterShare(
     total += calcCommissionForUnitPrice(concessionPrice, 'concession', rules, fallbackPercent)
   }
 
-  // Без правил и при базовом фиксе — одна сумма на всю продажу
-  if (total === 0 && commissionType === 'fixed' && commissionFixed != null) {
-    return commissionFixed
+  // Без правил и при базовом фиксе — по типам билетов или одна сумма
+  if (total === 0 && commissionType === 'fixed') {
+    const fa = commissionFixedAdult ?? commissionFixed
+    const fc = commissionFixedChild ?? commissionFixed
+    const fconc = commissionFixedConcession ?? commissionFixed
+    if (fa != null || fc != null || fconc != null) {
+      return (sale.adult_count * (fa ?? 0)) + (sale.child_count * (fc ?? 0)) + (sale.concession_count * (fconc ?? 0))
+    }
+    if (commissionFixed != null) return commissionFixed
   }
   return total
 }
@@ -158,6 +170,9 @@ export function calcIncomeSplit(
     tour.commission_type,
     tour.commission_percentage,
     tour.commission_fixed_amount,
+    tour.commission_fixed_adult != null ? Number(tour.commission_fixed_adult) : null,
+    tour.commission_fixed_child != null ? Number(tour.commission_fixed_child) : null,
+    tour.commission_fixed_concession != null ? Number(tour.commission_fixed_concession) : null,
     tour.commission_rules
   )
   const owner = Math.max(0, total - partner - promoter)

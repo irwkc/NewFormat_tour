@@ -184,7 +184,10 @@ model Tour {
   owner_min_concession_price Decimal?   @map("owner_min_concession_price") @db.Decimal(10, 2)
   commission_type       CommissionType?
   commission_percentage Decimal?        @db.Decimal(5, 2)
-  commission_fixed_amount Decimal?      @db.Decimal(10, 2)
+  commission_fixed_amount Decimal?      @map("commission_fixed_amount") @db.Decimal(10, 2)
+  commission_fixed_adult   Decimal?     @map("commission_fixed_adult") @db.Decimal(10, 2)
+  commission_fixed_child   Decimal?     @map("commission_fixed_child") @db.Decimal(10, 2)
+  commission_fixed_concession Decimal?  @map("commission_fixed_concession") @db.Decimal(10, 2)
   created_at            DateTime        @default(now())
   updated_at            DateTime        @updatedAt
 

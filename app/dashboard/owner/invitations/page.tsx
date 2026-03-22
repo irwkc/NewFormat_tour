@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Select from '@/components/UI/Select'
+import { getNavForRole } from '@/lib/dashboard-nav'
 
 const createInvitationSchema = z.object({
   target_role: z.enum(['manager', 'promoter', 'partner']),
@@ -28,13 +29,46 @@ type OwnerInvitation = {
   } | null
 }
 
+type ReferralItem = {
+  id: string
+  full_name?: string | null
+  promoter_id?: number | null
+  email?: string | null
+  invitedBy?: {
+    full_name?: string | null
+    promoter_id?: number | null
+  } | null
+  created_at: string
+  balance?: number | string
+}
+
+type ReferralBalanceHistoryItem = {
+  id: string
+  description: string
+  created_at: string
+  amount: number | string
+  balance_after: number | string
+  transaction_type: 'credit' | 'debit'
+  ticket?: {
+    tour?: { company?: string }
+    flight?: { flight_number?: string }
+  } | null
+}
+
+type Tab = 'invitations' | 'referrals'
+
 export default function InvitationsPage() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [invitations, setInvitations] = useState<OwnerInvitation[]>([])
+  const [referrals, setReferrals] = useState<ReferralItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [referralsLoading, setReferralsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('invitations')
+  const [selectedReferralId, setSelectedReferralId] = useState<string | null>(null)
+  const [balanceHistory, setBalanceHistory] = useState<ReferralBalanceHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const {
-    register,
     handleSubmit,
     reset,
     watch,
@@ -52,6 +86,18 @@ export default function InvitationsPage() {
       fetchInvitations()
     }
   }, [token])
+
+  useEffect(() => {
+    if (token && activeTab === 'referrals') {
+      setReferralsLoading(true)
+      fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setReferrals(d.data)
+        })
+        .finally(() => setReferralsLoading(false))
+    }
+  }, [token, activeTab])
 
   const fetchInvitations = async () => {
     try {
@@ -123,21 +169,57 @@ export default function InvitationsPage() {
     await customAlert('Ссылка скопирована в буфер обмена')
   }
 
-  const navItems = [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
-    { label: 'Категории', href: '/dashboard/owner/categories' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
-    { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
-    { label: 'Настройки', href: '/dashboard/owner/settings' },
-  ]
+  const fetchBalanceHistory = async (userId: string) => {
+    if (selectedReferralId === userId && balanceHistory.length > 0) {
+      setSelectedReferralId(null)
+      setBalanceHistory([])
+      return
+    }
+    setHistoryLoading(true)
+    setSelectedReferralId(userId)
+    try {
+      const r = await fetch(`/api/referrals/${userId}/balance-history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const d = await r.json()
+      if (d.success) setBalanceHistory(d.data)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const navItems = getNavForRole(user?.role || 'owner')
 
   return (
-    <DashboardLayout title="Приглашения" navItems={navItems}>
+    <DashboardLayout title="Приглашения и рефералы" navItems={navItems}>
       <div className="space-y-6">
+        <div className="flex gap-2 border-b border-white/20 pb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('invitations')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'invitations'
+                ? 'bg-white/20 text-white'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Приглашения
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('referrals')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'referrals'
+                ? 'bg-white/20 text-white'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Рефералы
+          </button>
+        </div>
+
+        {activeTab === 'invitations' && (
+          <>
         <div className="glass-card">
           <h2 className="text-xl font-bold mb-4 text-white">Создать приглашение</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -256,6 +338,106 @@ export default function InvitationsPage() {
             </div>
           )}
         </div>
+          </>
+        )}
+
+        {activeTab === 'referrals' && (
+          <div className="glass-card">
+            <h2 className="text-xl font-bold mb-4 text-white">Реферально приглашенные промоутеры</h2>
+            {referralsLoading ? (
+              <div className="p-6 text-center">
+                <div className="inline-flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  <span className="ml-3 text-white/70">Загрузка...</span>
+                </div>
+              </div>
+            ) : referrals.length === 0 ? (
+              <div className="p-6 text-center text-white/60">Нет реферально приглашенных промоутеров</div>
+            ) : (
+              <div className="space-y-4">
+                {referrals.map((referral) => (
+                  <div key={referral.id} className="bg-white/20 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <div className="font-semibold text-white">
+                          {referral.full_name || 'Без имени'}
+                        </div>
+                        {referral.promoter_id && (
+                          <div className="text-sm text-white/90 mt-1">
+                            ID промоутера: {referral.promoter_id}
+                          </div>
+                        )}
+                        {referral.email && (
+                          <div className="text-sm text-white/90">
+                            Email: {referral.email}
+                          </div>
+                        )}
+                        <div className="text-sm text-white/90 mt-2">
+                          Приглашен: {referral.invitedBy?.full_name || 'Неизвестно'}
+                          {referral.invitedBy?.promoter_id && ` (ID: ${referral.invitedBy.promoter_id})`}
+                        </div>
+                        <div className="text-sm text-white/70 mt-1">
+                          Дата регистрации: {new Date(referral.created_at).toLocaleString('ru-RU')}
+                        </div>
+                        <div className="text-lg font-bold text-white mt-2">
+                          Баланс: {Number(referral.balance || 0).toFixed(2)}₽
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => fetchBalanceHistory(referral.id)}
+                        className="btn-secondary text-sm"
+                      >
+                        {selectedReferralId === referral.id && balanceHistory.length > 0
+                          ? 'Скрыть историю'
+                          : 'История баланса'}
+                      </button>
+                    </div>
+
+                    {selectedReferralId === referral.id && (
+                      <div className="mt-4 pt-4 border-t border-white/20">
+                        {historyLoading ? (
+                          <div className="text-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
+                          </div>
+                        ) : balanceHistory.length === 0 ? (
+                          <div className="text-center text-white/60 py-4">История пуста</div>
+                        ) : (
+                          <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-hide">
+                            {balanceHistory.map((history) => (
+                              <div key={history.id} className="bg-white/10 rounded-xl p-3">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="text-sm text-white/90">{history.description}</div>
+                                    {history.ticket?.tour && (
+                                      <div className="text-xs text-white/70 mt-1">
+                                        {history.ticket.tour.company}{history.ticket.flight && ` - ${history.ticket.flight.flight_number}`}
+                                      </div>
+                                    )}
+                                    <div className="text-xs text-white/70">
+                                      {new Date(history.created_at).toLocaleString('ru-RU')}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className={`font-semibold ${history.transaction_type === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
+                                      {history.transaction_type === 'credit' ? '+' : '-'}{Number(history.amount).toFixed(2)}₽
+                                    </div>
+                                    <div className="text-xs text-white/70">
+                                      Баланс: {Number(history.balance_after).toFixed(2)}₽
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )
