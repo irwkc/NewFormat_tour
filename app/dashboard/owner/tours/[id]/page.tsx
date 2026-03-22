@@ -24,6 +24,7 @@ type EditFlight = {
   max_places: number
   current_booked_places: number
   is_sale_stopped: boolean
+  is_moderated?: boolean
 }
 
 type EditTour = {
@@ -320,6 +321,8 @@ export default function OwnerTourEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
+  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number }[]>([])
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
 
   const {
     register,
@@ -356,6 +359,27 @@ export default function OwnerTourEditPage() {
   useEffect(() => {
     if (token) fetchTour()
   }, [token, tourId])
+
+  useEffect(() => {
+    fetch('/api/moscow-week')
+      .then((r) => r.json())
+      .then((d) => d.success && setWeekDates(d.data))
+  }, [])
+
+  const toggleDate = (dateStr: string) => {
+    setSelectedDates((prev) => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
+  const getFlightsForDate = (dateStr: string) =>
+    (tour?.flights || []).filter((f) => {
+      const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
+      return d === dateStr
+    })
 
   const fetchTour = async () => {
     try {
@@ -394,6 +418,10 @@ export default function OwnerTourEditPage() {
 
   const onSubmit = async (data: EditFormData) => {
     if (!tour) return
+    if (selectedDates.size === 0 && (tour.flights?.length ?? 0) > 0) {
+      setError('Выберите дни для применения изменений')
+      return
+    }
     setError(null)
     setSaving(true)
 
@@ -465,6 +493,7 @@ export default function OwnerTourEditPage() {
     }
 
     try {
+      const dates = (tour.flights?.length ?? 0) > 0 ? Array.from(selectedDates) : undefined
       const [minRes, commissionRes, rulesRes] = await Promise.all([
         fetch(`/api/tours/${tourId}/min-prices`, {
           method: 'PATCH',
@@ -476,6 +505,7 @@ export default function OwnerTourEditPage() {
             owner_min_adult_price: data.owner_min_adult_price,
             owner_min_child_price: data.owner_min_child_price,
             owner_min_concession_price: data.owner_min_concession_price ?? undefined,
+            dates,
           }),
         }),
         fetch(`/api/tours/${tourId}/commission`, {
@@ -832,6 +862,37 @@ export default function OwnerTourEditPage() {
               </button>
             </div>
 
+            {tour.flights && tour.flights.length > 0 && (
+              <div className="p-4 glass rounded-xl border border-white/10">
+                <h3 className="font-semibold mb-2 text-white">Применить к дням</h3>
+                <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Изменения применятся к рейсам на выбранные даты.</p>
+                <div className="grid grid-cols-7 gap-2">
+                  {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+                    const isSelected = selectedDates.has(dateStr)
+                    const dayFlightsCount = getFlightsForDate(dateStr).length
+                    return (
+                      <div
+                        key={dateStr}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => toggleDate(dateStr)}
+                        onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
+                        className={`p-3 rounded-lg border text-center cursor-pointer transition ${
+                          isSelected ? 'bg-purple-500/30 border-purple-400' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="text-white/70 text-xs">{dayName}</div>
+                        <div className="text-white font-semibold">{dayOfMonth}</div>
+                        {dayFlightsCount > 0 && (
+                          <div className="text-xs text-white/70 mt-1">{dayFlightsCount} рейс.</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <EarningsPreviewTable tour={tour} formValues={formValues} />
 
             {error && (
@@ -841,8 +902,8 @@ export default function OwnerTourEditPage() {
             )}
 
             <div className="flex space-x-4">
-              <button type="submit" className="btn-primary flex-1" disabled={saving}>
-                {saving ? 'Сохранение...' : 'Сохранить'}
+              <button type="submit" className="btn-primary flex-1" disabled={saving || ((tour.flights?.length ?? 0) > 0 && selectedDates.size === 0)}>
+                {saving ? 'Сохранение...' : (tour.flights?.length ?? 0) > 0 ? `Применить к ${selectedDates.size} дн.` : 'Сохранить'}
               </button>
               <Link href="/dashboard/owner/tours" className="btn-secondary flex-1 text-center">
                 Отмена

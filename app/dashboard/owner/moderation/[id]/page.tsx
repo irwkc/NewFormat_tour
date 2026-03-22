@@ -16,6 +16,7 @@ type ModerateFlight = {
   departure_time: string
   max_places: number
   current_booked_places: number
+  is_moderated?: boolean
   boarding_location_url?: string | null
 }
 
@@ -239,11 +240,12 @@ export default function ModerateTourPage() {
   
   const [tour, setTour] = useState<ModerateTour | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
   const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number }[]>([])
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
-  const [selectAll, setSelectAll] = useState(true)
+  const [flightsExpanded, setFlightsExpanded] = useState(false)
 
   const {
     register,
@@ -318,7 +320,6 @@ export default function ModerateTourPage() {
   }
 
   const toggleDate = (dateStr: string) => {
-    setSelectAll(false)
     setSelectedDates((prev) => {
       const next = new Set(prev)
       if (next.has(dateStr)) next.delete(dateStr)
@@ -327,13 +328,29 @@ export default function ModerateTourPage() {
     })
   }
 
+  const allFlights = tour?.flights || []
+  const moderatedCount = allFlights.filter((f) => (f as ModerateFlight).is_moderated).length
+  const allModerated = allFlights.length > 0 && moderatedCount === allFlights.length
+
+  const groupFlightsByDate = (flights: ModerateFlight[]) => {
+    const groups: Record<string, ModerateFlight[]> = {}
+    for (const f of flights) {
+      const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
+      if (!groups[d]) groups[d] = []
+      groups[d].push(f)
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
+  }
+
+
   const onSubmit = async (data: ModerateFormData) => {
     try {
       setError(null)
+      setSaving(true)
 
       if (data.moderation_status === 'approved' && tour) {
-        if (!selectAll && selectedDates.size === 0) {
-          setError('Выберите дни для применения модерации или «Все дни»')
+        if (selectedDates.size === 0) {
+          setError('Выберите дни для применения модерации')
           return
         }
         const tourParams = buildTourParams(data, tour)
@@ -348,9 +365,7 @@ export default function ModerateTourPage() {
         }
       }
 
-      const datesToSend = selectAll || selectedDates.size === 0
-        ? undefined
-        : Array.from(selectedDates)
+      const datesToSend = Array.from(selectedDates)
       const response = await fetch(`/api/tours/${tourId}/moderate`, {
         method: 'POST',
         headers: {
@@ -384,13 +399,19 @@ export default function ModerateTourPage() {
       })
       const rulesResult = await rulesResponse.json()
       if (!rulesResult.success) {
-        setError(rulesResult.error || 'Экскурсия обновлена, но не удалось сохранить правила процента промоутера')
+        setError('Экскурсия обновлена, но не удалось сохранить правила процента промоутера')
         return
       }
 
-      router.push('/dashboard/owner')
+      await fetchTour()
+      setSelectedDates(new Set())
+      if (data.moderation_status === 'rejected') {
+        router.push('/dashboard/owner')
+      }
     } catch (err) {
       setError('Ошибка при модерации экскурсии')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -449,32 +470,49 @@ export default function ModerateTourPage() {
 
           {tour.flights && tour.flights.length > 0 && (
             <div className="mb-6 p-4 glass rounded-xl">
-              <h3 className="font-semibold mb-3 text-white">Рейсы</h3>
-              <div className="space-y-3">
-                {tour.flights.map((flight: any) => (
-                  <div key={flight.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div className="space-y-1 text-sm text-white/70">
-                      <p><strong className="text-white/90">Рейс:</strong> {flight.flight_number}</p>
-                      <p><strong className="text-white/90">Дата:</strong> {new Date(flight.date).toLocaleDateString('ru-RU')}</p>
-                      <p><strong className="text-white/90">Время отправления:</strong> {new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
-                      <p><strong className="text-white/90">Мест:</strong> {flight.max_places} (забронировано: {flight.current_booked_places})</p>
-                      {flight.boarding_location_url && (
-                        <p>
-                          <strong className="text-white/90">Точка посадки:</strong>{' '}
-                          <a 
-                            href={flight.boarding_location_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 underline"
-                          >
-                            Открыть на Яндекс.Картах
-                          </a>
-                        </p>
-                      )}
+              <button
+                type="button"
+                onClick={() => setFlightsExpanded(!flightsExpanded)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h3 className="font-semibold text-white">
+                  Рейсы на модерации ({moderatedCount}/{allFlights.length})
+                </h3>
+                <span className="text-white/70 text-lg">{flightsExpanded ? '−' : '+'}</span>
+              </button>
+              {flightsExpanded && (
+                <div className="mt-4 space-y-4">
+                  {groupFlightsByDate(tour.flights as ModerateFlight[]).map(([dateStr, dayFlights]) => (
+                    <div key={dateStr} className="border border-white/10 rounded-lg overflow-hidden">
+                      <div className="px-3 py-2 bg-white/5 text-sm font-medium text-white flex items-center justify-between">
+                        <span>{new Date(dateStr + 'T12:00:00').toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                        <span className="text-white/70 text-xs">
+                          взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽
+                        </span>
+                      </div>
+                      <div className="divide-y divide-white/5">
+                        {dayFlights.map((flight: ModerateFlight) => (
+                          <div key={flight.id} className={`p-3 ${flight.is_moderated ? 'bg-green-500/10' : 'bg-white/5'}`}>
+                            <div className="space-y-1 text-sm text-white/70 flex flex-wrap justify-between gap-2">
+                              <div>
+                                <p><strong className="text-white/90">Рейс:</strong> {flight.flight_number}</p>
+                                <p><strong className="text-white/90">Время:</strong> {new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p><strong className="text-white/90">Мест:</strong> {flight.max_places} (забр.: {flight.current_booked_places})</p>
+                                {flight.boarding_location_url && (
+                                  <a href={flight.boarding_location_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs">
+                                    Карты
+                                  </a>
+                                )}
+                              </div>
+                              {flight.is_moderated && <span className="text-green-400 text-xs shrink-0">✓ Модерация пройдена</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -679,47 +717,37 @@ export default function ModerateTourPage() {
               <div className="glass rounded-xl border border-white/10 p-4">
                 <h3 className="font-semibold mb-2 text-white">Применить модерацию к дням</h3>
                 <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Одобрение и цены применятся только к рейсам на выбранные даты.</p>
-                <label className="flex items-center gap-2 mb-4 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={(e) => {
-                      setSelectAll(e.target.checked)
-                      if (e.target.checked) setSelectedDates(new Set())
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-white/90">Все дни</span>
-                </label>
-                {!selectAll && (
-                  <div className="grid grid-cols-7 gap-2 mb-4">
-                    {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
-                      const isSelected = selectedDates.has(dateStr)
-                      const dayFlightsCount = (tour.flights || []).filter((f) => {
-                        const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
-                        return d === dateStr
-                      }).length
-                      return (
-                        <div
-                          key={dateStr}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleDate(dateStr)}
-                          onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
-                          className={`p-3 rounded-lg border text-center cursor-pointer transition ${
-                            isSelected ? 'bg-purple-500/30 border-purple-400' : 'bg-white/5 border-white/20 hover:bg-white/10'
-                          }`}
-                        >
-                          <div className="text-white/70 text-xs">{dayName}</div>
-                          <div className="text-white font-semibold">{dayOfMonth}</div>
-                          {dayFlightsCount > 0 && (
-                            <div className="text-xs text-green-300 mt-1">{dayFlightsCount} рейс.</div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+                    const isSelected = selectedDates.has(dateStr)
+                    const dayFlights = (tour.flights || []).filter((f: ModerateFlight) => {
+                      const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
+                      return d === dateStr
+                    })
+                    const dayModerated = dayFlights.every((f: ModerateFlight) => f.is_moderated)
+                    const dayFlightsCount = dayFlights.length
+                    return (
+                      <div
+                        key={dateStr}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => toggleDate(dateStr)}
+                        onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
+                        className={`p-3 rounded-lg border text-center cursor-pointer transition ${
+                          isSelected ? 'bg-purple-500/30 border-purple-400' : dayModerated ? 'bg-green-500/20 border-green-400/50' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="text-white/70 text-xs">{dayName}</div>
+                        <div className="text-white font-semibold">{dayOfMonth}</div>
+                        {dayFlightsCount > 0 && (
+                          <div className={`text-xs mt-1 ${dayModerated ? 'text-green-300' : 'text-white/70'}`}>
+                            {dayFlightsCount} рейс. {dayModerated ? '✓' : ''}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
@@ -745,20 +773,23 @@ export default function ModerateTourPage() {
               </div>
             )}
 
-            <div className="flex space-x-4">
-              <button
-                type="submit"
-                className="btn-primary flex-1"
-              >
-                Сохранить решение
+            <div className="flex flex-wrap gap-4">
+              <button type="submit" className="btn-primary flex-1" disabled={saving}>
+                {saving ? 'Сохранение...' : 'Применить к выбранным дням'}
               </button>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="btn-secondary flex-1"
-              >
-                Отмена
-              </button>
+              {allModerated ? (
+                <button
+                  type="button"
+                  onClick={() => router.push('/dashboard/owner')}
+                  className="btn-primary"
+                >
+                  Готово, вернуться
+                </button>
+              ) : (
+                <button type="button" onClick={() => router.back()} className="btn-secondary">
+                  Отмена
+                </button>
+              )}
             </div>
           </form>
         </div>

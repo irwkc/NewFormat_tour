@@ -8,6 +8,7 @@ const updateMinPricesSchema = z.object({
   owner_min_adult_price: z.number().positive(),
   owner_min_child_price: z.number().positive(),
   owner_min_concession_price: z.number().positive().optional(),
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
 })
 
 // PATCH /api/tours/:id/min-prices - изменение минимальных цен (только владелец)
@@ -39,6 +40,7 @@ export async function PATCH(
           },
           include: {
             category: true,
+            flights: true,
             createdBy: {
               select: {
                 id: true,
@@ -54,9 +56,25 @@ export async function PATCH(
           },
         })
 
+        if (data.dates && data.dates.length > 0 && tour.flights.length > 0) {
+          const dateSet = new Set(data.dates)
+          for (const flight of tour.flights) {
+            const flightDateStr = flight.date instanceof Date
+              ? flight.date.toISOString().split('T')[0]
+              : String(flight.date).split('T')[0]
+            if (dateSet.has(flightDateStr)) {
+              await prisma.flight.update({
+                where: { id: flight.id },
+                data: { is_moderated: true },
+              })
+            }
+          }
+        }
+
+        const { flights, ...tourWithoutFlights } = tour
         return NextResponse.json({
           success: true,
-          data: tour,
+          data: { ...tourWithoutFlights, flights: tour.flights },
         })
       } catch (error) {
         if (error instanceof z.ZodError) {
