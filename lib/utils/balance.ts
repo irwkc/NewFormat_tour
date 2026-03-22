@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { TicketStatus, PaymentMethod, CommissionType } from '@prisma/client'
+import { TicketStatus, PaymentMethod } from '@prisma/client'
+import { calcIncomeSplit } from '@/lib/domain/commission-calc'
 
 /**
- * Обновление баланса при подтверждении билета
+ * Обновление баланса при подтверждении билета.
+ * Процент промоутера считается по каждой позиции: пороги применяются к цене за билет, не к сумме.
  */
 export async function updateBalanceOnTicketConfirm(
   ticketId: string,
@@ -33,28 +35,52 @@ export async function updateBalanceOnTicketConfirm(
   const isPromoterSale = !!sale.promoter_user_id
   const isManagerSaleForPromoter = sale.seller.role === 'manager' && isPromoterSale
 
-  const totalAmount = Number(sale.total_amount)
-  let commissionAmount = 0
-
   const rules = await prisma.tourCommissionRule.findMany({
     where: { tour_id: tour.id },
     orderBy: { order: 'asc' },
   })
-  const applicableRule = rules
-    .filter((r) => Number(r.threshold_amount) <= totalAmount)
-    .sort((a, b) => Number(b.threshold_amount) - Number(a.threshold_amount))[0]
 
-  if (applicableRule) {
-    if (applicableRule.commission_type === CommissionType.percentage && applicableRule.commission_percentage) {
-      commissionAmount = totalAmount * Number(applicableRule.commission_percentage) / 100
-    } else if (applicableRule.commission_type === CommissionType.fixed && applicableRule.commission_fixed_amount) {
-      commissionAmount = Number(applicableRule.commission_fixed_amount)
-    }
-  } else if (tour.commission_type === CommissionType.percentage && tour.commission_percentage) {
-    commissionAmount = totalAmount * Number(tour.commission_percentage) / 100
-  } else if (tour.commission_type === CommissionType.fixed && tour.commission_fixed_amount) {
-    commissionAmount = Number(tour.commission_fixed_amount)
+  const saleParams = {
+    adult_count: sale.adult_count,
+    child_count: sale.child_count || 0,
+    concession_count: sale.concession_count || 0,
+    adult_price: Number(sale.adult_price),
+    child_price: sale.child_price != null ? Number(sale.child_price) : 0,
+    concession_price: sale.concession_price != null ? Number(sale.concession_price) : 0,
+    total_amount: Number(sale.total_amount),
   }
+
+  const t = tour as {
+    partner_commission_type?: string | null
+    partner_fixed_adult_price?: unknown
+    partner_fixed_child_price?: unknown
+    partner_fixed_concession_price?: unknown
+  }
+  const tourParams = {
+    partner_min_adult_price: Number(tour.partner_min_adult_price),
+    partner_min_child_price: Number(tour.partner_min_child_price),
+    partner_min_concession_price: tour.partner_min_concession_price != null ? Number(tour.partner_min_concession_price) : 0,
+    partner_commission_type: (t.partner_commission_type as 'fixed' | 'percentage') ?? undefined,
+    partner_fixed_adult_price: t.partner_fixed_adult_price != null ? Number(t.partner_fixed_adult_price) : null,
+    partner_fixed_child_price: t.partner_fixed_child_price != null ? Number(t.partner_fixed_child_price) : null,
+    partner_fixed_concession_price: t.partner_fixed_concession_price != null ? Number(t.partner_fixed_concession_price) : null,
+    partner_commission_percentage: tour.partner_commission_percentage != null ? Number(tour.partner_commission_percentage) : null,
+    owner_min_adult_price: tour.owner_min_adult_price != null ? Number(tour.owner_min_adult_price) : Number(tour.partner_min_adult_price),
+    owner_min_child_price: tour.owner_min_child_price != null ? Number(tour.owner_min_child_price) : Number(tour.partner_min_child_price),
+    owner_min_concession_price: tour.owner_min_concession_price != null ? Number(tour.owner_min_concession_price) : 0,
+    commission_type: tour.commission_type as 'percentage' | 'fixed',
+    commission_percentage: tour.commission_percentage != null ? Number(tour.commission_percentage) : undefined,
+    commission_fixed_amount: tour.commission_fixed_amount != null ? Number(tour.commission_fixed_amount) : undefined,
+    commission_rules: rules.map((r) => ({
+      threshold_amount: Number(r.threshold_amount),
+      commission_type: r.commission_type as 'percentage' | 'fixed',
+      commission_percentage: r.commission_percentage != null ? Number(r.commission_percentage) : undefined,
+      commission_fixed_amount: r.commission_fixed_amount != null ? Number(r.commission_fixed_amount) : undefined,
+    })),
+  }
+
+  const split = calcIncomeSplit(saleParams, tourParams)
+  const commissionAmount = split.promoter
 
   const balanceBefore = Number(seller.balance)
   const balanceAfter = balanceBefore + commissionAmount
@@ -72,7 +98,7 @@ export async function updateBalanceOnTicketConfirm(
       amount: commissionAmount,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
-      description: `Пополнение от продажи билета #${ticket.id}, сумма продажи: ${sale.total_amount}₽, комиссия: ${commissionAmount}₽`,
+      description: `Пополнение от продажи билета #${ticket.id}, сумма продажи: ${sale.total_amount}₽, процент промоутера: ${commissionAmount}₽`,
       ticket_id: ticket.id,
       sale_id: sale.id,
       performed_by_user_id: performedByUserId,

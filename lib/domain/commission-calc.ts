@@ -77,38 +77,62 @@ function calcPartnerShare(
   return 0
 }
 
-/** Промоутер получает: фикс. (с продажи) или % (с учётом порогов) */
+/**
+ * Процент промоутера за одну позицию: правило по цене билета (порог ≤ цена за билет).
+ * Если правило не найдено — используется базовый процент (фикс применяется только ко всей продаже).
+ */
+function calcCommissionForUnitPrice(
+  unitPrice: number,
+  rules: CommissionRule[] | undefined,
+  fallbackPercent: number | null | undefined
+): number {
+  if (rules && rules.length > 0) {
+    const sorted = [...rules].filter((r) => r.threshold_amount <= unitPrice)
+      .sort((a, b) => b.threshold_amount - a.threshold_amount)
+    const rule = sorted[0]
+    if (rule) {
+      if (rule.commission_type === 'percentage' && rule.commission_percentage != null) {
+        return unitPrice * (rule.commission_percentage / 100)
+      }
+      if (rule.commission_type === 'fixed' && rule.commission_fixed_amount != null) {
+        return rule.commission_fixed_amount
+      }
+    }
+  }
+  if (fallbackPercent != null) {
+    return unitPrice * (fallbackPercent / 100)
+  }
+  return 0
+}
+
+/** Промоутер получает: %/фикс с каждой позиции. Пороги — по цене за билет (не по сумме). */
 function calcPromoterShare(
-  totalAmount: number,
+  sale: SaleParams,
   commissionType: 'percentage' | 'fixed',
   commissionPercent: number | null | undefined,
   commissionFixed: number | null | undefined,
   rules: CommissionRule[] | undefined
 ): number {
-  let amount = 0
+  const childPrice = sale.child_price || 0
+  const concessionPrice = sale.concession_price ?? childPrice
+  const fallbackPercent = commissionType === 'percentage' ? commissionPercent : undefined
 
-  if (rules && rules.length > 0) {
-    const sorted = [...rules].filter((r) => r.threshold_amount <= totalAmount)
-      .sort((a, b) => b.threshold_amount - a.threshold_amount)
-    const rule = sorted[0]
-    if (rule) {
-      if (rule.commission_type === 'percentage' && rule.commission_percentage != null) {
-        amount = totalAmount * (rule.commission_percentage / 100)
-      } else if (rule.commission_type === 'fixed' && rule.commission_fixed_amount != null) {
-        amount = rule.commission_fixed_amount
-      }
-    }
+  let total = 0
+  for (let i = 0; i < sale.adult_count; i++) {
+    total += calcCommissionForUnitPrice(sale.adult_price, rules, fallbackPercent)
+  }
+  for (let i = 0; i < sale.child_count; i++) {
+    total += calcCommissionForUnitPrice(childPrice, rules, fallbackPercent)
+  }
+  for (let i = 0; i < sale.concession_count; i++) {
+    total += calcCommissionForUnitPrice(concessionPrice, rules, fallbackPercent)
   }
 
-  if (amount === 0) {
-    if (commissionType === 'percentage' && commissionPercent != null) {
-      amount = totalAmount * (commissionPercent / 100)
-    } else if (commissionType === 'fixed' && commissionFixed != null) {
-      amount = commissionFixed
-    }
+  // Без правил и при базовом фиксе — одна сумма на всю продажу
+  if (total === 0 && commissionType === 'fixed' && commissionFixed != null) {
+    return commissionFixed
   }
-
-  return amount
+  return total
 }
 
 /** Расчёт при заданных параметрах продажи и настроек тура */
@@ -132,7 +156,7 @@ export function calcIncomeSplit(
     tour.partner_commission_percentage
   )
   const promoter = calcPromoterShare(
-    total,
+    sale,
     tour.commission_type,
     tour.commission_percentage,
     tour.commission_fixed_amount,
@@ -142,7 +166,7 @@ export function calcIncomeSplit(
   return { partner, promoter, owner, total }
 }
 
-/** Примеры продаж для превью (минимальная и выше) */
+/** Примеры продаж для превью: 1 взрослый, 1 детский, 1 льготный */
 export function getPreviewScenarios(tour: TourParams): SaleParams[] {
   const { owner_min_adult_price, owner_min_child_price, owner_min_concession_price } = tour
   const childPrice = owner_min_child_price || 0
@@ -150,9 +174,7 @@ export function getPreviewScenarios(tour: TourParams): SaleParams[] {
 
   return [
     { adult_count: 1, child_count: 0, concession_count: 0, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: owner_min_adult_price },
-    { adult_count: 2, child_count: 0, concession_count: 0, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: 2 * owner_min_adult_price },
-    { adult_count: 1, child_count: 1, concession_count: 0, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: owner_min_adult_price + childPrice },
-    { adult_count: 1, child_count: 0, concession_count: 0, adult_price: owner_min_adult_price * 1.2, child_price: childPrice, concession_price: concessionPrice, total_amount: Math.round(owner_min_adult_price * 1.2 * 100) / 100 },
-    { adult_count: 2, child_count: 1, concession_count: 0, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: 2 * owner_min_adult_price + childPrice },
+    { adult_count: 0, child_count: 1, concession_count: 0, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: childPrice },
+    { adult_count: 0, child_count: 0, concession_count: 1, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: concessionPrice },
   ]
 }

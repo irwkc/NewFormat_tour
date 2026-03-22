@@ -118,10 +118,11 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
 
   const hasNegativeOwner = rows.some(r => r.split.owner <= 0)
 
+  const rowLabels = ['1 взрослый', '1 детский', '1 льготный']
+
   return (
     <div className="p-4 glass rounded-xl border border-white/10">
-      <h3 className="font-semibold mb-2 text-white">Превью: при таких параметрах кто сколько зарабатывает</h3>
-      <p className="text-sm text-white/60 mb-3">Примеры типовых продаж по мин. ценам и выше.</p>
+      <h3 className="font-semibold mb-3 text-white">Расчёт</h3>
       {hasNegativeOwner && (
         <div className="mb-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg text-red-200 text-sm">
           ⚠️ При некоторых сценариях владелец не зарабатывает (доход ≤ 0). Одобрение будет заблокировано.
@@ -133,7 +134,6 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
             <tr className="text-left text-white/80 border-b border-white/20">
               <th className="py-2 pr-4">Продажа</th>
               <th className="py-2 pr-4">Сумма</th>
-              <th className="py-2 pr-4">Партнёр</th>
               <th className="py-2 pr-4">Промоутер</th>
               <th className="py-2 pr-4">Владелец</th>
             </tr>
@@ -141,11 +141,8 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
           <tbody>
             {rows.map((row, i) => (
               <tr key={i} className={row.split.owner <= 0 ? 'text-red-300' : 'text-white/80'}>
-                <td className="py-2 pr-4">
-                  {row.sale.adult_count} взр.{row.sale.child_count ? ` + ${row.sale.child_count} дет.` : ''}
-                </td>
+                <td className="py-2 pr-4">{rowLabels[i]}</td>
                 <td className="py-2 pr-4">{row.sale.total_amount.toFixed(0)}₽</td>
-                <td className="py-2 pr-4">{row.split.partner.toFixed(0)}₽</td>
                 <td className="py-2 pr-4">{row.split.promoter.toFixed(0)}₽</td>
                 <td className="py-2 pr-4 font-medium">{row.split.owner.toFixed(0)}₽</td>
               </tr>
@@ -278,7 +275,7 @@ export default function ModerateTourPage() {
           return split.owner <= 0
         })
         if (badScenario) {
-          setError('Нельзя одобрить: при этих параметрах владелец не зарабатывает (доход ≤ 0). Уменьшите комиссию промоутера или увеличьте минимальные цены.')
+          setError('Нельзя одобрить: при этих параметрах владелец не зарабатывает (доход ≤ 0). Уменьшите процент промоутера или увеличьте минимальные цены.')
           return
         }
       }
@@ -316,7 +313,7 @@ export default function ModerateTourPage() {
       })
       const rulesResult = await rulesResponse.json()
       if (!rulesResult.success) {
-        setError(rulesResult.error || 'Экскурсия обновлена, но не удалось сохранить правила комиссии')
+        setError(rulesResult.error || 'Экскурсия обновлена, но не удалось сохранить правила процента промоутера')
         return
       }
 
@@ -453,12 +450,12 @@ export default function ModerateTourPage() {
             </div>
 
             <div className="p-4 glass rounded-xl border border-white/10">
-              <h3 className="font-semibold mb-2 text-white">Комиссия промоутера/менеджера</h3>
+              <h3 className="font-semibold mb-2 text-white">Процент промоутера</h3>
               <p className="text-sm text-white/60 mb-4">Укажите, сколько получает промоутер или менеджер с каждой продажи. Остаток остаётся вам.</p>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Тип комиссии *
+                    Тип процента промоутера *
                   </label>
                   <select
                     {...register('commission_type')}
@@ -475,7 +472,7 @@ export default function ModerateTourPage() {
                 {commissionType === 'percentage' ? (
                   <div>
                     <label className="block text-sm font-medium text-white/90 mb-2">
-                      Процент комиссии (%) *
+                      Процент промоутера (%) *
                     </label>
                 <input
                   {...register('commission_percentage', { valueAsNumber: true })}
@@ -512,8 +509,8 @@ export default function ModerateTourPage() {
             </div>
 
             <div className="p-4 glass rounded-xl border border-white/10">
-              <h3 className="font-semibold mb-2 text-white">Дополнительные условия комиссии</h3>
-              <p className="text-sm text-white/60 mb-4">Если сумма продажи больше порога, применяется правило (порог, тип, значение).</p>
+              <h3 className="font-semibold mb-2 text-white">Дополнительные условия процента промоутера</h3>
+              <p className="text-sm text-white/60 mb-4">Пороги — по цене за билет (за каждую позицию). Если цена билета ≥ порога, применяется правило. Процент промоутера считается с каждой позиции отдельно (взр. 1200₽ → 30%, взр. 18000₽ → 40%).</p>
               {fields.map((field, index) => (
                 <div key={field.id} className="flex flex-wrap gap-2 items-end mb-3 p-3 bg-white/5 rounded-lg">
                   <div className="flex-1 min-w-[100px]">

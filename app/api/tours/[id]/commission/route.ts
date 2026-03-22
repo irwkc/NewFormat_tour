@@ -18,7 +18,7 @@ const updateCommissionSchema = z.object({
   message: "commission_percentage or commission_fixed_amount is required based on commission_type"
 })
 
-// PATCH /api/tours/:id/commission - изменение комиссии (только владелец)
+// PATCH /api/tours/:id/commission - изменение процента промоутера (только владелец)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -29,7 +29,7 @@ export async function PATCH(
       try {
         if (req.user!.role !== UserRole.owner) {
           return NextResponse.json(
-            { success: false, error: 'Only owner can update commission' },
+            { success: false, error: 'Only owner can update promoter percent' },
             { status: 403 }
           )
         }
@@ -74,7 +74,7 @@ export async function PATCH(
           )
         }
         
-        console.error('Update commission error:', error)
+        console.error('Update promoter percent error:', error)
         return NextResponse.json(
           { success: false, error: 'Internal server error' },
           { status: 500 }
