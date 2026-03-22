@@ -15,9 +15,9 @@ export async function POST(
     request,
     async (req) => {
       try {
-        if (req.user!.role !== UserRole.manager) {
+        if (req.user!.role !== UserRole.manager && req.user!.role !== UserRole.promoter) {
           return NextResponse.json(
-            { success: false, error: 'Only managers can upload receipts' },
+            { success: false, error: 'Only managers and promoters can upload receipts' },
             { status: 403 }
           )
         }
@@ -55,6 +55,23 @@ export async function POST(
         if (!photo) {
           return NextResponse.json(
             { success: false, error: 'Photo is required' },
+            { status: 400 }
+          )
+        }
+
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+        const MAX_SIZE_MB = 10
+        const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
+
+        if (!ALLOWED_TYPES.includes(photo.type)) {
+          return NextResponse.json(
+            { success: false, error: 'Разрешены только JPEG, PNG и WebP' },
+            { status: 400 }
+          )
+        }
+        if (photo.size > MAX_SIZE_BYTES) {
+          return NextResponse.json(
+            { success: false, error: `Размер файла не должен превышать ${MAX_SIZE_MB} МБ` },
             { status: 400 }
           )
         }
@@ -98,6 +115,6 @@ export async function POST(
         )
       }
     },
-    [UserRole.manager]
+    [UserRole.manager, UserRole.promoter]
   )
 }

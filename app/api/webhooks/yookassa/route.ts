@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { completeSaleFromYookassaDomain } from '@/lib/domain/sales'
+import { isYooKassaWebhookRequest } from '@/lib/yookassa-webhook'
 
 // POST /api/webhooks/yookassa - webhook от ЮКассы для обновления статуса платежа
 export async function POST(request: NextRequest) {
+  if (!isYooKassaWebhookRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const body = await request.json()
     const event = body.event || body.type // Зависит от формата ЮКассы

@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 type ManagerSalesRow = {
   id: string
+  sale_number?: string | null
   tour: {
     company: string
   }
@@ -91,6 +92,9 @@ export default function ManagerSalesPage() {
                 {sales.map((sale) => (
                   <div key={sale.id} className="glass-card">
                     <div className="text-sm font-semibold text-white">
+                      {sale.sale_number && (
+                        <span className="text-white/60 mr-2">#{sale.sale_number}</span>
+                      )}
                       {sale.tour.company}
                       {sale.flight && ` — ${sale.flight.flight_number}`}
                     </div>
@@ -152,6 +156,7 @@ export default function ManagerSalesPage() {
                   <table className="table">
                     <thead>
                       <tr>
+                        <th>№</th>
                         <th>Экскурсия</th>
                         <th>Дата</th>
                         <th>Билеты</th>
@@ -164,6 +169,9 @@ export default function ManagerSalesPage() {
                     <tbody>
                       {sales.map((sale) => (
                         <tr key={sale.id}>
+                          <td className="text-sm text-white/80 whitespace-nowrap">
+                            {sale.sale_number || '-'}
+                          </td>
                           <td>
                             <div className="text-sm font-medium text-white">
                               {sale.tour.company}

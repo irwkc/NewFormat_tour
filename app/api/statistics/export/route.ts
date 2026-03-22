@@ -45,11 +45,18 @@ export async function GET(request: NextRequest) {
           { indicator: 'Использовано билетов', value: usedTickets },
         ])
 
-        // Лист 2: Продажи
+        // Лист 2: Продажи (расширенный)
         const salesSheet = workbook.addWorksheet('Продажи')
         salesSheet.columns = [
+          { header: 'Номер продажи', key: 'sale_number', width: 15 },
           { header: 'ID', key: 'id', width: 40 },
           { header: 'Экскурсия', key: 'tour', width: 30 },
+          { header: 'Партнёр', key: 'partner', width: 25 },
+          { header: 'Номер рейса', key: 'flight_number', width: 15 },
+          { header: 'Дата рейса', key: 'flight_date', width: 15 },
+          { header: 'Время начала', key: 'departure_time', width: 15 },
+          { header: 'Время окончания', key: 'end_time', width: 15 },
+          { header: 'Длительность (мин)', key: 'duration_minutes', width: 15 },
           { header: 'Продавец', key: 'seller', width: 25 },
           { header: 'Промоутер', key: 'promoter', width: 25 },
           { header: 'Взрослых', key: 'adults', width: 10 },
@@ -57,7 +64,9 @@ export async function GET(request: NextRequest) {
           { header: 'Льготных', key: 'concessions', width: 10 },
           { header: 'Сумма', key: 'amount', width: 15 },
           { header: 'Способ оплаты', key: 'method', width: 15 },
-          { header: 'Дата', key: 'date', width: 20 },
+          { header: 'Email клиента', key: 'customer_email', width: 30 },
+          { header: 'Точка посадки', key: 'boarding_location', width: 40 },
+          { header: 'Дата продажи', key: 'date', width: 20 },
         ]
 
         const sales = await prisma.sale.findMany({
@@ -65,25 +74,58 @@ export async function GET(request: NextRequest) {
           include: {
             seller: { select: { full_name: true } },
             promoter: { select: { full_name: true } },
-            tour: { select: { company: true } },
-            flight: { select: { flight_number: true } },
+            tour: {
+              select: {
+                company: true,
+                createdBy: { select: { full_name: true } },
+              },
+            },
+            flight: {
+              select: {
+                flight_number: true,
+                date: true,
+                departure_time: true,
+                duration_minutes: true,
+                boarding_location_url: true,
+              },
+            },
           },
           orderBy: { created_at: 'desc' },
         })
 
         salesSheet.addRows(
-          sales.map((sale) => ({
-            id: sale.id,
-            tour: `${sale.tour.company}${sale.flight ? ` - ${sale.flight.flight_number}` : ''}`,
-            seller: sale.seller.full_name || '',
-            promoter: sale.promoter?.full_name || '',
-            adults: sale.adult_count,
-            children: sale.child_count,
-            concessions: (sale as any).concession_count || 0,
-            amount: Number(sale.total_amount),
-            method: sale.payment_method,
-            date: sale.created_at.toISOString(),
-          }))
+          sales.map((sale) => {
+            const flight = sale.flight
+            let endTime = ''
+            if (flight?.departure_time && flight?.duration_minutes) {
+              const end = new Date(flight.departure_time)
+              end.setMinutes(end.getMinutes() + flight.duration_minutes)
+              endTime = end.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+            }
+            return {
+              sale_number: (sale as any).sale_number || '',
+              id: sale.id,
+              tour: sale.tour.company,
+              partner: sale.tour.createdBy?.full_name || sale.tour.company,
+              flight_number: flight?.flight_number || '',
+              flight_date: flight?.date ? new Date(flight.date).toLocaleDateString('ru-RU') : '',
+              departure_time: flight?.departure_time
+                ? new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                : '',
+              end_time: endTime,
+              duration_minutes: flight?.duration_minutes ?? '',
+              seller: sale.seller.full_name || '',
+              promoter: sale.promoter?.full_name || '',
+              adults: sale.adult_count,
+              children: sale.child_count,
+              concessions: (sale as any).concession_count || 0,
+              amount: Number(sale.total_amount),
+              method: sale.payment_method,
+              customer_email: sale.customer_email || '',
+              boarding_location: flight?.boarding_location_url || '',
+              date: sale.created_at.toISOString(),
+            }
+          })
         )
 
         // Лист 3: Билеты

@@ -1,7 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
+
+const QrScanner = dynamic(() => import('@/components/Tickets/QrScanner'), {
+  ssr: false,
+  loading: () => <div className="p-8 text-center text-white/70">Загрузка сканера...</div>,
+})
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'next/navigation'
 import { customAlert } from '@/utils/modals'
@@ -12,6 +18,7 @@ type TicketInfo = {
   can_confirm: boolean
   ticket: {
     id: string
+    qr_code_data?: string | null
     tour: {
       company: string
       category?: string
@@ -43,18 +50,14 @@ export default function TicketCheckPage() {
   const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [method, setMethod] = useState<'qr' | 'number'>('qr')
+  const [method, setMethod] = useState<'qr' | 'number' | 'camera'>('qr')
 
-  const checkByQR = async () => {
-    if (!qrData.trim()) {
-      setError('Введите данные QR кода')
-      return
-    }
-
+  const doCheckByQrData = useCallback(async (data: string) => {
+    if (!data?.trim()) return
     try {
       setError(null)
       setLoading(true)
-      const response = await fetch(`/api/tickets/check/qr/${encodeURIComponent(qrData)}`, {
+      const response = await fetch(`/api/tickets/check/qr/${encodeURIComponent(data.trim())}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -71,6 +74,14 @@ export default function TicketCheckPage() {
     } finally {
       setLoading(false)
     }
+  }, [token])
+
+  const checkByQR = async () => {
+    if (!qrData.trim()) {
+      setError('Введите данные QR кода')
+      return
+    }
+    await doCheckByQrData(qrData)
   }
 
   const checkByNumber = async () => {
@@ -130,7 +141,9 @@ export default function TicketCheckPage() {
       if (result.success) {
         // Обновить информацию о билете
         if (method === 'qr') {
-          await checkByQR()
+          await doCheckByQrData(qrData)
+        } else if (method === 'camera' && ticketInfo?.ticket?.qr_code_data) {
+          await doCheckByQrData(ticketInfo.ticket.qr_code_data)
         } else {
           await checkByNumber()
         }
@@ -159,7 +172,21 @@ export default function TicketCheckPage() {
           <h2 className="text-2xl font-bold mb-6 text-white">Проверка билетов</h2>
 
           <div className="mb-6">
-            <div className="flex space-x-4 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => {
+                  setMethod('camera')
+                  setTicketInfo(null)
+                  setError(null)
+                  setQrData('')
+                  setTicketNumber('')
+                }}
+                className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
+                  method === 'camera' ? 'btn-primary' : 'btn-secondary'
+                }`}
+              >
+                Сканировать
+              </button>
               <button
                 onClick={() => {
                   setMethod('qr')
@@ -168,13 +195,11 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`px-4 py-2 rounded-xl transition-all ${
-                  method === 'qr'
-                    ? 'btn-primary'
-                    : 'btn-secondary'
+                className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
+                  method === 'qr' ? 'btn-primary' : 'btn-secondary'
                 }`}
               >
-                По QR коду
+                Ввод QR
               </button>
               <button
                 onClick={() => {
@@ -184,17 +209,22 @@ export default function TicketCheckPage() {
                   setQrData('')
                   setTicketNumber('')
                 }}
-                className={`px-4 py-2 rounded-xl transition-all ${
-                  method === 'number'
-                    ? 'btn-primary'
-                    : 'btn-secondary'
+                className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
+                  method === 'number' ? 'btn-primary' : 'btn-secondary'
                 }`}
               >
-                По номеру билета
+                По номеру
               </button>
             </div>
 
-            {method === 'qr' ? (
+            {method === 'camera' ? (
+              <div className="space-y-4">
+                <QrScanner
+                  onScan={(data) => doCheckByQrData(data)}
+                  onError={(msg) => setError(msg)}
+                />
+              </div>
+            ) : method === 'qr' ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">

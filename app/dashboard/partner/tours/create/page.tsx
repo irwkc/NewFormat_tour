@@ -17,6 +17,7 @@ const flightSchema = z.object({
   flight_number: z.string().min(1, 'Номер рейса обязателен'),
   departure_time: z.string().min(1, 'Время отправления обязательно'),
   date: z.string().date('Неверный формат даты'),
+  duration_minutes: z.number().int().positive().optional(),
   max_places: z.number().int().positive('Количество мест должно быть положительным'),
   boarding_location_url: z.string().url().optional().or(z.literal('')),
 })
@@ -52,6 +53,7 @@ export default function CreateTourPage() {
           flight_number: '',
           departure_time: '',
           date: '',
+          duration_minutes: undefined,
           max_places: 1,
           boarding_location_url: '',
         },
@@ -89,6 +91,7 @@ export default function CreateTourPage() {
       const formattedFlights = data.flights.map(flight => ({
         ...flight,
         departure_time: new Date(`${flight.date}T${flight.departure_time}`).toISOString(),
+        duration_minutes: flight.duration_minutes || undefined,
       }))
 
       const response = await fetch('/api/tours', {
@@ -126,6 +129,7 @@ export default function CreateTourPage() {
       flight_number: '',
       departure_time: '',
       date: '',
+      duration_minutes: undefined,
       max_places: 1,
       boarding_location_url: '',
     })
@@ -303,7 +307,7 @@ export default function CreateTourPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-white/90 mb-2">
                         Дата *
@@ -332,6 +336,24 @@ export default function CreateTourPage() {
                       {errors.flights?.[index]?.departure_time && (
                         <p className="text-red-300 text-xs mt-1">
                           {errors.flights[index]?.departure_time?.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-2">
+                        Длительность (мин)
+                      </label>
+                      <input
+                        {...register(`flights.${index}.duration_minutes`, { valueAsNumber: true })}
+                        type="number"
+                        min="1"
+                        className="input-glass"
+                        placeholder="90"
+                      />
+                      {errors.flights?.[index]?.duration_minutes && (
+                        <p className="text-red-300 text-xs mt-1">
+                          {errors.flights[index]?.duration_minutes?.message}
                         </p>
                       )}
                     </div>

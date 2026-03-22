@@ -9,8 +9,8 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
 const cashTicketSchema = z.object({
-  ticket_number: z.string().min(1, 'Выберите номер билета из переданных вам'),
-  ticket_photo: z.any(),
+  ticket_photo: z.any().optional(),
+  customer_email: z.string().optional(),
 })
 
 type CashTicketFormData = z.infer<typeof cashTicketSchema>
@@ -22,22 +22,8 @@ function CashTicketPageContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [availableNumbers, setAvailableNumbers] = useState<string[]>([])
-  const [availableLoading, setAvailableLoading] = useState(true)
 
   const saleId = searchParams?.get('sale_id')
-
-  useEffect(() => {
-    if (!token) return
-    fetch('/api/manager-ticket-ranges/my-available', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.data)) setAvailableNumbers(data.data)
-      })
-      .finally(() => setAvailableLoading(false))
-  }, [token])
 
   const {
     register,
@@ -74,14 +60,15 @@ function CashTicketPageContent() {
       setError(null)
       setLoading(true)
 
-      // Конвертировать фото в base64
-      const file = data.ticket_photo[0]
-      const photoBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
+      let photoBase64: string | undefined
+      if (data.ticket_photo?.[0]) {
+        photoBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(data.ticket_photo[0])
+        })
+      }
 
       const response = await fetch('/api/tickets', {
         method: 'POST',
@@ -91,8 +78,8 @@ function CashTicketPageContent() {
         },
         body: JSON.stringify({
           sale_id: saleId,
-          ticket_number: data.ticket_number.toUpperCase(),
           photo: photoBase64,
+          customer_email: data.customer_email?.trim() || undefined,
         }),
       })
 
@@ -116,48 +103,32 @@ function CashTicketPageContent() {
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
   ]
 
-  const noNumbers = !availableLoading && availableNumbers.length === 0
-
   return (
     <DashboardLayout title="Ввод билета (наличные)" navItems={navItems}>
       <div className="space-y-6 max-w-2xl mx-auto">
         <div className="glass-card">
-          <h2 className="text-2xl font-bold mb-6 text-white">Ввод номера билета и фото</h2>
-
-          {noNumbers && (
-            <div className="mb-6 p-4 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-sm">
-              Нет переданных вам билетов. Обратитесь к владельцу или его помощнику для передачи пронумерованных билетов.
-            </div>
-          )}
+          <h2 className="text-2xl font-bold mb-6 text-white">Подтверждение продажи (наличные)</h2>
+          <p className="text-white/70 text-sm mb-4">Билеты безномерные. Нажмите «Создать билет» для завершения продажи.</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
-                Номер билета (из переданных вам) *
+                Email клиента (для отправки билета)
               </label>
-              {availableLoading ? (
-                <p className="text-white/60">Загрузка списка...</p>
-              ) : (
-                <select
-                  {...register('ticket_number')}
-                  className="input-glass w-full uppercase"
-                  disabled={availableNumbers.length === 0}
-                >
-                  <option value="">— Выберите номер —</option>
-                  {availableNumbers.map((num) => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
-                </select>
+              <input
+                {...register('customer_email')}
+                type="email"
+                className="input-glass"
+                placeholder="client@example.com"
+              />
+              {errors.customer_email && (
+                <p className="text-red-300 text-xs mt-1">{errors.customer_email.message}</p>
               )}
-              {errors.ticket_number && (
-                <p className="text-red-300 text-xs mt-1">{errors.ticket_number.message}</p>
-              )}
-              <p className="text-xs text-white/60 mt-1">Доступны только номера, переданные вам владельцем</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
-                Фото билета *
+                Фото билета (опционально)
               </label>
               <input
                 {...register('ticket_photo')}
@@ -186,7 +157,7 @@ function CashTicketPageContent() {
             <div className="flex space-x-4">
               <button
                 type="submit"
-                disabled={loading || noNumbers}
+                disabled={loading}
                 className="btn-primary flex-1"
               >
                 {loading ? 'Создание...' : 'Создать билет'}

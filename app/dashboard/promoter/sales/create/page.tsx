@@ -52,6 +52,7 @@ const createSaleSchema = z.object({
   adult_price: requiredNumber,
   child_price: optionalNumber,
   concession_price: optionalNumber,
+  payment_method: z.enum(['online_yookassa', 'acquiring']),
 }).refine((data) => {
   if (data.child_count > 0) return data.child_price !== undefined
   return true
@@ -89,6 +90,7 @@ export default function CreateSalePage() {
     defaultValues: {
       child_count: 0,
       concession_count: 0,
+      payment_method: 'online_yookassa',
     },
   })
 
@@ -96,6 +98,7 @@ export default function CreateSalePage() {
   const selectedFlightId = watch('flight_id')
   const childCount = watch('child_count')
   const concessionCount = watch('concession_count')
+  const paymentMethod = watch('payment_method')
 
   const selectedFlight = useMemo(() => {
     if (!selectedTour || !selectedFlightId) return null
@@ -150,14 +153,12 @@ export default function CreateSalePage() {
       setError(null)
       setLoading(true)
 
-      // если количество 0 — чистим цены, чтобы не мешали бэкенду
       const payload = {
         ...data,
         child_price: data.child_count > 0 ? data.child_price : undefined,
         concession_price: data.concession_count > 0 ? data.concession_price : undefined,
       }
 
-      // Создать продажу (только онлайн)
       const response = await fetch('/api/sales', {
         method: 'POST',
         headers: {
@@ -166,7 +167,7 @@ export default function CreateSalePage() {
         },
         body: JSON.stringify({
           ...payload,
-          payment_method: 'online_yookassa',
+          payment_method: data.payment_method,
         }),
       })
 
@@ -178,7 +179,12 @@ export default function CreateSalePage() {
         return
       }
 
-      // Создать платеж и получить QR/ссылку
+      if (data.payment_method === 'acquiring') {
+        router.push(`/dashboard/promoter/sales/create/acquiring-receipt?sale_id=${result.data.id}`)
+        setLoading(false)
+        return
+      }
+
       const paymentResponse = await fetch(`/api/sales/${result.data.id}/create-payment`, {
         method: 'POST',
         headers: {
@@ -219,7 +225,7 @@ export default function CreateSalePage() {
     <DashboardLayout title="Создание продажи" navItems={navItems}>
       <div className="space-y-6 max-w-4xl mx-auto">
         <div className="glass-card">
-          <h2 className="text-2xl font-bold mb-6 text-white">Создать продажу (Онлайн)</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">Создать продажу</h2>
 
           {!qrCode ? (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -293,9 +299,14 @@ export default function CreateSalePage() {
                       Выберите рейс
                     </option>
                     {selectedTour.flights
-                      .filter((flight: any) => !flight.is_sale_stopped && (flight.max_places - flight.current_booked_places > 0))
+                      .filter((flight: any) => {
+                        const reserved = flight.reserved_for_partner ?? 0
+                        const available = flight.max_places - flight.current_booked_places - reserved
+                        return !flight.is_sale_stopped && available > 0
+                      })
                       .map((flight: any) => {
-                        const availablePlaces = flight.max_places - flight.current_booked_places
+                        const reserved = flight.reserved_for_partner ?? 0
+                        const availablePlaces = flight.max_places - flight.current_booked_places - reserved
                         const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
                         const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                         return (
@@ -452,6 +463,22 @@ export default function CreateSalePage() {
                       readOnly
                     />
                   </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/90 mb-2">
+                  Способ оплаты *
+                </label>
+                <select
+                  {...register('payment_method')}
+                  className="input-glass"
+                >
+                  <option value="online_yookassa">Онлайн (ЮКасса)</option>
+                  <option value="acquiring">Эквайринг</option>
+                </select>
+                {errors.payment_method && (
+                  <p className="text-red-300 text-xs mt-1">{errors.payment_method.message}</p>
                 )}
               </div>
 

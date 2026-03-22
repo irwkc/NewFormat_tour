@@ -8,10 +8,12 @@ import { customConfirm, customAlert } from '@/utils/modals'
 
 type PartnerFlightRow = {
   id: string
+  flight_number: string
   date: string
   departure_time: string
   max_places: number
   current_booked_places: number
+  reserved_for_partner: number
   is_sale_stopped: boolean
 }
 
@@ -26,6 +28,20 @@ export default function PartnerToursPage() {
   const { token } = useAuthStore()
   const [tours, setTours] = useState<PartnerTourRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedTourId, setExpandedTourId] = useState<string | null>(null)
+  const [reservedInputs, setReservedInputs] = useState<Record<string, number>>({})
+
+  // Синхронизировать reservedInputs при развороте тура (сброс при смене тура)
+  useEffect(() => {
+    if (!expandedTourId || !tours.length) return
+    const tour = tours.find(t => t.id === expandedTourId)
+    if (!tour?.flights) return
+    const next: Record<string, number> = {}
+    for (const f of tour.flights) {
+      next[f.id] = f.reserved_for_partner ?? 0
+    }
+    setReservedInputs(next)
+  }, [expandedTourId, tours])
 
   useEffect(() => {
     if (token) {
@@ -72,6 +88,27 @@ export default function PartnerToursPage() {
       }
     } catch (error) {
       await customAlert('Ошибка остановки продаж')
+    }
+  }
+
+  const handleSetReserved = async (flightId: string, reserved: number) => {
+    try {
+      const response = await fetch(`/api/flights/${flightId}/reserved`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reserved }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        fetchTours()
+      } else {
+        await customAlert(result.error || 'Ошибка')
+      }
+    } catch {
+      await customAlert('Ошибка при обновлении резерва')
     }
   }
 
@@ -131,6 +168,7 @@ export default function PartnerToursPage() {
               <table className="table">
                 <thead>
                   <tr>
+                    <th></th>
                     <th>Компания / Рейс</th>
                     <th>Дата / Время</th>
                     <th>Места</th>
@@ -151,7 +189,17 @@ export default function PartnerToursPage() {
                       tour.flights?.every((flight) => flight.is_sale_stopped) || false
                     
                     return (
+                      <>
                       <tr key={tour.id}>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedTourId(expandedTourId === tour.id ? null : tour.id)}
+                            className="text-white/70 hover:text-white text-lg"
+                          >
+                            {expandedTourId === tour.id ? '−' : '+'}
+                          </button>
+                        </td>
                         <td>
                           <div className="text-sm font-medium text-white">
                             {tour.company}
@@ -214,6 +262,55 @@ export default function PartnerToursPage() {
                           </button>
                         </td>
                       </tr>
+                      {expandedTourId === tour.id && tour.flights && tour.flights.length > 0 && (
+                        <tr key={`${tour.id}-flights`}>
+                          <td colSpan={7} className="bg-white/5 p-4">
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-semibold text-white">Рейсы — зарезервировать на свои продажи</h4>
+                              {tour.flights.map((flight: PartnerFlightRow) => {
+                                const availableForReserve = flight.max_places - flight.current_booked_places
+                                const currentReserved = reservedInputs[flight.id] ?? flight.reserved_for_partner ?? 0
+                                return (
+                                  <div key={flight.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-white/5">
+                                    <span className="text-white/90 text-sm">
+                                      {flight.flight_number} · {new Date(flight.date).toLocaleDateString('ru-RU')} · мест: {flight.max_places}, забронировано: {flight.current_booked_places}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={availableForReserve}
+                                      value={currentReserved}
+                                      onChange={(e) => setReservedInputs((s) => ({ ...s, [flight.id]: Number(e.target.value) || 0 }))}
+                                      className="input-glass w-20 text-sm"
+                                    />
+                                    <span className="text-white/60 text-xs">зарезервировано</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetReserved(flight.id, currentReserved)}
+                                      className="btn-primary text-xs px-3 py-1"
+                                    >
+                                      Сохранить
+                                    </button>
+                                    {currentReserved > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReservedInputs((s) => ({ ...s, [flight.id]: 0 }))
+                                          handleSetReserved(flight.id, 0)
+                                        }}
+                                        className="text-blue-400 hover:text-blue-300 text-xs"
+                                      >
+                                        Вернуть в оборот
+                                      </button>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                     )
                   })}
                 </tbody>

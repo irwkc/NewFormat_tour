@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
@@ -43,15 +43,22 @@ const optionalNumber = z.preprocess((v) => {
 
 const requiredPrice = z.preprocess((v) => Number(v), z.number().min(0.01))
 
+const ruleSchema = z.object({
+  threshold_amount: z.number().min(0),
+  commission_type: z.enum(['percentage', 'fixed']),
+  commission_percentage: optionalNumber,
+  commission_fixed_amount: optionalNumber,
+})
+
 const moderateSchema = z.object({
   moderation_status: z.enum(['approved', 'rejected']),
   owner_min_adult_price: requiredPrice,
   owner_min_child_price: requiredPrice,
   owner_min_concession_price: optionalNumber,
   commission_type: z.enum(['percentage', 'fixed']),
-  // Комиссия может быть 0, поэтому min(0)
   commission_percentage: optionalNumber,
   commission_fixed_amount: optionalNumber,
+  commission_rules: z.array(ruleSchema).optional(),
 }).refine((data) => {
   if (data.commission_type === 'percentage') {
     return data.commission_percentage !== undefined
@@ -78,12 +85,20 @@ export default function ModerateTourPage() {
     register,
     handleSubmit,
     watch,
+    control,
+    setValue,
     formState: { errors },
   } = useForm<ModerateFormData>({
     resolver: zodResolver(moderateSchema),
     defaultValues: {
       commission_type: 'percentage',
+      commission_rules: [] as { threshold_amount: number; commission_type: 'percentage' | 'fixed'; commission_percentage?: number; commission_fixed_amount?: number }[],
     },
+  })
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'commission_rules' as const,
   })
 
   const commission_type = watch('commission_type')
@@ -111,10 +126,18 @@ export default function ModerateTourPage() {
       const data = await response.json()
       if (data.success) {
         setTour(data.data)
-        // Установить значения по умолчанию
-        if (data.data.owner_min_adult_price) {
-          // Значения уже установлены
-        }
+      }
+      const rulesRes = await fetch(`/api/tours/${tourId}/commission-rules`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      const rulesData = await rulesRes.json()
+      if (rulesData.success && Array.isArray(rulesData.data) && rulesData.data.length > 0) {
+        setValue('commission_rules', rulesData.data.map((r: any) => ({
+          threshold_amount: Number(r.threshold_amount),
+          commission_type: r.commission_type,
+          commission_percentage: r.commission_percentage != null ? Number(r.commission_percentage) : undefined,
+          commission_fixed_amount: r.commission_fixed_amount != null ? Number(r.commission_fixed_amount) : undefined,
+        })))
       }
     } catch (error) {
       console.error('Error fetching tour:', error)
@@ -127,22 +150,45 @@ export default function ModerateTourPage() {
     try {
       setError(null)
 
+      const { commission_rules, ...moderateData } = data
       const response = await fetch(`/api/tours/${tourId}/moderate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(moderateData),
       })
 
       const result = await response.json()
-
-      if (result.success) {
-        router.push('/dashboard/owner/moderation')
-      } else {
+      if (!result.success) {
         setError(result.error || 'Ошибка модерации')
+        return
       }
+
+      const rulesResponse = await fetch(`/api/tours/${tourId}/commission-rules`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          rules: (commission_rules || []).map((r, i) => ({
+            threshold_amount: r.threshold_amount,
+            commission_type: r.commission_type,
+            commission_percentage: r.commission_type === 'percentage' ? r.commission_percentage : undefined,
+            commission_fixed_amount: r.commission_type === 'fixed' ? r.commission_fixed_amount : undefined,
+            order: i,
+          })),
+        }),
+      })
+      const rulesResult = await rulesResponse.json()
+      if (!rulesResult.success) {
+        setError(rulesResult.error || 'Экскурсия обновлена, но не удалось сохранить правила комиссии')
+        return
+      }
+
+      router.push('/dashboard/owner/moderation')
     } catch (err) {
       setError('Ошибка при модерации экскурсии')
     }
@@ -281,27 +327,31 @@ export default function ModerateTourPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
-                Тип комиссии *
-              </label>
-              <select
-                {...register('commission_type')}
-                className="input-glass"
-              >
-                <option value="percentage">Процент</option>
-                <option value="fixed">Фиксированная сумма</option>
-              </select>
-              {errors.commission_type && (
-                <p className="text-red-300 text-xs mt-1">{errors.commission_type.message}</p>
-              )}
-            </div>
+            <div className="p-4 glass rounded-xl border border-white/10">
+              <h3 className="font-semibold mb-2 text-white">Комиссия владельца с партнёра</h3>
+              <p className="text-sm text-white/60 mb-4">Укажите, какую долю от продажи вы получаете с партнёра.</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Тип комиссии *
+                  </label>
+                  <select
+                    {...register('commission_type')}
+                    className="input-glass"
+                  >
+                    <option value="percentage">Процент от суммы продажи</option>
+                    <option value="fixed">Фиксированная сумма (₽) с продажи</option>
+                  </select>
+                  {errors.commission_type && (
+                    <p className="text-red-300 text-xs mt-1">{errors.commission_type.message}</p>
+                  )}
+                </div>
 
-            {commissionType === 'percentage' ? (
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Процент комиссии (%) *
-                </label>
+                {commissionType === 'percentage' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-2">
+                      Процент комиссии (%) *
+                    </label>
                 <input
                   {...register('commission_percentage', { valueAsNumber: true })}
                   type="number"
@@ -311,15 +361,15 @@ export default function ModerateTourPage() {
                   defaultValue={Number(tour.commission_percentage) || 0}
                   className="input-glass"
                 />
-                {errors.commission_percentage && (
-                  <p className="text-red-300 text-xs mt-1">{errors.commission_percentage.message}</p>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-2">
-                  Фиксированная сумма комиссии (₽) *
-                </label>
+                    {errors.commission_percentage && (
+                      <p className="text-red-300 text-xs mt-1">{errors.commission_percentage.message}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-2">
+                      Фиксированная сумма (₽) с каждой продажи *
+                    </label>
                 <input
                   {...register('commission_fixed_amount', { valueAsNumber: true })}
                   type="number"
@@ -328,11 +378,73 @@ export default function ModerateTourPage() {
                   defaultValue={Number(tour.commission_fixed_amount) || 0}
                   className="input-glass"
                 />
-                {errors.commission_fixed_amount && (
-                  <p className="text-red-300 text-xs mt-1">{errors.commission_fixed_amount.message}</p>
+                    {errors.commission_fixed_amount && (
+                      <p className="text-red-300 text-xs mt-1">{errors.commission_fixed_amount.message}</p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            </div>
+
+            <div className="p-4 glass rounded-xl border border-white/10">
+              <h3 className="font-semibold mb-2 text-white">Дополнительные условия комиссии</h3>
+              <p className="text-sm text-white/60 mb-4">Если сумма продажи больше порога, применяется правило (порог, тип, значение).</p>
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex flex-wrap gap-2 items-end mb-3 p-3 bg-white/5 rounded-lg">
+                  <div className="flex-1 min-w-[100px]">
+                    <label className="block text-xs text-white/70 mb-1">Порог (₽)</label>
+                    <input
+                      {...register(`commission_rules.${index}.threshold_amount`, { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input-glass text-sm"
+                    />
+                  </div>
+                  <div className="min-w-[120px]">
+                    <label className="block text-xs text-white/70 mb-1">Тип</label>
+                    <select {...register(`commission_rules.${index}.commission_type`)} className="input-glass text-sm">
+                      <option value="percentage">%</option>
+                      <option value="fixed">₽</option>
+                    </select>
+                  </div>
+                  {watch(`commission_rules.${index}.commission_type`) === 'percentage' ? (
+                    <div className="min-w-[80px]">
+                      <label className="block text-xs text-white/70 mb-1">%</label>
+                      <input
+                        {...register(`commission_rules.${index}.commission_percentage`, { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        className="input-glass text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <div className="min-w-[100px]">
+                      <label className="block text-xs text-white/70 mb-1">₽</label>
+                      <input
+                        {...register(`commission_rules.${index}.commission_fixed_amount`, { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-glass text-sm"
+                      />
+                    </div>
+                  )}
+                  <button type="button" onClick={() => remove(index)} className="text-red-400 hover:text-red-300 text-sm">
+                    Удалить
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => append({ threshold_amount: 0, commission_type: 'percentage' as const, commission_percentage: 0 })}
+                className="text-sm text-blue-400 hover:text-blue-300"
+              >
+                + Добавить условие
+              </button>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">

@@ -57,9 +57,10 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     return { status: 'flight_sales_stopped' } as const
   }
 
-  // Проверить доступность мест
+  // Проверить доступность мест (для менеджеров/промоутеров учитываем резерв партнёра)
   const totalPlaces = input.adult_count + input.child_count + (input.concession_count || 0)
-  const availablePlaces = flight.max_places - flight.current_booked_places
+  const reservedForPartner = flight.reserved_for_partner ?? 0
+  const availablePlaces = flight.max_places - flight.current_booked_places - reservedForPartner
   if (totalPlaces > availablePlaces) {
     return {
       status: 'not_enough_places',
@@ -105,9 +106,19 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     (input.child_count * childPrice) +
     ((input.concession_count || 0) * concessionPrice)
 
+  // Генерация уникального 6-значного номера продажи
+  let saleNumber = ''
+  for (let attempt = 0; attempt < 10; attempt++) {
+    saleNumber = String(Math.floor(100000 + Math.random() * 900000))
+    const existing = await prisma.sale.findUnique({ where: { sale_number: saleNumber } })
+    if (!existing) break
+    if (attempt === 9) throw new Error('Could not generate unique sale number')
+  }
+
   // Создать продажу
   const sale = await prisma.sale.create({
     data: {
+      sale_number: saleNumber,
       tour_id: input.tour_id,
       flight_id: input.flight_id,
       seller_user_id: user.id,
@@ -187,6 +198,11 @@ export async function completeSaleFromYookassaDomain(payment: any) {
     return { status: 'sale_not_found' } as const
   }
 
+  // Idempotency: повторный webhook — просто подтверждаем получение
+  if (sale.payment_status === 'completed') {
+    return { status: 'already_completed' } as const
+  }
+
   await prisma.sale.update({
     where: { id: saleId },
     data: {
@@ -212,7 +228,7 @@ export async function completeSaleFromYookassaDomain(payment: any) {
     sale,
     adult_count: sale.adult_count,
     child_count: sale.child_count,
-    concession_count: (sale as any).concession_count || 0,
+    concession_count: sale.concession_count || 0,
     qr_code_data: qrData,
   })
 
@@ -222,7 +238,7 @@ export async function completeSaleFromYookassaDomain(payment: any) {
       tour_id: sale.tour_id,
       adult_count: sale.adult_count,
       child_count: sale.child_count,
-      concession_count: (sale as any).concession_count || 0,
+      concession_count: sale.concession_count || 0,
       ticket_status: 'sold',
       qr_code_data: qrData,
       qr_code_url: qrUrl,
@@ -238,7 +254,7 @@ export async function completeSaleFromYookassaDomain(payment: any) {
     sale,
     adult_count: sale.adult_count,
     child_count: sale.child_count,
-    concession_count: (sale as any).concession_count || 0,
+    concession_count: sale.concession_count || 0,
     qr_code_data: correctQrData,
   })
 
@@ -251,7 +267,7 @@ export async function completeSaleFromYookassaDomain(payment: any) {
     },
   })
 
-  const placesToAdd = sale.adult_count + sale.child_count + ((sale as any).concession_count || 0)
+  const placesToAdd = sale.adult_count + sale.child_count + (sale.concession_count || 0)
   const updatedFlight = await prisma.flight.update({
     where: { id: sale.flight_id },
     data: {

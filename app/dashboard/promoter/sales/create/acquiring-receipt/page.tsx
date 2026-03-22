@@ -36,7 +36,6 @@ function AcquiringReceiptPageContent() {
 
   const receiptPhoto = watch('receipt_photo')
 
-  // Обновление превью фото
   useEffect(() => {
     if (receiptPhoto && receiptPhoto.length > 0) {
       const file = receiptPhoto[0]
@@ -61,8 +60,6 @@ function AcquiringReceiptPageContent() {
       setLoading(true)
 
       const file = data.receipt_photo[0]
-
-      // Загрузить фото чека на продажу (multipart/form-data)
       const formData = new FormData()
       formData.append('photo', file)
 
@@ -81,7 +78,6 @@ function AcquiringReceiptPageContent() {
         return
       }
 
-      // Создать билет (безномерный)
       const ticketResponse = await fetch('/api/tickets', {
         method: 'POST',
         headers: {
@@ -97,7 +93,7 @@ function AcquiringReceiptPageContent() {
       const ticketResult = await ticketResponse.json()
 
       if (ticketResult.success) {
-        router.push('/dashboard/manager/sales')
+        router.push('/dashboard/promoter/sales')
       } else {
         setError(ticketResult.error || 'Ошибка создания билета')
       }
@@ -109,9 +105,10 @@ function AcquiringReceiptPageContent() {
   }
 
   const navItems = [
-    { label: 'Продажи', href: '/dashboard/manager/sales' },
-    { label: 'История баланса', href: '/dashboard/manager/balance-history' },
-    { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
+    { label: 'Продажи', href: '/dashboard/promoter/sales' },
+    { label: 'История баланса', href: '/dashboard/promoter/balance-history' },
+    { label: 'Выданные вещи', href: '/dashboard/promoter/issued-items' },
+    { label: 'Реферальная программа', href: '/dashboard/promoter/invitations' },
   ]
 
   return (
@@ -188,7 +185,7 @@ function AcquiringReceiptPageContent() {
   )
 }
 
-export default function AcquiringReceiptPage() {
+export default function PromoterAcquiringReceiptPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <AcquiringReceiptPageContent />

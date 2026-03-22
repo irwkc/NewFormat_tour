@@ -19,11 +19,16 @@ export async function GET(
           )
         }
 
-        const { qr_data } = params
+        let { qr_data } = params
+        qr_data = decodeURIComponent(qr_data)
+
+        // Извлечь ticket-xxx из полного URL (https://.../tickets/check/ticket-xxx)
+        const ticketMatch = qr_data.match(/ticket-[a-f0-9-]+$/i)
+        const searchData = ticketMatch ? ticketMatch[0] : qr_data
 
         const ticket = await prisma.ticket.findFirst({
           where: {
-            qr_code_data: qr_data,
+            qr_code_data: searchData,
           },
           include: {
             tour: {

@@ -51,6 +51,10 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
         doc.text(`Дата: ${new Date(flight.date).toLocaleDateString('ru-RU')}`, 50, yPos)
         yPos += 30
         doc.text(`Время отправления: ${new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`, 50, yPos)
+        if (flight.duration_minutes) {
+          yPos += 30
+          doc.text(`Длительность: ${flight.duration_minutes} мин`, 50, yPos)
+        }
         
         // Ссылка на Яндекс.Карты (если есть)
         if (flight.boarding_location_url) {
@@ -104,8 +108,12 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
         doc.fontSize(10).text('QR код для контроля', 400, 410, { align: 'center', width: 150 })
       }
 
-      // Номер билета
-      doc.fontSize(12).text(`Номер билета: ${ticketData.id}`, 50, 600)
+      // Номер продажи и билета
+      let bottomText = ''
+      if (sale.sale_number) bottomText += `Номер продажи: ${sale.sale_number}`
+      if (bottomText) bottomText += '\n'
+      bottomText += `ID билета: ${ticketData.id}`
+      doc.fontSize(12).text(bottomText, 50, 600)
 
       doc.end()
 

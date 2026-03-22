@@ -8,6 +8,7 @@ const flightSchema = z.object({
   flight_number: z.string().min(1),
   departure_time: z.string().datetime(),
   date: z.string().date(),
+  duration_minutes: z.number().int().positive().optional(),
   max_places: z.number().int().positive(),
   boarding_location_url: z.string().url().optional().or(z.literal('')),
 })
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
                 flight_number: flight.flight_number,
                 departure_time: new Date(flight.departure_time),
                 date: new Date(flight.date),
+                duration_minutes: flight.duration_minutes ?? null,
                 max_places: flight.max_places,
                 boarding_location_url: flight.boarding_location_url || null,
               })),

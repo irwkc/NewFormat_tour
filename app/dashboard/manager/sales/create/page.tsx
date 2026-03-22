@@ -15,6 +15,7 @@ type CreateSaleFlight = {
   flight_number: string
   date: string
   departure_time: string
+  duration_minutes?: number | null
   max_places: number
   current_booked_places: number
   is_sale_stopped: boolean
@@ -370,14 +371,20 @@ export default function CreateSalePage() {
                       Выберите рейс
                     </option>
                     {selectedTour.flights
-                      .filter((flight: any) => !flight.is_sale_stopped && (flight.max_places - flight.current_booked_places > 0))
+                      .filter((flight: any) => {
+                        const reserved = flight.reserved_for_partner ?? 0
+                        const available = flight.max_places - flight.current_booked_places - reserved
+                        return !flight.is_sale_stopped && available > 0
+                      })
                       .map((flight: any) => {
-                        const availablePlaces = flight.max_places - flight.current_booked_places
+                        const reserved = flight.reserved_for_partner ?? 0
+                        const availablePlaces = flight.max_places - flight.current_booked_places - reserved
                         const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
                         const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                        const durationStr = flight.duration_minutes ? ` · ${flight.duration_minutes} мин` : ''
                         return (
                           <option key={flight.id} value={flight.id}>
-                            {flight.flight_number} · {dateStr} {timeStr} · свободно {availablePlaces}
+                            {flight.flight_number} · {dateStr} {timeStr}{durationStr} · свободно {availablePlaces}
                           </option>
                         )
                       })}

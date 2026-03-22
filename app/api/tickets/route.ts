@@ -122,32 +122,32 @@ export async function POST(request: NextRequest) {
     request,
     async (req) => {
       try {
-        // Только менеджеры могут создавать билеты для налички/эквайринга
-        if (req.user!.role !== 'manager') {
+        if (req.user!.role !== 'manager' && req.user!.role !== 'promoter') {
           return NextResponse.json(
-            { success: false, error: 'Only managers can create cash/acquiring tickets' },
+            { success: false, error: 'Only managers and promoters can create cash/acquiring tickets' },
             { status: 403 }
           )
         }
 
         const body = await request.json()
-        const { sale_id, ticket_number, photo } = body
+        const { sale_id, ticket_number, photo, customer_email } = body
 
-        // Валидация
-        if (!sale_id || !ticket_number) {
+        if (!sale_id) {
           return NextResponse.json(
-            { success: false, error: 'sale_id and ticket_number are required' },
+            { success: false, error: 'sale_id is required' },
             { status: 400 }
           )
         }
 
-        // Проверить формат номера билета (AA00000000)
-        const ticketNumberRegex = /^[A-Z]{2}\d{8}$/
-        if (!ticketNumberRegex.test(ticket_number)) {
-          return NextResponse.json(
-            { success: false, error: 'Invalid ticket number format. Expected: AA00000000 (2 uppercase letters + 8 digits)' },
-            { status: 400 }
-          )
+        const isTicketless = !ticket_number || ticket_number.trim() === ''
+        if (!isTicketless) {
+          const ticketNumberRegex = /^[A-Z]{2}\d{8}$/
+          if (!ticketNumberRegex.test(ticket_number)) {
+            return NextResponse.json(
+              { success: false, error: 'Invalid ticket number format. Expected: AA00000000 (2 uppercase letters + 8 digits)' },
+              { status: 400 }
+            )
+          }
         }
 
         // Найти продажу
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Проверить, что продажа принадлежит менеджеру
+        // Проверить, что продажа принадлежит пользователю (менеджер или промоутер как продавец)
         if (sale.seller_user_id !== req.user!.userId && sale.promoter_user_id !== req.user!.userId) {
           return NextResponse.json(
             { success: false, error: 'You can only create tickets for your own sales' },
@@ -186,40 +186,38 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        // Проверить уникальность номера билета
-        const existingTicketNumber = await prisma.ticket.findUnique({
-          where: { ticket_number: ticket_number.toUpperCase() },
-        })
-
-        if (existingTicketNumber) {
-          return NextResponse.json(
-            { success: false, error: 'Ticket number already exists' },
-            { status: 400 }
-          )
-        }
-
-        // Номер должен быть из переданных менеджеру диапазонов
-        const myRanges = await prisma.managerTicketRange.findMany({
-          where: { manager_user_id: req.user!.userId },
-          select: {
-            ticket_number_start: true,
-            ticket_number_end: true,
-          },
-        })
-        const { isTicketInRange } = await import('@/utils/ticket-range')
-        const num = ticket_number.toUpperCase()
-        const inAnyRange = myRanges.some((r) =>
-          isTicketInRange(num, r.ticket_number_start, r.ticket_number_end)
-        )
-        if (!inAnyRange) {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                'Этот номер билета не входит в переданные вам диапазоны. Выберите номер из списка переданных билетов.',
+        if (!isTicketless) {
+          const existingTicketNumber = await prisma.ticket.findUnique({
+            where: { ticket_number: ticket_number.toUpperCase() },
+          })
+          if (existingTicketNumber) {
+            return NextResponse.json(
+              { success: false, error: 'Ticket number already exists' },
+              { status: 400 }
+            )
+          }
+          const myRanges = await prisma.managerTicketRange.findMany({
+            where: { manager_user_id: req.user!.userId },
+            select: {
+              ticket_number_start: true,
+              ticket_number_end: true,
             },
-            { status: 400 }
+          })
+          const { isTicketInRange } = await import('@/utils/ticket-range')
+          const num = ticket_number.toUpperCase()
+          const inAnyRange = myRanges.some((r) =>
+            isTicketInRange(num, r.ticket_number_start, r.ticket_number_end)
           )
+          if (!inAnyRange) {
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  'Этот номер билета не входит в переданные вам диапазоны.',
+              },
+              { status: 400 }
+            )
+          }
         }
 
         // Обработать фото билета (если есть)
@@ -246,27 +244,117 @@ export async function POST(request: NextRequest) {
         }
 
         // Создать билет
-        const ticket = await prisma.ticket.create({
+        let ticket = await prisma.ticket.create({
           data: {
             sale_id,
             tour_id: sale.tour_id,
-            ticket_number: ticket_number.toUpperCase(),
+            ticket_number: isTicketless ? null : ticket_number.toUpperCase(),
             ticket_photo_url: photoUrl,
             adult_count: sale.adult_count,
             child_count: sale.child_count,
             concession_count: sale.concession_count || 0,
             ticket_status: 'sold',
-            qr_code_data: null, // Для налички/эквайринга QR не генерируется
+            qr_code_data: null,
+            qr_code_url: null,
+            ticket_pdf_url: null,
           },
           include: {
             sale: {
               include: {
                 tour: true,
                 flight: true,
+                seller: true,
+                promoter: true,
               },
             },
           },
         })
+
+        // Для безномерных билетов генерируем QR и PDF
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const emailToUse = customer_email || sale.customer_email
+
+        if (isTicketless) {
+          const { generateTicketPDF } = await import('@/utils/pdf')
+          const correctQrData = `ticket-${ticket.id}`
+          const correctQrUrl = `${appUrl}/tickets/check/${correctQrData}`
+          const fullSale = await prisma.sale.findUnique({
+            where: { id: sale_id },
+            include: { tour: true, flight: true },
+          })
+          const correctPdfUrl = fullSale
+            ? await generateTicketPDF({
+                id: ticket.id,
+                sale: fullSale,
+                adult_count: sale.adult_count,
+                child_count: sale.child_count,
+                concession_count: sale.concession_count || 0,
+                qr_code_data: correctQrData,
+              })
+            : null
+          ticket = await prisma.ticket.update({
+            where: { id: ticket.id },
+            data: {
+              qr_code_data: correctQrData,
+              qr_code_url: correctQrUrl,
+              ticket_pdf_url: correctPdfUrl,
+            },
+            include: {
+              sale: {
+                include: {
+                  tour: true,
+                  flight: true,
+                },
+              },
+            },
+          }) as any
+
+          // Отправка билета на email
+          if (emailToUse && correctPdfUrl) {
+            await prisma.sale.update({
+              where: { id: sale_id },
+              data: { customer_email: emailToUse },
+            })
+            try {
+              const { sendTicketEmail } = await import('@/lib/email')
+              await sendTicketEmail(emailToUse, `${appUrl}${correctPdfUrl}`)
+            } catch (emailErr) {
+              console.error('Error sending ticket email:', emailErr)
+            }
+          }
+        } else if (emailToUse) {
+          // Для номерных билетов — генерируем PDF при запросе email
+          const fullSale = await prisma.sale.findUnique({
+            where: { id: sale_id },
+            include: { tour: true, flight: true },
+          })
+          if (fullSale) {
+            const { generateTicketPDF } = await import('@/utils/pdf')
+            const qrData = `ticket-${ticket.id}`
+            const pdfUrl = await generateTicketPDF({
+              id: ticket.id,
+              sale: fullSale,
+              adult_count: sale.adult_count,
+              child_count: sale.child_count,
+              concession_count: sale.concession_count || 0,
+              qr_code_data: qrData,
+            })
+            await prisma.ticket.update({
+              where: { id: ticket.id },
+              data: { qr_code_data: qrData, qr_code_url: `${appUrl}/tickets/check/${qrData}`, ticket_pdf_url: pdfUrl },
+            })
+            await prisma.sale.update({
+              where: { id: sale_id },
+              data: { customer_email: emailToUse },
+            })
+            try {
+              const { sendTicketEmail } = await import('@/lib/email')
+              await sendTicketEmail(emailToUse, `${appUrl}${pdfUrl}`)
+            } catch (emailErr) {
+              console.error('Error sending ticket email:', emailErr)
+            }
+          }
+        }
 
         // Обновить статус продажи на completed
         await prisma.sale.update({
@@ -314,6 +402,6 @@ export async function POST(request: NextRequest) {
         )
       }
     },
-    [UserRole.manager]
+    [UserRole.manager, UserRole.promoter]
   )
 }

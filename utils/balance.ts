@@ -34,10 +34,26 @@ export async function updateBalanceOnTicketConfirm(
   const isPromoterSale = !!sale.promoter_user_id
   const isManagerSaleForPromoter = sale.seller.role === 'manager' && isPromoterSale
 
-  // Вычислить сумму комиссии
+  // Вычислить сумму комиссии (с учётом дополнительных правил по порогу)
+  const totalAmount = Number(sale.total_amount)
   let commissionAmount = 0
-  if (tour.commission_type === CommissionType.percentage && tour.commission_percentage) {
-    commissionAmount = Number(sale.total_amount) * Number(tour.commission_percentage) / 100
+
+  const rules = await prisma.tourCommissionRule.findMany({
+    where: { tour_id: tour.id },
+    orderBy: { order: 'asc' },
+  })
+  const applicableRule = rules
+    .filter((r) => Number(r.threshold_amount) <= totalAmount)
+    .sort((a, b) => Number(b.threshold_amount) - Number(a.threshold_amount))[0]
+
+  if (applicableRule) {
+    if (applicableRule.commission_type === CommissionType.percentage && applicableRule.commission_percentage) {
+      commissionAmount = totalAmount * Number(applicableRule.commission_percentage) / 100
+    } else if (applicableRule.commission_type === CommissionType.fixed && applicableRule.commission_fixed_amount) {
+      commissionAmount = Number(applicableRule.commission_fixed_amount)
+    }
+  } else if (tour.commission_type === CommissionType.percentage && tour.commission_percentage) {
+    commissionAmount = totalAmount * Number(tour.commission_percentage) / 100
   } else if (tour.commission_type === CommissionType.fixed && tour.commission_fixed_amount) {
     commissionAmount = Number(tour.commission_fixed_amount)
   }
