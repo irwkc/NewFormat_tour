@@ -13,12 +13,23 @@ type CategoryOption = {
   name: string
 }
 
+const numOr = (fallback: number) =>
+  z.preprocess((v) => {
+    const n = Number(v)
+    return v === '' || v === null || v === undefined || Number.isNaN(n) ? fallback : n
+  }, z.number())
+
+const numOptional = z.preprocess((v) => {
+  const n = Number(v)
+  return v === '' || v === null || v === undefined || Number.isNaN(n) ? undefined : n
+}, z.number().optional())
+
 const flightSchema = z.object({
   flight_number: z.string().min(1, 'Номер рейса обязателен'),
   departure_time: z.string().min(1, 'Время отправления обязательно'),
   date: z.string().date('Неверный формат даты'),
-  duration_minutes: z.number().int().positive().optional(),
-  max_places: z.number().int().positive('Количество мест должно быть положительным'),
+  duration_minutes: numOptional.pipe(z.union([z.number().int().positive(), z.undefined()])),
+  max_places: numOr(1).pipe(z.number().int().positive('Количество мест должно быть положительным')),
   boarding_location_url: z.string().url().optional().or(z.literal('')),
 })
 
@@ -26,10 +37,10 @@ const createTourSchema = z.object({
   category_id: z.string().min(1, 'Выберите категорию'),
   company: z.string().min(1, 'Название компании обязательно'),
   partner_pricing_type: z.enum(['min_prices', 'percentage']),
-  partner_min_adult_price: z.number().min(0).optional().default(0),
-  partner_min_child_price: z.number().min(0).optional().default(0),
-  partner_min_concession_price: z.number().min(0).optional(),
-  partner_commission_percentage: z.number().min(0).max(100).optional(),
+  partner_min_adult_price: numOr(0).pipe(z.number().min(0)),
+  partner_min_child_price: numOr(0).pipe(z.number().min(0)),
+  partner_min_concession_price: numOptional.pipe(z.union([z.number().min(0), z.undefined()])),
+  partner_commission_percentage: numOptional.pipe(z.union([z.number().min(0).max(100), z.undefined()])),
   flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
 }).refine((data) => {
   if (data.partner_pricing_type === 'min_prices') {
