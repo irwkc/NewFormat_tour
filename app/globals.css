@@ -125,7 +125,7 @@
   }
   
   .glass-card {
-    @apply rounded-lg border border-white/10 bg-slate-900/95 p-6;
+    @apply rounded-lg border border-white/10 p-6;
   }
 
   .glass-card-light {
