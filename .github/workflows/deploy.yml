@@ -72,14 +72,14 @@ jobs:
             # Применение миграций (только если изменилась схема)
             if [ "$SCHEMA_CHANGED" = true ]; then
               echo "🗄️ Применение миграций..."
-              npx prisma db push --accept-data-loss --skip-generate 2>&1 | grep -v "^Environment\|^Prisma schema\|^Datasource\|^Tip:" || true
+              npm run db:push -- --accept-data-loss --skip-generate 2>&1 | grep -v "^Environment\|^Prisma schema\|^Datasource\|^Tip:" || true
             else
               echo "✅ Prisma схема не изменилась, пропускаем миграции"
             fi
             
-            # Генерация Prisma Client (после npm ci он уже в node_modules, только генерируем код)
+            # Генерация Prisma Client (используем prisma из node_modules)
             echo "🔧 Генерация Prisma Client..."
-            npx prisma generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
+            npm run db:generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
             # Сборка проекта
             echo "🏗️ Сборка проекта..."
