@@ -36,18 +36,21 @@ const flightSchema = z.object({
 const createTourSchema = z.object({
   category_id: z.string().min(1, 'Выберите категорию'),
   company: z.string().min(1, 'Название компании обязательно'),
-  partner_pricing_type: z.enum(['min_prices', 'percentage']),
-  partner_min_adult_price: numOr(0).pipe(z.number().min(0)),
-  partner_min_child_price: numOr(0).pipe(z.number().min(0)),
+  partner_min_adult_price: numOr(0).pipe(z.number().min(0.01, 'Мин. цена взрослого обязательна')),
+  partner_min_child_price: numOr(0).pipe(z.number().min(0.01, 'Мин. цена детского обязательна')),
   partner_min_concession_price: numOptional.pipe(z.union([z.number().min(0), z.undefined()])),
+  partner_commission_type: z.enum(['fixed', 'percentage']),
+  partner_fixed_adult_price: numOptional.pipe(z.union([z.number().min(0), z.undefined()])),
+  partner_fixed_child_price: numOptional.pipe(z.union([z.number().min(0), z.undefined()])),
+  partner_fixed_concession_price: numOptional.pipe(z.union([z.number().min(0), z.undefined()])),
   partner_commission_percentage: numOptional.pipe(z.union([z.number().min(0).max(100), z.undefined()])),
   flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
 }).refine((data) => {
-  if (data.partner_pricing_type === 'min_prices') {
-    return (data.partner_min_adult_price ?? 0) > 0 && (data.partner_min_child_price ?? 0) > 0
+  if (data.partner_commission_type === 'percentage') {
+    return (data.partner_commission_percentage ?? 0) > 0
   }
-  return (data.partner_commission_percentage ?? 0) > 0
-}, { message: 'Укажите мин. цены или процент партнёра', path: ['partner_commission_percentage'] })
+  return true
+}, { message: 'Укажите процент партнёра', path: ['partner_commission_percentage'] })
 
 type CreateTourFormData = z.infer<typeof createTourSchema>
 
@@ -69,10 +72,13 @@ export default function CreateTourPage() {
     mode: 'onTouched',
     resolver: zodResolver(createTourSchema),
     defaultValues: {
-      partner_pricing_type: 'min_prices',
+      partner_commission_type: 'fixed',
       partner_min_adult_price: 0,
       partner_min_child_price: 0,
-      partner_commission_percentage: 0,
+      partner_fixed_adult_price: undefined,
+      partner_fixed_child_price: undefined,
+      partner_fixed_concession_price: undefined,
+      partner_commission_percentage: undefined,
       flights: [
         {
           flight_number: '',
@@ -128,11 +134,14 @@ export default function CreateTourPage() {
         body: JSON.stringify({
           category_id: data.category_id,
           company: data.company,
-          partner_pricing_type: data.partner_pricing_type,
-          partner_min_adult_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_adult_price : 0,
-          partner_min_child_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_child_price : 0,
-          partner_min_concession_price: data.partner_pricing_type === 'min_prices' ? data.partner_min_concession_price : 0,
-          partner_commission_percentage: data.partner_pricing_type === 'percentage' ? data.partner_commission_percentage : null,
+          partner_min_adult_price: data.partner_min_adult_price,
+          partner_min_child_price: data.partner_min_child_price,
+          partner_min_concession_price: data.partner_min_concession_price ?? null,
+          partner_commission_type: data.partner_commission_type,
+          partner_fixed_adult_price: data.partner_commission_type === 'fixed' ? (data.partner_fixed_adult_price ?? data.partner_min_adult_price) : null,
+          partner_fixed_child_price: data.partner_commission_type === 'fixed' ? (data.partner_fixed_child_price ?? data.partner_min_child_price) : null,
+          partner_fixed_concession_price: data.partner_commission_type === 'fixed' ? data.partner_fixed_concession_price ?? null : null,
+          partner_commission_percentage: data.partner_commission_type === 'percentage' ? data.partner_commission_percentage ?? null : null,
           flights: formattedFlights,
         }),
       })
@@ -240,71 +249,111 @@ export default function CreateTourPage() {
 
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-2">
-                  Модель дохода партнёра *
+                  Минимальные цены билетов *
+                </label>
+                <p className="text-sm text-white/60 mb-3">Партнёр всегда указывает мин. цену каждого типа билета.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена взрослого (₽) *</label>
+                    <input
+                      {...register('partner_min_adult_price', { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input-glass"
+                    />
+                    {errors.partner_min_adult_price && (
+                      <p className="text-red-300 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена детского (₽) *</label>
+                    <input
+                      {...register('partner_min_child_price', { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input-glass"
+                    />
+                    {errors.partner_min_child_price && (
+                      <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена льготного (₽)</label>
+                    <input
+                      {...register('partner_min_concession_price', { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input-glass"
+                    />
+                  </div>
+                </div>
+
+                <label className="block text-sm font-medium text-white/90 mb-2">
+                  Доля партнёра с каждого билета *
                 </label>
                 <div className="flex gap-4 mb-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      {...register('partner_pricing_type')}
-                      value="min_prices"
+                      {...register('partner_commission_type')}
+                      value="fixed"
                       className="rounded"
                     />
-                    <span className="text-white/90">Минимальные цены за билет</span>
+                    <span className="text-white/90">Фиксированная сумма с билета каждого типа</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
-                      {...register('partner_pricing_type')}
+                      {...register('partner_commission_type')}
                       value="percentage"
                       className="rounded"
                     />
-                    <span className="text-white/90">Процент от суммы продаж</span>
+                    <span className="text-white/90">Процент от суммы продажи</span>
                   </label>
                 </div>
 
-                {watch('partner_pricing_type') === 'min_prices' ? (
+                {watch('partner_commission_type') === 'fixed' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена взрослого (₽) *</label>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Фикс. с взрослого (₽)</label>
                       <input
-                        {...register('partner_min_adult_price', { valueAsNumber: true })}
+                        {...register('partner_fixed_adult_price', { valueAsNumber: true })}
                         type="number"
                         step="0.01"
                         min="0"
                         className="input-glass"
+                        placeholder="= мин. цене"
                       />
-                      {errors.partner_min_adult_price && (
-                        <p className="text-red-300 text-xs mt-1">{errors.partner_min_adult_price.message}</p>
-                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена детского (₽) *</label>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Фикс. с детского (₽)</label>
                       <input
-                        {...register('partner_min_child_price', { valueAsNumber: true })}
+                        {...register('partner_fixed_child_price', { valueAsNumber: true })}
                         type="number"
                         step="0.01"
                         min="0"
                         className="input-glass"
+                        placeholder="= мин. цене"
                       />
-                      {errors.partner_min_child_price && (
-                        <p className="text-red-300 text-xs mt-1">{errors.partner_min_child_price.message}</p>
-                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white/70 mb-2">Мин. цена льготного (₽)</label>
+                      <label className="block text-sm font-medium text-white/70 mb-2">Фикс. с льготного (₽)</label>
                       <input
-                        {...register('partner_min_concession_price', { valueAsNumber: true })}
+                        {...register('partner_fixed_concession_price', { valueAsNumber: true })}
                         type="number"
                         step="0.01"
                         min="0"
                         className="input-glass"
+                        placeholder="= мин. цене"
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="max-w-xs">
-                    <label className="block text-sm font-medium text-white/70 mb-2">Процент партнёра от продаж (%) *</label>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Процент партнёра (%) *</label>
                     <input
                       {...register('partner_commission_percentage', { valueAsNumber: true })}
                       type="number"

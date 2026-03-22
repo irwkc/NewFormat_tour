@@ -26,6 +26,10 @@ type ModerateTour = {
   partner_min_adult_price: number | string
   partner_min_child_price: number | string
   partner_min_concession_price?: number | string | null
+  partner_commission_type?: string | null
+  partner_fixed_adult_price?: number | string | null
+  partner_fixed_child_price?: number | string | null
+  partner_fixed_concession_price?: number | string | null
   partner_commission_percentage?: number | string | null
   owner_min_adult_price?: number | string | null
   owner_min_child_price?: number | string | null
@@ -92,6 +96,10 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
     partner_min_adult_price: Number(tour.partner_min_adult_price),
     partner_min_child_price: Number(tour.partner_min_child_price),
     partner_min_concession_price: tour.partner_min_concession_price != null ? Number(tour.partner_min_concession_price) : 0,
+    partner_commission_type: (tour.partner_commission_type as 'fixed' | 'percentage') ?? (tour.partner_commission_percentage != null ? 'percentage' : 'fixed'),
+    partner_fixed_adult_price: tour.partner_fixed_adult_price != null ? Number(tour.partner_fixed_adult_price) : null,
+    partner_fixed_child_price: tour.partner_fixed_child_price != null ? Number(tour.partner_fixed_child_price) : null,
+    partner_fixed_concession_price: tour.partner_fixed_concession_price != null ? Number(tour.partner_fixed_concession_price) : null,
     partner_commission_percentage: tour.partner_commission_percentage != null ? Number(tour.partner_commission_percentage) : null,
     owner_min_adult_price: ownerMinAdult,
     owner_min_child_price: ownerMinChild,
@@ -161,6 +169,10 @@ function buildTourParams(data: ModerateFormData, tour?: ModerateTour | null): To
     partner_min_adult_price: partnerMinAdult,
     partner_min_child_price: partnerMinChild,
     partner_min_concession_price: partnerMinConcession,
+    partner_commission_type: (tour?.partner_commission_type as 'fixed' | 'percentage') ?? (tour?.partner_commission_percentage != null ? 'percentage' : 'fixed'),
+    partner_fixed_adult_price: tour?.partner_fixed_adult_price != null ? Number(tour.partner_fixed_adult_price) : null,
+    partner_fixed_child_price: tour?.partner_fixed_child_price != null ? Number(tour.partner_fixed_child_price) : null,
+    partner_fixed_concession_price: tour?.partner_fixed_concession_price != null ? Number(tour.partner_fixed_concession_price) : null,
     partner_commission_percentage: tour?.partner_commission_percentage != null ? Number(tour.partner_commission_percentage) : null,
     owner_min_adult_price: ownerMinAdult,
     owner_min_child_price: ownerMinChild,
@@ -346,9 +358,10 @@ export default function ModerateTourPage() {
               <p><strong className="text-white/90">Компания:</strong> {tour.company}</p>
               <p><strong className="text-white/90">Категория:</strong> {tour.category?.name}</p>
               <p><strong className="text-white/90">Модель партнёра:</strong>{' '}
-                {tour.partner_commission_percentage != null && Number(tour.partner_commission_percentage) > 0
+                {tour.partner_commission_type === 'percentage' && tour.partner_commission_percentage != null && Number(tour.partner_commission_percentage) > 0
                   ? `${Number(tour.partner_commission_percentage)}% от суммы продаж`
-                  : `Мин. цены: взр. ${Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. ${Number(tour.partner_min_child_price).toFixed(0)}₽${tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}`}
+                  : `Фикс с билета: взр. ${Number(tour.partner_fixed_adult_price ?? tour.partner_min_adult_price).toFixed(0)}₽, дет. ${Number(tour.partner_fixed_child_price ?? tour.partner_min_child_price).toFixed(0)}₽${(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price) ? `, льг. ${Number(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price).toFixed(0)}₽` : ''}`}
+                . Мин. цены: взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}
               </p>
               <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
             </div>

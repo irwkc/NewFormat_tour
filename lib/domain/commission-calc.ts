@@ -1,10 +1,10 @@
 /**
  * Расчёт долей при продаже: партнёр, промоутер/менеджер, владелец.
- * Модели:
- * 1. Партнёр мин. цены → Owner фикс. (promoter fixed)
- * 2. Партнёр мин. цены → Owner % + пороги (promoter % with thresholds)
- * 3. Партнёр % → Owner фикс. (promoter fixed)
- * 4. Партнёр % → Owner % + пороги (promoter % with thresholds)
+ * Модели (везде партнёр выставляет мин. цены билетов):
+ * 1. Партнёр мин. цены + фикс с билета → Owner фикс. (promoter)
+ * 2. Партнёр мин. цены + фикс с билета → Owner % + пороги
+ * 3. Партнёр мин. цены + процент → Owner фикс. (promoter)
+ * 4. Партнёр мин. цены + процент → Owner % + пороги
  */
 
 export type CommissionRule = {
@@ -28,6 +28,10 @@ export type TourParams = {
   partner_min_adult_price: number
   partner_min_child_price: number
   partner_min_concession_price?: number | null
+  partner_commission_type?: 'fixed' | 'percentage' | null
+  partner_fixed_adult_price?: number | null
+  partner_fixed_child_price?: number | null
+  partner_fixed_concession_price?: number | null
   partner_commission_percentage?: number | null
   owner_min_adult_price: number
   owner_min_child_price: number
@@ -45,25 +49,32 @@ export type IncomeSplit = {
   total: number
 }
 
-/** Партнёр получает: мин. цены или % от суммы */
+/** Партнёр получает: фикс с билета каждого типа или % от суммы */
 function calcPartnerShare(
   totalAmount: number,
   adultCount: number,
   childCount: number,
   concessionCount: number,
+  partnerType: 'fixed' | 'percentage' | null | undefined,
   partnerMinAdult: number,
   partnerMinChild: number,
   partnerMinConcession: number,
+  partnerFixedAdult: number | null | undefined,
+  partnerFixedChild: number | null | undefined,
+  partnerFixedConcession: number | null | undefined,
   partnerPercent: number | null | undefined
 ): number {
-  if (partnerPercent != null && partnerPercent > 0) {
+  if (partnerType === 'percentage' && partnerPercent != null && partnerPercent > 0) {
     return totalAmount * (partnerPercent / 100)
   }
-  return (
-    adultCount * partnerMinAdult +
-    childCount * partnerMinChild +
-    concessionCount * partnerMinConcession
-  )
+  const useFixed = partnerType === 'fixed' || (partnerType != 'percentage' && partnerFixedAdult != null)
+  if (useFixed) {
+    const fa = partnerFixedAdult ?? partnerMinAdult
+    const fc = partnerFixedChild ?? partnerMinChild
+    const fconc = partnerFixedConcession ?? partnerMinConcession
+    return adultCount * fa + childCount * fc + concessionCount * fconc
+  }
+  return 0
 }
 
 /** Промоутер получает: фикс. (с продажи) или % (с учётом порогов) */
@@ -111,9 +122,13 @@ export function calcIncomeSplit(
     sale.adult_count,
     sale.child_count,
     sale.concession_count,
+    tour.partner_commission_type ?? (tour.partner_commission_percentage != null ? 'percentage' : 'fixed'),
     tour.partner_min_adult_price,
     tour.partner_min_child_price,
     tour.partner_min_concession_price ?? 0,
+    tour.partner_fixed_adult_price != null ? Number(tour.partner_fixed_adult_price) : null,
+    tour.partner_fixed_child_price != null ? Number(tour.partner_fixed_child_price) : null,
+    tour.partner_fixed_concession_price != null ? Number(tour.partner_fixed_concession_price) : null,
     tour.partner_commission_percentage
   )
   const promoter = calcPromoterShare(
