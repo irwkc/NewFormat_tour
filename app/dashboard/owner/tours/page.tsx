@@ -171,14 +171,22 @@ export default function OwnerToursPage() {
                           <td className="whitespace-nowrap">
                             <span
                               className={`px-2 py-1 text-xs rounded-full border ${
-                                tour.moderation_status === 'approved'
-                                  ? 'bg-green-300/30 text-green-200 border-green-400/30'
-                                  : tour.moderation_status === 'pending'
-                                    ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30'
-                                    : 'bg-red-300/30 text-red-200 border-red-400/30'
+                                !tour.flights?.length
+                                  ? 'bg-white/20 text-white/80 border-white/30'
+                                  : tour.moderation_status === 'approved'
+                                    ? 'bg-green-300/30 text-green-200 border-green-400/30'
+                                    : tour.moderation_status === 'pending'
+                                      ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30'
+                                      : 'bg-red-300/30 text-red-200 border-red-400/30'
                               }`}
                             >
-                              {tour.moderation_status === 'approved' ? 'Одобрена' : tour.moderation_status === 'pending' ? 'На модерации' : 'Отклонена'}
+                              {!tour.flights?.length
+                                ? 'Нет рейсов'
+                                : tour.moderation_status === 'approved'
+                                  ? 'Одобрена'
+                                  : tour.moderation_status === 'pending'
+                                    ? 'На модерации'
+                                    : 'Отклонена'}
                             </span>
                           </td>
                           <td className="whitespace-nowrap">
@@ -203,7 +211,7 @@ export default function OwnerToursPage() {
                                 Редактировать
                               </Link>
                             )}
-                            {tour.moderation_status === 'pending' && (
+                            {tour.moderation_status === 'pending' && (tour.flights?.length ?? 0) > 0 && (
                               <Link
                                 href={`/dashboard/owner/moderation/${tour.id}`}
                                 className="btn-secondary text-xs px-3 py-1 inline-block"

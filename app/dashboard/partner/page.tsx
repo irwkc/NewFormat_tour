@@ -228,24 +228,37 @@ export default function PartnerDashboard() {
                           <td>
                             <span
                               className={`px-2 py-1 text-xs rounded-full border ${
-                                tour.moderation_status === 'approved' ? 'bg-green-300/30 text-green-200 border-green-400/30' :
-                                tour.moderation_status === 'pending' ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
-                                'bg-red-300/30 text-red-200 border-red-400/30'
+                                !tour.flights?.length
+                                  ? 'bg-white/20 text-white/80 border-white/30'
+                                  : tour.moderation_status === 'approved'
+                                    ? 'bg-green-300/30 text-green-200 border-green-400/30'
+                                    : tour.moderation_status === 'pending'
+                                      ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30'
+                                      : 'bg-red-300/30 text-red-200 border-red-400/30'
                               }`}
                             >
-                              {tour.moderation_status === 'approved' ? 'Одобрена' :
-                               tour.moderation_status === 'pending' ? 'На модерации' : 'Отклонена'}
+                              {!tour.flights?.length
+                                ? 'Нет рейсов'
+                                : tour.moderation_status === 'approved'
+                                  ? 'Одобрена'
+                                  : tour.moderation_status === 'pending'
+                                    ? 'На модерации'
+                                    : 'Отклонена'}
                             </span>
                           </td>
                           <td>
                             <span
                               className={`px-2 py-1 text-xs rounded-full border ${
-                                allFlightsStopped ? 'bg-red-300/30 text-red-200 border-red-400/30' :
-                                hasStoppedFlights ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30' :
-                                'bg-green-300/30 text-green-200 border-green-400/30'
+                                !tour.flights?.length
+                                  ? 'bg-white/10 text-white/50 border-white/20'
+                                  : allFlightsStopped
+                                    ? 'bg-red-300/30 text-red-200 border-red-400/30'
+                                    : hasStoppedFlights
+                                      ? 'bg-yellow-300/30 text-yellow-200 border-yellow-400/30'
+                                      : 'bg-green-300/30 text-green-200 border-green-400/30'
                               }`}
                             >
-                              {allFlightsStopped ? 'Остановлены' : hasStoppedFlights ? 'Частично' : 'Активны'}
+                              {!tour.flights?.length ? '—' : allFlightsStopped ? 'Остановлены' : hasStoppedFlights ? 'Частично' : 'Активны'}
                             </span>
                           </td>
                           <td className="text-sm space-x-2">
@@ -255,7 +268,7 @@ export default function PartnerDashboard() {
                             >
                               Редактировать
                             </Link>
-                            {!allFlightsStopped && (
+                            {(tour.flights?.length ?? 0) > 0 && !allFlightsStopped && (
                               <button
                                 type="button"
                                 onClick={() => handleStopSales(tour.id)}

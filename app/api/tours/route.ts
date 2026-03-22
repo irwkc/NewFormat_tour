@@ -63,6 +63,9 @@ export async function GET(request: NextRequest) {
           } else if (user.role === UserRole.owner) {
             if (moderationStatus) {
               where.moderation_status = moderationStatus
+              if (moderationStatus === ModerationStatus.pending) {
+                where.flights = { some: {} }
+              }
             }
           }
         }

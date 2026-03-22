@@ -254,7 +254,7 @@ export default function EditTourPage() {
           </Link>
         </div>
 
-        <div className="glass-card">
+        <div className="rounded-lg border border-white/10 p-4">
           <h3 className="text-lg font-semibold text-white mb-4">Цены и доля партнёра</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -348,63 +348,79 @@ export default function EditTourPage() {
           </div>
         </div>
 
-        <div className="glass-card">
-          <h3 className="text-lg font-semibold text-white mb-4">Рейсы (шаблон)</h3>
-          <p className="text-sm text-white/70 mb-4">Заполните рейсы и выберите дни — они будут применены к выбранным датам.</p>
-          <div className="space-y-3">
+        <div className="rounded-lg border border-white/10 p-4">
+          <h3 className="text-lg font-semibold text-white mb-2">Рейсы (шаблон)</h3>
+          <p className="text-sm text-white/60 mb-4">Заполните рейсы и выберите дни — они будут применены к выбранным датам.</p>
+          <div className="space-y-4">
             {flights.map((f, idx) => (
-              <div key={idx} className="flex flex-wrap gap-3 items-start p-3 rounded-lg bg-white/5">
-                <input
-                  placeholder="Номер рейса"
-                  value={f.flight_number}
-                  onChange={(e) => updateFlight(idx, 'flight_number', e.target.value)}
-                  className="input-glass flex-1 min-w-[100px]"
-                />
-                <input
-                  type="time"
-                  value={f.departure_time}
-                  onChange={(e) => updateFlight(idx, 'departure_time', e.target.value)}
-                  className="input-glass w-28"
-                />
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="Мест"
-                  value={f.max_places}
-                  onChange={(e) => updateFlight(idx, 'max_places', Number(e.target.value) || 0)}
-                  className="input-glass w-20"
-                />
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="Мин"
-                  value={f.duration_minutes ?? ''}
-                  onChange={(e) => updateFlight(idx, 'duration_minutes', e.target.value ? Number(e.target.value) : 60)}
-                  className="input-glass w-16"
-                />
-                <input
-                  placeholder="Ссылка на место посадки"
-                  value={f.boarding_location_url ?? ''}
-                  onChange={(e) => updateFlight(idx, 'boarding_location_url', e.target.value)}
-                  className="input-glass flex-1 min-w-[150px]"
-                />
+              <div key={idx} className="relative p-4 rounded border border-white/10 space-y-3">
                 <button
                   type="button"
                   onClick={() => removeFlightRow(idx)}
-                  className="btn-danger text-xs px-2 py-1"
                   disabled={flights.length === 1}
+                  className="absolute top-2 right-2 text-white/40 hover:text-white/80 text-xl leading-none disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Удалить"
                 >
                   ×
                 </button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pr-8">
+                  <div>
+                    <label className="block text-xs text-white/60 mb-1">Номер рейса</label>
+                    <input
+                      value={f.flight_number}
+                      onChange={(e) => updateFlight(idx, 'flight_number', e.target.value)}
+                      className="input-glass w-full"
+                      placeholder="Например: Рейс 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/60 mb-1">Время отправления</label>
+                    <input
+                      type="time"
+                      value={f.departure_time}
+                      onChange={(e) => updateFlight(idx, 'departure_time', e.target.value)}
+                      className="input-glass w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/60 mb-1">Мест</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={f.max_places}
+                      onChange={(e) => updateFlight(idx, 'max_places', Number(e.target.value) || 0)}
+                      className="input-glass w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/60 mb-1">Длительность (мин)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={f.duration_minutes ?? ''}
+                      onChange={(e) => updateFlight(idx, 'duration_minutes', e.target.value ? Number(e.target.value) : 60)}
+                      className="input-glass w-full"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-white/60 mb-1">Ссылка на место посадки</label>
+                  <input
+                    value={f.boarding_location_url ?? ''}
+                    onChange={(e) => updateFlight(idx, 'boarding_location_url', e.target.value)}
+                    className="input-glass w-full"
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
             ))}
-            <button type="button" onClick={addFlightRow} className="btn-secondary text-sm">
+            <button type="button" onClick={addFlightRow} className="text-white/70 hover:text-white text-sm">
               + Добавить рейс
             </button>
           </div>
         </div>
 
-        <div className="glass-card">
+        <div className="rounded-lg border border-white/10 p-4">
           <h3 className="text-lg font-semibold text-white mb-4">Календарь (текущая неделя)</h3>
           <p className="text-sm text-white/70 mb-4">Выберите дни и нажмите «Применить».</p>
           <div className="grid grid-cols-7 gap-2">
@@ -461,7 +477,7 @@ export default function EditTourPage() {
 
         {editingDay && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="glass-card max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div className="rounded-lg border border-white/10 bg-slate-900/95 max-w-lg w-full max-h-[80vh] overflow-y-auto p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">
                   Рейсы на {editingDay}
