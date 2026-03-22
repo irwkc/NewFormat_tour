@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
       orderBy: { created_at: 'desc' },
     })
 
-    // Для менеджеров и промоутеров — исключаем начавшиеся рейсы (нельзя продавать)
-    let resultTours = tours
+    // Исключаем начавшиеся рейсы из UI (оставляем только в БД)
+    let managerOrPromoter = false
     if (token && authHeader) {
       try {
         const { verifyToken } = await import('@/lib/auth')
@@ -110,20 +110,21 @@ export async function GET(request: NextRequest) {
           where: { id: payload.userId },
           select: { role: true },
         })
-        if (user && (user.role === UserRole.manager || user.role === UserRole.promoter)) {
-          resultTours = tours.map((t) => {
-            let flights = (t.flights || []).filter((f) => !isFlightStarted(f.departure_time))
-            const hasModerated = flights.some((f) => (f as { is_moderated?: boolean }).is_moderated)
-            if (hasModerated) {
-              flights = flights.filter((f) => (f as { is_moderated?: boolean }).is_moderated)
-            }
-            return { ...t, flights }
-          })
-        }
+        managerOrPromoter = !!(user && (user.role === UserRole.manager || user.role === UserRole.promoter))
       } catch {
         // ignore
       }
     }
+    const resultTours = tours.map((t) => {
+      let flights = (t.flights || []).filter((f) => !isFlightStarted(f.departure_time))
+      if (managerOrPromoter) {
+        const hasModerated = flights.some((f) => (f as { is_moderated?: boolean }).is_moderated)
+        if (hasModerated) {
+          flights = flights.filter((f) => (f as { is_moderated?: boolean }).is_moderated)
+        }
+      }
+      return { ...t, flights }
+    })
 
     return NextResponse.json({
       success: true,

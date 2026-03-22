@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
-import { isInCurrentMoscowWeek } from '@/lib/moscow-time'
+import { isInCurrentMoscowWeek, isDateInPast } from '@/lib/moscow-time'
 
 const flightTemplateSchema = z.object({
   flight_number: z.string().min(1),
@@ -68,6 +68,12 @@ export async function POST(
         }
 
         for (const d of data.dates) {
+          if (isDateInPast(d)) {
+            return NextResponse.json(
+              { success: false, error: `Нельзя создавать рейсы на прошедшие даты (${d})` },
+              { status: 400 }
+            )
+          }
           if (!isInCurrentMoscowWeek(d)) {
             return NextResponse.json(
               { success: false, error: `Дата ${d} не входит в текущую неделю` },

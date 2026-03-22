@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, TicketStatus } from '@prisma/client'
 import { z } from 'zod'
+import { isFlightStarted } from '@/lib/moscow-time'
 
 const updateTourSchema = z.object({
   partner_min_adult_price: z.number().positive().optional(),
@@ -55,9 +56,10 @@ export async function GET(
       )
     }
 
+    const filteredFlights = (tour.flights || []).filter((f) => !isFlightStarted(f.departure_time))
     return NextResponse.json({
       success: true,
-      data: tour,
+      data: { ...tour, flights: filteredFlights },
     })
   } catch (error) {
     console.error('Get tour error:', error)
@@ -123,7 +125,8 @@ export async function PATCH(
           },
         })
 
-        return NextResponse.json({ success: true, data: updated })
+        const filteredFlights = (updated.flights || []).filter((f) => !isFlightStarted(f.departure_time))
+        return NextResponse.json({ success: true, data: { ...updated, flights: filteredFlights } })
       } catch (error) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(

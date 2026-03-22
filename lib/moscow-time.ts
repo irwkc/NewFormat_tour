@@ -39,6 +39,12 @@ export function toDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+/** Проверить, что дата уже прошла (по Москве) — нельзя создавать рейсы задним числом */
+export function isDateInPast(dateStr: string): boolean {
+  const today = getMoscowDateString()
+  return dateStr < today
+}
+
 /** Проверить, что дата входит в текущую неделю по Москве */
 export function isInCurrentMoscowWeek(dateStr: string): boolean {
   const weekDates = getMoscowWeekDates()

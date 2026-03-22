@@ -42,7 +42,7 @@ type Tour = {
   flights?: Flight[]
 }
 
-type WeekDay = { dateStr: string; dayName: string; dayOfMonth: number }
+type WeekDay = { dateStr: string; dayName: string; dayOfMonth: number; isPast?: boolean }
 
 export default function EditTourPage() {
   const router = useRouter()
@@ -156,12 +156,18 @@ export default function EditTourPage() {
     try {
       setApplyLoading(true)
       setError(null)
+      const datesToSend = Array.from(selectedDates).filter((d) => !weekDates.find((w) => w.dateStr === d)?.isPast)
+      if (datesToSend.length === 0) {
+        setError('Выбранные дни уже прошли. Выберите актуальные даты.')
+        setApplyLoading(false)
+        return
+      }
       const body: {
         dates: string[]
         prices?: Record<string, unknown>
         flights: { flight_number: string; departure_time: string; max_places: number; duration_minutes?: number | null; boarding_location_url?: string }[]
       } = {
-        dates: Array.from(selectedDates),
+        dates: datesToSend,
         flights: validFlights.map((f) => ({
           flight_number: f.flight_number.trim(),
           departure_time: f.departure_time,
@@ -422,23 +428,25 @@ export default function EditTourPage() {
 
         <div className="glass-card">
           <h3 className="text-lg font-semibold text-white mb-4">Календарь (текущая неделя)</h3>
-          <p className="text-sm text-white/70 mb-4">Выберите дни и нажмите «Применить».</p>
+          <p className="text-sm text-white/70 mb-4">Выберите дни и нажмите «Применить». Прошедшие даты недоступны для создания рейсов.</p>
           <div className="grid grid-cols-7 gap-2">
-            {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+            {weekDates.map(({ dateStr, dayName, dayOfMonth, isPast }) => {
               const dayFlightsCount = getFlightsForDate(dateStr).length
               const isSelected = selectedDates.has(dateStr)
               return (
                 <div
                   key={dateStr}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleDate(dateStr)}
-                  onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
+                  role={isPast ? undefined : 'button'}
+                  tabIndex={isPast ? undefined : 0}
+                  onClick={() => !isPast && toggleDate(dateStr)}
+                  onKeyDown={(e) => !isPast && e.key === 'Enter' && toggleDate(dateStr)}
                   className={`
-                    p-4 rounded-lg border text-center cursor-pointer transition
-                    ${isSelected
-                      ? 'bg-purple-500/30 border-purple-400'
-                      : 'bg-white/5 border-white/20 hover:bg-white/10'
+                    p-4 rounded-lg border text-center transition relative
+                    ${isPast
+                      ? 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      : isSelected
+                        ? 'bg-purple-500/30 border-purple-400 cursor-pointer'
+                        : 'bg-white/5 border-white/20 hover:bg-white/10 cursor-pointer'
                     }
                   `}
                 >
@@ -447,13 +455,15 @@ export default function EditTourPage() {
                   {dayFlightsCount > 0 && (
                     <div className="text-xs text-green-300 mt-1">{dayFlightsCount} рейс.</div>
                   )}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); openDayEdit(dateStr) }}
-                    className="mt-2 text-xs text-purple-300 hover:text-purple-200"
-                  >
-                    Редакт.
-                  </button>
+                  {dayFlightsCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openDayEdit(dateStr) }}
+                      className={`mt-2 text-xs ${isPast ? 'text-white/50' : 'text-purple-300 hover:text-purple-200'}`}
+                    >
+                      Редакт.
+                    </button>
+                  )}
                 </div>
               )
             })}

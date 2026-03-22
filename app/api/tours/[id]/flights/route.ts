@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { isFlightStarted } from '@/lib/moscow-time'
 
 // GET /api/tours/:id/flights?date=YYYY-MM-DD — рейсы на дату (для редактирования дня)
 export async function GET(
@@ -56,9 +57,11 @@ export async function GET(
           orderBy: { departure_time: 'asc' },
         })
 
+        const filteredFlights = flights.filter((f) => !isFlightStarted(f.departure_time))
+
         return NextResponse.json({
           success: true,
-          data: flights,
+          data: filteredFlights,
         })
       } catch (error) {
         console.error('Get flights error:', error)

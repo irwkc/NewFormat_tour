@@ -243,7 +243,7 @@ export default function ModerateTourPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
-  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number }[]>([])
+  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number; isPast?: boolean }[]>([])
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
   const [flightsExpanded, setFlightsExpanded] = useState(false)
 
@@ -365,7 +365,7 @@ export default function ModerateTourPage() {
         }
       }
 
-      const datesToSend = Array.from(selectedDates)
+      const datesToSend = Array.from(selectedDates).filter((d) => !weekDates.find((w) => w.dateStr === d)?.isPast)
       const response = await fetch(`/api/tours/${tourId}/moderate`, {
         method: 'POST',
         headers: {
@@ -718,7 +718,7 @@ export default function ModerateTourPage() {
                 <h3 className="font-semibold mb-2 text-white">Применить модерацию к дням</h3>
                 <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Одобрение и цены применятся только к рейсам на выбранные даты.</p>
                 <div className="grid grid-cols-7 gap-2 mb-4">
-                  {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+                  {weekDates.map(({ dateStr, dayName, dayOfMonth, isPast }) => {
                     const isSelected = selectedDates.has(dateStr)
                     const dayFlights = (tour.flights || []).filter((f: ModerateFlight) => {
                       const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
@@ -726,15 +726,13 @@ export default function ModerateTourPage() {
                     })
                     const dayModerated = dayFlights.every((f: ModerateFlight) => f.is_moderated)
                     const dayFlightsCount = dayFlights.length
+                    const disabled = isPast === true
                     return (
                       <div
                         key={dateStr}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleDate(dateStr)}
-                        onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
-                        className={`p-3 rounded-lg border text-center cursor-pointer transition ${
-                          isSelected ? 'bg-purple-500/30 border-purple-400' : dayModerated ? 'bg-green-500/20 border-green-400/50' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                        {...(disabled ? {} : { role: 'button' as const, tabIndex: 0, onClick: () => toggleDate(dateStr), onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && toggleDate(dateStr) })}
+                        className={`p-3 rounded-lg border text-center transition ${
+                          disabled ? 'opacity-50 cursor-not-allowed bg-white/5 border-white/10' : `cursor-pointer ${isSelected ? 'bg-purple-500/30 border-purple-400' : dayModerated ? 'bg-green-500/20 border-green-400/50' : 'bg-white/5 border-white/20 hover:bg-white/10'}`
                         }`}
                       >
                         <div className="text-white/70 text-xs">{dayName}</div>

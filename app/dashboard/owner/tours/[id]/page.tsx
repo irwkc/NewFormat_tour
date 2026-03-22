@@ -321,7 +321,7 @@ export default function OwnerTourEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
-  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number }[]>([])
+  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number; isPast?: boolean }[]>([])
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
 
   const {
@@ -867,18 +867,16 @@ export default function OwnerTourEditPage() {
                 <h3 className="font-semibold mb-2 text-white">Применить к дням</h3>
                 <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Изменения применятся к рейсам на выбранные даты.</p>
                 <div className="grid grid-cols-7 gap-2">
-                  {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+                  {weekDates.map(({ dateStr, dayName, dayOfMonth, isPast }) => {
                     const isSelected = selectedDates.has(dateStr)
                     const dayFlightsCount = getFlightsForDate(dateStr).length
+                    const disabled = isPast === true
                     return (
                       <div
                         key={dateStr}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleDate(dateStr)}
-                        onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
-                        className={`p-3 rounded-lg border text-center cursor-pointer transition ${
-                          isSelected ? 'bg-purple-500/30 border-purple-400' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                        {...(disabled ? {} : { role: 'button' as const, tabIndex: 0, onClick: () => toggleDate(dateStr), onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && toggleDate(dateStr) })}
+                        className={`p-3 rounded-lg border text-center transition ${
+                          disabled ? 'opacity-50 cursor-not-allowed bg-white/5 border-white/10' : `cursor-pointer ${isSelected ? 'bg-purple-500/30 border-purple-400' : 'bg-white/5 border-white/20 hover:bg-white/10'}`
                         }`}
                       >
                         <div className="text-white/70 text-xs">{dayName}</div>

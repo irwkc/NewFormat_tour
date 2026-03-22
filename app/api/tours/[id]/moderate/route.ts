@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, ModerationStatus, CommissionType } from '@prisma/client'
 import { z } from 'zod'
 import { calcIncomeSplit, getPreviewScenarios, getPreviewScenariosForRule } from '@/lib/domain/commission-calc'
+import { isDateInPast, isFlightStarted } from '@/lib/moscow-time'
 
 const optionalNumber = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
@@ -63,6 +64,16 @@ export async function POST(
         const data = moderateSchema.parse(body)
 
         if (data.moderation_status === 'approved') {
+          if (data.dates && data.dates.length > 0) {
+            for (const d of data.dates) {
+              if (isDateInPast(d)) {
+                return NextResponse.json(
+                  { success: false, error: `Нельзя применять модерацию к прошедшим датам (${d})` },
+                  { status: 400 }
+                )
+              }
+            }
+          }
           const existing = await prisma.tour.findUnique({ where: { id } })
           if (!existing) {
             return NextResponse.json({ success: false, error: 'Tour not found' }, { status: 404 })
@@ -174,9 +185,10 @@ export async function POST(
         }
 
         const { flights, ...tourWithoutFlights } = tour
+        const filteredFlights = (tour.flights || []).filter((f) => !isFlightStarted(f.departure_time))
         return NextResponse.json({
           success: true,
-          data: { ...tourWithoutFlights, flights: tour.flights },
+          data: { ...tourWithoutFlights, flights: filteredFlights },
         })
       } catch (error) {
         if (error instanceof z.ZodError) {

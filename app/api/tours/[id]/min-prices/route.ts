@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 import { z } from 'zod'
+import { isDateInPast, isFlightStarted } from '@/lib/moscow-time'
 
 const updateMinPricesSchema = z.object({
   owner_min_adult_price: z.number().positive(),
@@ -30,6 +31,17 @@ export async function PATCH(
         const { id } = params
         const body = await request.json()
         const data = updateMinPricesSchema.parse(body)
+
+        if (data.dates && data.dates.length > 0) {
+          for (const d of data.dates) {
+            if (isDateInPast(d)) {
+              return NextResponse.json(
+                { success: false, error: `Нельзя применять к прошедшим датам (${d})` },
+                { status: 400 }
+              )
+            }
+          }
+        }
 
         const tour = await prisma.tour.update({
           where: { id },
@@ -72,9 +84,10 @@ export async function PATCH(
         }
 
         const { flights, ...tourWithoutFlights } = tour
+        const filteredFlights = (tour.flights || []).filter((f) => !isFlightStarted(f.departure_time))
         return NextResponse.json({
           success: true,
-          data: { ...tourWithoutFlights, flights: tour.flights },
+          data: { ...tourWithoutFlights, flights: filteredFlights },
         })
       } catch (error) {
         if (error instanceof z.ZodError) {
