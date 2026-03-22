@@ -24,8 +24,6 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const data = checkNumberSchema.parse(body)
 
-        let ticket: Awaited<ReturnType<typeof prisma.ticket.findUnique>> = null
-
         const ticketInclude = {
           tour: {
             include: {
@@ -47,7 +45,7 @@ export async function POST(request: NextRequest) {
           where: { sale_number: data.sale_number },
           include: { ticket: { include: ticketInclude } },
         })
-        ticket = sale?.ticket ?? null
+        const ticket = sale?.ticket ?? null
 
         if (!ticket) {
           return NextResponse.json({
