@@ -397,13 +397,33 @@ export default function OwnerTourEditPage() {
     setError(null)
     setSaving(true)
 
-    const tourParams = {
+    const rulesRaw = (data.commission_rules || []).filter(
+      (r) =>
+        r &&
+        Number.isFinite(Number(r.commission_percentage ?? 0)) &&
+        (r.commission_percentage ?? 0) >= 0
+    )
+    const rules = rulesRaw.map((r) => ({
+      threshold_adult: Number(r.threshold_adult ?? 0) || 0,
+      threshold_child: Number(r.threshold_child ?? 0) || 0,
+      threshold_concession: Number(r.threshold_concession ?? 0) || 0,
+      commission_percentage: Number(r.commission_percentage ?? 0) || 0,
+    }))
+
+    const tourParams: TourParams = {
       partner_min_adult_price: Number(tour.partner_min_adult_price),
       partner_min_child_price: Number(tour.partner_min_child_price),
       partner_min_concession_price:
         tour.partner_min_concession_price != null
           ? Number(tour.partner_min_concession_price)
           : 0,
+      partner_commission_type:
+        (tour.partner_commission_type as 'fixed' | 'percentage') ??
+        (tour.partner_commission_percentage != null ? 'percentage' : 'fixed'),
+      partner_fixed_adult_price: tour.partner_fixed_adult_price != null ? Number(tour.partner_fixed_adult_price) : null,
+      partner_fixed_child_price: tour.partner_fixed_child_price != null ? Number(tour.partner_fixed_child_price) : null,
+      partner_fixed_concession_price: tour.partner_fixed_concession_price != null ? Number(tour.partner_fixed_concession_price) : null,
+      partner_commission_percentage: tour.partner_commission_percentage != null ? Number(tour.partner_commission_percentage) : null,
       owner_min_adult_price: Number(data.owner_min_adult_price),
       owner_min_child_price: Number(data.owner_min_child_price),
       owner_min_concession_price: Number(data.owner_min_concession_price) || 0,
@@ -413,22 +433,35 @@ export default function OwnerTourEditPage() {
       commission_fixed_adult: data.commission_fixed_adult,
       commission_fixed_child: data.commission_fixed_child,
       commission_fixed_concession: data.commission_fixed_concession,
-      commission_rules: (data.commission_rules || []).filter(
-        (r) => (r.commission_percentage ?? 0) >= 0
-      ),
+      commission_rules: rules.length > 0 ? rules : undefined,
     }
 
-    const scenarios = getPreviewScenarios(tourParams as TourParams)
-    const badScenario = scenarios.find((s) => {
-      const split = calcIncomeSplit(s, tourParams as TourParams)
+    const checkScenario = (s: { total_amount: number; adult_count: number; child_count: number; concession_count: number; adult_price: number; child_price: number; concession_price: number }, params: TourParams) => {
+      const split = calcIncomeSplit(s, params)
       return split.owner <= 0
-    })
-    if (badScenario) {
+    }
+
+    const minScenarios = getPreviewScenarios(tourParams)
+    const badMin = minScenarios.find((s) => checkScenario(s, tourParams))
+    if (badMin) {
       setError(
         'Нельзя сохранить: при этих параметрах владелец не зарабатывает (доход ≤ 0). Уменьшите процент промоутера или увеличьте минимальные цены.'
       )
       setSaving(false)
       return
+    }
+
+    for (const rule of rules) {
+      const ruleParams: TourParams = { ...tourParams, commission_rules: [rule] }
+      const ruleScenarios = getPreviewScenariosForRule(tourParams, rule)
+      const badRule = ruleScenarios.find((s) => checkScenario(s, ruleParams))
+      if (badRule) {
+        setError(
+          `Нельзя сохранить: при пороге взр. ${rule.threshold_adult}₽, дет. ${rule.threshold_child}₽, льг. ${rule.threshold_concession}₽ (${rule.commission_percentage}%) владелец не зарабатывает. Уменьшите процент или измените пороги.`
+        )
+        setSaving(false)
+        return
+      }
     }
 
     try {

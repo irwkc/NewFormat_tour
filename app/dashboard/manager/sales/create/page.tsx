@@ -372,13 +372,11 @@ export default function CreateSalePage() {
                     </option>
                     {selectedTour.flights
                       .filter((flight: any) => {
-                        const reserved = flight.reserved_for_partner ?? 0
-                        const available = flight.max_places - flight.current_booked_places - reserved
+                        const available = flight.max_places - flight.current_booked_places
                         return !flight.is_sale_stopped && available > 0
                       })
                       .map((flight: any) => {
-                        const reserved = flight.reserved_for_partner ?? 0
-                        const availablePlaces = flight.max_places - flight.current_booked_places - reserved
+                        const availablePlaces = flight.max_places - flight.current_booked_places
                         const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
                         const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                         const durationStr = flight.duration_minutes ? ` · ${flight.duration_minutes} мин` : ''

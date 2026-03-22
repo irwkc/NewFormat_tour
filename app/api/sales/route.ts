@@ -138,6 +138,12 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
+        if (result.status === 'flight_already_started') {
+          return NextResponse.json(
+            { success: false, error: 'Рейс уже начался, продажа билетов недоступна' },
+            { status: 400 }
+          )
+        }
         if (result.status === 'not_enough_places') {
           return NextResponse.json(
             {

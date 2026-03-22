@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, ModerationStatus, CommissionType } from '@prisma/client'
 import { z } from 'zod'
-import { calcIncomeSplit, getPreviewScenarios } from '@/lib/domain/commission-calc'
+import { calcIncomeSplit, getPreviewScenarios, getPreviewScenariosForRule } from '@/lib/domain/commission-calc'
 
 const optionalNumber = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
@@ -66,7 +66,16 @@ export async function POST(
           if (!existing) {
             return NextResponse.json({ success: false, error: 'Tour not found' }, { status: 404 })
           }
-          const rules = (data.commission_rules || []).filter((r: { commission_percentage?: number }) => (r.commission_percentage ?? 0) >= 0)
+          const rulesRaw = (data.commission_rules || []).filter(
+            (r: { commission_percentage?: number }) => r && Number.isFinite(Number(r.commission_percentage ?? 0)) && (r.commission_percentage ?? 0) >= 0
+          )
+          const rules = rulesRaw.map((r: { threshold_adult?: number; threshold_child?: number; threshold_concession?: number; commission_percentage?: number }) => ({
+            threshold_adult: Number(r.threshold_adult ?? 0) || 0,
+            threshold_child: Number(r.threshold_child ?? 0) || 0,
+            threshold_concession: Number(r.threshold_concession ?? 0) || 0,
+            commission_percentage: Number(r.commission_percentage ?? 0) || 0,
+          }))
+
           const tourParams = {
             partner_min_adult_price: Number(existing.partner_min_adult_price),
             partner_min_child_price: Number(existing.partner_min_child_price),
@@ -85,23 +94,28 @@ export async function POST(
             commission_fixed_adult: data.commission_fixed_adult,
             commission_fixed_child: data.commission_fixed_child,
             commission_fixed_concession: data.commission_fixed_concession,
-            commission_rules: rules.length ? rules.map((r: { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }) => ({
-              threshold_adult: Number(r.threshold_adult ?? 0),
-              threshold_child: Number(r.threshold_child ?? 0),
-              threshold_concession: Number(r.threshold_concession ?? 0),
-              commission_percentage: Number(r.commission_percentage ?? 0),
-            })) : undefined,
+            commission_rules: rules.length ? rules : undefined,
           }
-          const scenarios = getPreviewScenarios(tourParams)
-          const badScenario = scenarios.find((s) => {
-            const split = calcIncomeSplit(s, tourParams)
-            return split.owner <= 0
-          })
-          if (badScenario) {
+
+          const minScenarios = getPreviewScenarios(tourParams)
+          const badMin = minScenarios.find((s) => calcIncomeSplit(s, tourParams).owner <= 0)
+          if (badMin) {
             return NextResponse.json(
               { success: false, error: 'Нельзя одобрить: при этих параметрах владелец не зарабатывает (доход ≤ 0). Уменьшите процент промоутера или увеличьте минимальные цены.' },
               { status: 400 }
             )
+          }
+
+          for (const rule of rules) {
+            const ruleParams = { ...tourParams, commission_rules: [rule] }
+            const ruleScenarios = getPreviewScenariosForRule(tourParams, rule)
+            const badRule = ruleScenarios.find((s) => calcIncomeSplit(s, ruleParams).owner <= 0)
+            if (badRule) {
+              return NextResponse.json(
+                { success: false, error: `Нельзя одобрить: при пороге взр. ${rule.threshold_adult}₽, дет. ${rule.threshold_child}₽, льг. ${rule.threshold_concession}₽ (${rule.commission_percentage}%) владелец не зарабатывает. Уменьшите процент или измените пороги.` },
+                { status: 400 }
+              )
+            }
           }
         }
 

@@ -9,8 +9,7 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   owner: [
     { label: 'Категории', href: '/dashboard/owner/categories' },
     { label: 'Экскурсии', href: '/dashboard/owner/tours' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
+    { label: 'Промоутеры и менеджеры', href: '/dashboard/owner/team' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
     { label: 'Приглашения и рефералы', href: '/dashboard/owner/invitations' },
@@ -20,9 +19,8 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
     { label: 'Выдача вещей', href: '/dashboard/owner-assistant' },
   ],
   partner: [
-    { label: 'Мои экскурсии', href: '/dashboard/partner/tours' },
+    { label: 'Мои экскурсии', href: '/dashboard/partner' },
     { label: 'Проверка билетов', href: '/dashboard/partner/tickets/check' },
-    { label: 'Статистика', href: '/dashboard/partner/statistics' },
     { label: 'Настройки', href: '/dashboard/partner/settings' },
   ],
   partner_controller: [

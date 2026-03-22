@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, TicketStatus } from '@prisma/client'
+import { z } from 'zod'
+
+const updateTourSchema = z.object({
+  partner_min_adult_price: z.number().positive().optional(),
+  partner_min_child_price: z.number().positive().optional().nullable(),
+  partner_min_concession_price: z.number().positive().optional().nullable(),
+  partner_commission_type: z.enum(['percentage', 'fixed']).optional().nullable(),
+  partner_commission_percentage: z.number().min(0).max(100).optional().nullable(),
+  partner_fixed_adult_price: z.number().min(0).optional().nullable(),
+  partner_fixed_child_price: z.number().min(0).optional().nullable(),
+  partner_fixed_concession_price: z.number().min(0).optional().nullable(),
+})
 
 // GET /api/tours/:id - детали экскурсии
 export async function GET(
@@ -54,6 +66,80 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+// PATCH /api/tours/:id - обновление цен/доли партнёра (только партнёр для своих)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(
+    request,
+    async (req) => {
+      try {
+        if (req.user!.role !== UserRole.partner) {
+          return NextResponse.json(
+            { success: false, error: 'Only partners can update tour prices' },
+            { status: 403 }
+          )
+        }
+
+        const { id } = params
+        const body = await request.json()
+        const data = updateTourSchema.parse(body)
+
+        const tour = await prisma.tour.findUnique({ where: { id } })
+        if (!tour) {
+          return NextResponse.json(
+            { success: false, error: 'Tour not found' },
+            { status: 404 }
+          )
+        }
+        if (tour.created_by_user_id !== req.user!.userId) {
+          return NextResponse.json(
+            { success: false, error: 'You can only update your own tours' },
+            { status: 403 }
+          )
+        }
+
+        const updateData: Record<string, unknown> = {}
+        if (data.partner_min_adult_price !== undefined) updateData.partner_min_adult_price = data.partner_min_adult_price
+        if (data.partner_min_child_price !== undefined) updateData.partner_min_child_price = data.partner_min_child_price
+        if (data.partner_min_concession_price !== undefined) updateData.partner_min_concession_price = data.partner_min_concession_price
+        if (data.partner_commission_type !== undefined) updateData.partner_commission_type = data.partner_commission_type
+        if (data.partner_commission_percentage !== undefined) updateData.partner_commission_percentage = data.partner_commission_percentage
+        if (data.partner_fixed_adult_price !== undefined) updateData.partner_fixed_adult_price = data.partner_fixed_adult_price
+        if (data.partner_fixed_child_price !== undefined) updateData.partner_fixed_child_price = data.partner_fixed_child_price
+        if (data.partner_fixed_concession_price !== undefined) updateData.partner_fixed_concession_price = data.partner_fixed_concession_price
+
+        const updated = await prisma.tour.update({
+          where: { id },
+          data: updateData,
+          include: {
+            category: true,
+            flights: { orderBy: [{ date: 'asc' }, { departure_time: 'asc' }] },
+            createdBy: { select: { id: true, full_name: true } },
+            moderatedBy: { select: { id: true, full_name: true } },
+          },
+        })
+
+        return NextResponse.json({ success: true, data: updated })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid input', details: error.errors },
+            { status: 400 }
+          )
+        }
+        console.error('Update tour error:', error)
+        return NextResponse.json(
+          { success: false, error: 'Internal server error' },
+          { status: 500 }
+        )
+      }
+    },
+    [UserRole.partner]
+  )
 }
 
 // DELETE /api/tours/:id - удаление экскурсии (партнер для своих экскурсий)

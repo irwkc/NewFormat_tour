@@ -57,10 +57,14 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     return { status: 'flight_sales_stopped' } as const
   }
 
-  // Проверить доступность мест (для менеджеров/промоутеров учитываем резерв партнёра)
+  const { isFlightStarted } = await import('@/lib/moscow-time')
+  if (isFlightStarted(flight.departure_time)) {
+    return { status: 'flight_already_started' } as const
+  }
+
+  // Проверить доступность мест
   const totalPlaces = input.adult_count + input.child_count + (input.concession_count || 0)
-  const reservedForPartner = flight.reserved_for_partner ?? 0
-  const availablePlaces = flight.max_places - flight.current_booked_places - reservedForPartner
+  const availablePlaces = flight.max_places - flight.current_booked_places
   if (totalPlaces > availablePlaces) {
     return {
       status: 'not_enough_places',
@@ -69,21 +73,20 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     } as const
   }
 
-  // Проверить минимальные цены
-  if (input.adult_price < Number(tour.owner_min_adult_price)) {
-    return { status: 'adult_price_too_low', min: Number(tour.owner_min_adult_price) } as const
+  // Проверить минимальные цены (owner_min или partner_min если ещё не модерировано)
+  const minAdult = Number(tour.owner_min_adult_price ?? tour.partner_min_adult_price ?? 0)
+  if (minAdult > 0 && input.adult_price < minAdult) {
+    return { status: 'adult_price_too_low', min: minAdult } as const
   }
 
-  if (input.child_count > 0 && input.child_price) {
-    if (input.child_price < Number(tour.owner_min_child_price)) {
-      return { status: 'child_price_too_low', min: Number(tour.owner_min_child_price) } as const
-    }
+  const minChild = Number(tour.owner_min_child_price ?? tour.partner_min_child_price ?? 0)
+  if (input.child_count > 0 && input.child_price && minChild > 0 && input.child_price < minChild) {
+    return { status: 'child_price_too_low', min: minChild } as const
   }
 
-  if (input.concession_count > 0 && input.concession_price) {
-    if (tour.owner_min_concession_price && input.concession_price < Number(tour.owner_min_concession_price)) {
-      return { status: 'concession_price_too_low', min: Number(tour.owner_min_concession_price) } as const
-    }
+  const minConcession = Number(tour.owner_min_concession_price ?? tour.partner_min_concession_price ?? 0)
+  if (input.concession_count > 0 && input.concession_price && minConcession > 0 && input.concession_price < minConcession) {
+    return { status: 'concession_price_too_low', min: minConcession } as const
   }
 
   // Проверить промоутера, если указан

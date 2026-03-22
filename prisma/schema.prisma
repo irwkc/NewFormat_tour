@@ -168,8 +168,10 @@ model Tour {
   created_by_user_id    String          @map("created_by_user_id")
   category_id           String          @map("category_id")
   company               String
-  partner_min_adult_price Decimal       @map("partner_min_adult_price") @db.Decimal(10, 2)
-  partner_min_child_price Decimal       @map("partner_min_child_price") @db.Decimal(10, 2)
+  description           String?         @db.Text
+  photo_urls            Json?           @map("photo_urls") // string[] URLs
+  partner_min_adult_price Decimal?      @map("partner_min_adult_price") @db.Decimal(10, 2)
+  partner_min_child_price Decimal?      @map("partner_min_child_price") @db.Decimal(10, 2)
   partner_min_concession_price Decimal? @map("partner_min_concession_price") @db.Decimal(10, 2)
   partner_commission_type String?       @map("partner_commission_type") @db.VarChar(20)
   partner_fixed_adult_price Decimal?    @map("partner_fixed_adult_price") @db.Decimal(10, 2)
