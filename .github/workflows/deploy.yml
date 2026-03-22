@@ -81,9 +81,8 @@ jobs:
             echo "🔧 Генерация Prisma Client..."
             npm run db:generate 2>&1 | grep -v "^Start by importing\|^Tip:" || true
             
-            # Сборка проекта (очищаем .next — важен clean build после смены структуры)
+            # Сборка проекта
             echo "🏗️ Сборка проекта..."
-            echo "📁 Проверка структуры: src/app exist=$(test -d src/app && echo yes || echo no)"
             rm -rf .next
             NODE_OPTIONS="--max-old-space-size=1536" npm run build --silent 2>&1 | grep -v "^npm WARN\|^Start by importing\|^Tip:" || true
             
