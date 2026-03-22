@@ -49,6 +49,7 @@ export async function POST(
           { status: 500 }
         )
       }
-    }
+    },
+    [UserRole.partner, UserRole.partner_controller]
   )
 }

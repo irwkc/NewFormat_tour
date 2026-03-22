@@ -24,14 +24,22 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
         margin: 50,
       })
 
+      const fontPath = path.join(process.cwd(), 'lib', 'fonts', 'DejaVuSans.ttf')
+      if (fs.existsSync(fontPath)) {
+        doc.font(fontPath)
+      }
+
       doc.pipe(stream)
+
+      const pageWidth = doc.page.width
+      const margin = 50
 
       const logoPath = path.join(process.cwd(), 'public', 'logo.png')
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, 50, 50, { width: 100 })
+        doc.image(logoPath, margin, 50, { width: 100 })
       }
 
-      doc.fontSize(24).text('БИЛЕТ НА ЭКСКУРСИЮ', 50, 170, { align: 'center' })
+      doc.fontSize(24).text('БИЛЕТ НА ЭКСКУРСИЮ', 0, 170, { align: 'center', width: pageWidth })
 
       const sale = ticketData.sale || ticketData
       const tour = sale.tour || ticketData.tour
@@ -89,15 +97,17 @@ export async function generateTicketPDF(ticketData: any): Promise<string> {
       if (ticketData.qr_code_data) {
         const qrDataURL = await generateQRCode(ticketData.qr_code_data)
         const qrBuffer = Buffer.from(qrDataURL.split(',')[1], 'base64')
-        doc.image(qrBuffer, 400, 250, { width: 150, height: 150 })
-        doc.fontSize(10).text('QR код для контроля', 400, 410, { align: 'center', width: 150 })
+        doc.image(qrBuffer, pageWidth - margin - 150, 220, { width: 150, height: 150 })
+        doc.fontSize(10).text('QR для проверки на посадке', pageWidth - margin - 150, 375, { align: 'center', width: 150 })
       }
 
-      let bottomText = ''
-      if (sale.sale_number) bottomText += `Номер продажи: ${sale.sale_number}`
-      if (bottomText) bottomText += '\n'
-      bottomText += `ID билета: ${ticketData.id}`
-      doc.fontSize(12).text(bottomText, 50, 600)
+      yPos += 40
+      if (sale.sale_number) {
+        doc.fontSize(16).text(`Код заказа: ${sale.sale_number}`, 50, yPos)
+        doc.fontSize(10).text('(укажите при проверке билета)', 50, yPos + 22)
+        yPos += 50
+      }
+      doc.fontSize(10).fillColor('#666').text(`ID билета: ${ticketData.id}`, 50, yPos)
 
       doc.end()
 

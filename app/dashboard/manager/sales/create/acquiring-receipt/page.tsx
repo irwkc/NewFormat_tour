@@ -22,8 +22,32 @@ function AcquiringReceiptPageContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [sale, setSale] = useState<{ sale_number?: string | null; total_amount?: number | string } | null>(null)
 
   const saleId = searchParams.get('sale_id')
+  const [saleLoading, setSaleLoading] = useState(true)
+
+  useEffect(() => {
+    if (!saleId || !token) {
+      setSaleLoading(false)
+      return
+    }
+    setSaleLoading(true)
+    fetch(`/api/sales/${saleId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data) {
+          setSale({
+            sale_number: d.data.sale_number ?? null,
+            total_amount: d.data.total_amount ?? 0,
+          })
+        } else {
+          setSale(null)
+        }
+      })
+      .catch(() => setSale(null))
+      .finally(() => setSaleLoading(false))
+  }, [saleId, token])
 
   const {
     register,
@@ -119,6 +143,29 @@ function AcquiringReceiptPageContent() {
       <div className="space-y-6 max-w-2xl mx-auto">
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Фото чека эквайринга</h2>
+
+          <div className="mb-6 p-4 rounded-xl bg-white/10 border border-white/20 space-y-2">
+            {saleLoading ? (
+              <p className="text-white/70">Загрузка данных заказа...</p>
+            ) : sale ? (
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <span className="text-white/60 text-sm">Код заказа (6 цифр с чека):</span>
+                    <div className="text-2xl font-bold text-white tracking-widest mt-1">{sale.sale_number || '—'}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-white/60 text-sm">Сумма к оплате:</span>
+                    <div className="text-2xl font-bold text-white mt-1">{Number(sale.total_amount ?? 0).toLocaleString('ru-RU')} ₽</div>
+                  </div>
+                </div>
+                <p className="text-white/50 text-xs mt-2">Укажите этот код при проверке билета на посадке</p>
+              </>
+            ) : (
+              <p className="text-white/70">Заказ не найден. Проверьте ссылку.</p>
+            )}
+          </div>
+
           <p className="text-white/70 text-sm mb-4">Билеты безномерные. Загрузите фото чека и завершите продажу.</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

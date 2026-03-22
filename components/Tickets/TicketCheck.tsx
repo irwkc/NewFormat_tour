@@ -10,6 +10,7 @@ export default function TicketCheck() {
   const [qrData, setQrData] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [ticket, setTicket] = useState<any>(null)
+  const [canConfirm, setCanConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'qr' | 'number'>('qr')
@@ -34,21 +35,26 @@ export default function TicketCheck() {
       
       if (result.success && result.data.is_valid) {
         setTicket(result.data.ticket)
+        setCanConfirm(result.data.can_confirm ?? false)
         setError(result.data.message)
       } else {
         setError(result.data.message || 'Билет не найден')
         setTicket(null)
+        setCanConfirm(false)
       }
     } catch (err) {
       setError('Ошибка при проверке билета')
+      setTicket(null)
+      setCanConfirm(false)
     } finally {
       setLoading(false)
     }
   }
 
   const checkByNumber = async () => {
-    if (!ticketNumber || !ticketNumber.match(/^[A-Z]{2}\d{8}$/)) {
-      setError('Номер билета должен быть в формате AA00000000')
+    const trimmed = ticketNumber.trim()
+    if (!trimmed || !/^\d{6}$/.test(trimmed)) {
+      setError('Введите 6-значный код заказа с чека')
       return
     }
 
@@ -62,20 +68,24 @@ export default function TicketCheck() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ticket_number: ticketNumber }),
+        body: JSON.stringify({ sale_number: trimmed }),
       })
 
       const result = await response.json()
       
       if (result.success && result.data.is_valid) {
         setTicket(result.data.ticket)
+        setCanConfirm(result.data.can_confirm ?? false)
         setError(result.data.message)
       } else {
         setError(result.data.message || 'Билет не найден')
         setTicket(null)
+        setCanConfirm(false)
       }
     } catch (err) {
       setError('Ошибка при проверке билета')
+      setTicket(null)
+      setCanConfirm(false)
     } finally {
       setLoading(false)
     }
@@ -98,11 +108,13 @@ export default function TicketCheck() {
       
       if (result.success) {
         setError('Билет успешно подтвержден!')
-        // Обновить данные билета
-        if (mode === 'qr') {
-          checkByQR()
-        } else {
-          checkByNumber()
+        setCanConfirm(false)
+        // После подтверждения sale_number обнуляется — обновляем по QR
+        const qrToRefresh = mode === 'qr' ? qrData : ticket?.qr_code_data
+        if (qrToRefresh) {
+          setQrData(qrToRefresh)
+          setMode('qr')
+          await checkByQR()
         }
       } else {
         setError(result.error || 'Ошибка при подтверждении билета')
@@ -147,7 +159,7 @@ export default function TicketCheck() {
                   : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
               }`}
             >
-              По номеру билета
+              По коду
             </button>
           </div>
 
@@ -172,13 +184,14 @@ export default function TicketCheck() {
             <div className="space-y-4">
               <input
                 type="text"
+                inputMode="numeric"
                 value={ticketNumber}
-                onChange={(e) => setTicketNumber(e.target.value.toUpperCase())}
-                placeholder="AA00000000"
-                pattern="[A-Z]{2}\d{8}"
-                maxLength={10}
-                className="input-glass uppercase"
+                onChange={(e) => setTicketNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="704261"
+                maxLength={6}
+                className="input-glass"
               />
+              <p className="text-white/60 text-xs">6 цифр с чека</p>
               <button
                 onClick={checkByNumber}
                 disabled={loading}
@@ -257,7 +270,7 @@ export default function TicketCheck() {
               )}
             </div>
 
-            {ticket.can_confirm && ticket.ticket_status === 'sold' && (
+            {canConfirm && ticket.ticket_status === 'sold' && (
               <div className="mt-6 flex space-x-4">
                 <button
                   onClick={confirmTicket}
