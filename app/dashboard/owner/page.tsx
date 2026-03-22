@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { RoleOnboardingOverlay } from '@/components/Onboarding/RoleOnboardingOverlay'
+import Link from 'next/link'
 
 type OwnerPromoterSummary = {
   id: string
@@ -19,10 +20,21 @@ type OwnerManagerSummary = {
   debt_to_company: number | string
 }
 
+type ModerationTourRow = {
+  id: string
+  company: string
+  category: { name: string }
+  partner_min_adult_price: number | string
+  partner_min_child_price: number | string
+  partner_min_concession_price?: number | string | null
+  flights?: { id: string }[]
+}
+
 export default function OwnerDashboard() {
   const { token, user } = useAuthStore()
   const [promoters, setPromoters] = useState<OwnerPromoterSummary[]>([])
   const [managers, setManagers] = useState<OwnerManagerSummary[]>([])
+  const [toursOnModeration, setToursOnModeration] = useState<ModerationTourRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -45,28 +57,25 @@ export default function OwnerDashboard() {
 
   const fetchData = async () => {
     try {
-      const [promotersRes, managersRes] = await Promise.all([
+      const [promotersRes, managersRes, toursRes] = await Promise.all([
         fetch('/api/users/promoters', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
         }),
         fetch('/api/users/managers', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch('/api/tours?moderation_status=pending', {
+          headers: { 'Authorization': `Bearer ${token}` },
         }),
       ])
 
       const promotersData = await promotersRes.json()
       const managersData = await managersRes.json()
+      const toursData = await toursRes.json()
 
-      if (promotersData.success) {
-        setPromoters(promotersData.data)
-      }
-      if (managersData.success) {
-        setManagers(managersData.data)
-      }
+      if (promotersData.success) setPromoters(promotersData.data)
+      if (managersData.success) setManagers(managersData.data)
+      if (toursData.success) setToursOnModeration(toursData.data)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -74,21 +83,8 @@ export default function OwnerDashboard() {
     }
   }
 
-  const navItems = [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
-    { label: 'Категории', href: '/dashboard/owner/categories' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
-    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
-    { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
-    { label: 'Настройки', href: '/dashboard/owner/settings' },
-  ]
-
   return (
-    <DashboardLayout title="Панель владельца" navItems={navItems}>
+    <DashboardLayout title="Панель владельца">
       {showOnboarding && (
         <RoleOnboardingOverlay role="owner" onFinish={finishOnboarding} />
       )}
@@ -97,7 +93,45 @@ export default function OwnerDashboard() {
           <h2 className="text-2xl font-bold mb-2 text-white">Добро пожаловать{user?.full_name || user?.email ? `, ${user.full_name || user.email}` : ''}!</h2>
           <p className="text-white/70">Обзор системы управления экскурсиями</p>
         </div>
-        
+
+        {/* Экскурсии на модерации */}
+        <div className="glass-card">
+          <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+            <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
+            Экскурсии на модерации
+          </h3>
+          {loading ? (
+            <p className="text-white/70">Загрузка...</p>
+          ) : toursOnModeration.length === 0 ? (
+            <p className="text-white/60">Нет экскурсий на модерации</p>
+          ) : (
+            <div className="space-y-3">
+              {toursOnModeration.map((tour) => (
+                <Link
+                  key={tour.id}
+                  href={`/dashboard/owner/moderation/${tour.id}`}
+                  className="block rounded-2xl p-4 hover:bg-white/10 transition-all border border-white/10"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-white">{tour.company}</div>
+                      <div className="text-sm text-white/70 mt-1">
+                        Категория: {tour.category.name} · Рейсов: {tour.flights?.length || 0}
+                      </div>
+                      <div className="text-sm mt-1 text-white/60">
+                        Цены партнёра: взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-yellow-300/30 text-yellow-200 rounded-full text-sm border border-yellow-400/30 shrink-0">
+                      На модерации
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="glass-card">
             <h3 className="text-lg font-semibold mb-4 text-white flex items-center">

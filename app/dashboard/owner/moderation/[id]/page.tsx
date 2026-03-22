@@ -188,27 +188,15 @@ export default function ModerateTourPage() {
         return
       }
 
-      router.push('/dashboard/owner/moderation')
+      router.push('/dashboard/owner')
     } catch (err) {
       setError('Ошибка при модерации экскурсии')
     }
   }
 
-  const navItems = [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
-    { label: 'Категории', href: '/dashboard/owner/categories' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
-    { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
-    { label: 'Настройки', href: '/dashboard/owner/settings' },
-  ]
-
   if (loading) {
     return (
-      <DashboardLayout title="Модерация экскурсии" navItems={navItems}>
+      <DashboardLayout title="Модерация экскурсии">
         <div className="px-4 py-6 sm:px-0">
           <p>Загрузка...</p>
         </div>
@@ -218,7 +206,7 @@ export default function ModerateTourPage() {
 
   if (!tour) {
     return (
-      <DashboardLayout title="Модерация экскурсии" navItems={navItems}>
+      <DashboardLayout title="Модерация экскурсии">
         <div className="px-4 py-6 sm:px-0">
           <p>Экскурсия не найдена</p>
         </div>
@@ -227,7 +215,7 @@ export default function ModerateTourPage() {
   }
 
   return (
-    <DashboardLayout title="Модерация экскурсии" navItems={navItems}>
+    <DashboardLayout title="Модерация экскурсии">
       <div className="space-y-6 max-w-2xl mx-auto">
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Модерация экскурсии</h2>

@@ -7,11 +7,9 @@ export type NavItem = { label: string; href: string }
 
 export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   owner: [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
     { label: 'Категории', href: '/dashboard/owner/categories' },
     { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
     { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
     { label: 'Приглашения', href: '/dashboard/owner/invitations' },
@@ -20,7 +18,6 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   ],
   owner_assistant: [
     { label: 'Выдача вещей', href: '/dashboard/owner-assistant' },
-    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
   ],
   partner: [
     { label: 'Мои экскурсии', href: '/dashboard/partner/tours' },

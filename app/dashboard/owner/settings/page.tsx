@@ -387,21 +387,8 @@ export default function OwnerSettingsPage() {
     }
   }
 
-  const navItems = [
-    { label: 'Экскурсии на модерации', href: '/dashboard/owner/moderation' },
-    { label: 'Категории', href: '/dashboard/owner/categories' },
-    { label: 'Промоутеры', href: '/dashboard/owner/promoters' },
-    { label: 'Менеджеры', href: '/dashboard/owner/managers' },
-    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
-    { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
-    { label: 'Статистика', href: '/dashboard/owner/statistics' },
-    { label: 'Приглашения', href: '/dashboard/owner/invitations' },
-    { label: 'Рефералы', href: '/dashboard/owner/referrals' },
-    { label: 'Настройки', href: '/dashboard/owner/settings' },
-  ]
-
   return (
-    <DashboardLayout title="Настройки" navItems={navItems}>
+    <DashboardLayout title="Настройки">
       <div className="space-y-6">
         <div className="space-y-6 max-w-2xl">
           {/* Вход по лицу (2FA) — только для владельца */}

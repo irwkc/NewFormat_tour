@@ -141,13 +141,8 @@ export default function OwnerAssistantDashboard() {
     }
   }
 
-  const navItems = [
-    { label: 'Выдача вещей', href: '/dashboard/owner-assistant' },
-    { label: 'Передача билетов', href: '/dashboard/owner/ticket-transfers' },
-  ]
-
   return (
-    <DashboardLayout title="Панель помощника владельца" navItems={navItems}>
+    <DashboardLayout title="Панель помощника владельца">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>

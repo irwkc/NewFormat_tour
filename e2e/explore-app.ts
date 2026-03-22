@@ -32,18 +32,16 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD || ''
 const DASHBOARD_ROUTES: Record<string, string[]> = {
   owner: [
     '/dashboard/owner',
-    '/dashboard/owner/moderation',
     '/dashboard/owner/categories',
     '/dashboard/owner/promoters',
     '/dashboard/owner/managers',
-    '/dashboard/owner/ticket-transfers',
     '/dashboard/owner/issued-items',
     '/dashboard/owner/statistics',
     '/dashboard/owner/invitations',
     '/dashboard/owner/referrals',
     '/dashboard/owner/settings',
   ],
-  owner_assistant: ['/dashboard/owner-assistant', '/dashboard/owner/ticket-transfers'],
+  owner_assistant: ['/dashboard/owner-assistant'],
   partner: [
     '/dashboard/partner',
     '/dashboard/partner/tours',

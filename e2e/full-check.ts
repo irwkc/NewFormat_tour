@@ -18,11 +18,9 @@ const ROLES: Record<string, { login: string; password: string; routes: string[] 
     password: process.env.OWNER_PASS || 'Owner123!',
     routes: [
       '/dashboard/owner',
-      '/dashboard/owner/moderation',
       '/dashboard/owner/categories',
       '/dashboard/owner/promoters',
       '/dashboard/owner/managers',
-      '/dashboard/owner/ticket-transfers',
       '/dashboard/owner/issued-items',
       '/dashboard/owner/statistics',
       '/dashboard/owner/invitations',

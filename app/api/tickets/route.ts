@@ -196,28 +196,6 @@ export async function POST(request: NextRequest) {
               { status: 400 }
             )
           }
-          const myRanges = await prisma.managerTicketRange.findMany({
-            where: { manager_user_id: req.user!.userId },
-            select: {
-              ticket_number_start: true,
-              ticket_number_end: true,
-            },
-          })
-          const { isTicketInRange } = await import('@/utils/ticket-range')
-          const num = ticket_number.toUpperCase()
-          const inAnyRange = myRanges.some((r) =>
-            isTicketInRange(num, r.ticket_number_start, r.ticket_number_end)
-          )
-          if (!inAnyRange) {
-            return NextResponse.json(
-              {
-                success: false,
-                error:
-                  'Этот номер билета не входит в переданные вам диапазоны.',
-              },
-              { status: 400 }
-            )
-          }
         }
 
         // Обработать фото билета (если есть)
