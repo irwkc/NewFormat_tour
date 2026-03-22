@@ -241,6 +241,9 @@ export default function ModerateTourPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage')
+  const [weekDates, setWeekDates] = useState<{ dateStr: string; dayName: string; dayOfMonth: number }[]>([])
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
+  const [selectAll, setSelectAll] = useState(true)
 
   const {
     register,
@@ -277,6 +280,12 @@ export default function ModerateTourPage() {
     }
   }, [token, tourId])
 
+  useEffect(() => {
+    fetch('/api/moscow-week')
+      .then((r) => r.json())
+      .then((d) => d.success && setWeekDates(d.data))
+  }, [])
+
   const fetchTour = async () => {
     try {
       const response = await fetch(`/api/tours/${tourId}`, {
@@ -308,11 +317,25 @@ export default function ModerateTourPage() {
     }
   }
 
+  const toggleDate = (dateStr: string) => {
+    setSelectAll(false)
+    setSelectedDates((prev) => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
   const onSubmit = async (data: ModerateFormData) => {
     try {
       setError(null)
 
       if (data.moderation_status === 'approved' && tour) {
+        if (!selectAll && selectedDates.size === 0) {
+          setError('Выберите дни для применения модерации или «Все дни»')
+          return
+        }
         const tourParams = buildTourParams(data, tour)
         const scenarios = getPreviewScenarios(tourParams)
         const badScenario = scenarios.find(s => {
@@ -325,13 +348,16 @@ export default function ModerateTourPage() {
         }
       }
 
+      const datesToSend = selectAll || selectedDates.size === 0
+        ? undefined
+        : Array.from(selectedDates)
       const response = await fetch(`/api/tours/${tourId}/moderate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, dates: datesToSend }),
       })
 
       const result = await response.json()
@@ -648,6 +674,54 @@ export default function ModerateTourPage() {
             </div>
 
             <EarningsPreviewTable tour={tour} formValues={formValues} />
+
+            {tour.flights && tour.flights.length > 0 && (
+              <div className="glass rounded-xl border border-white/10 p-4">
+                <h3 className="font-semibold mb-2 text-white">Применить модерацию к дням</h3>
+                <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Одобрение и цены применятся только к рейсам на выбранные даты.</p>
+                <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={(e) => {
+                      setSelectAll(e.target.checked)
+                      if (e.target.checked) setSelectedDates(new Set())
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-white/90">Все дни</span>
+                </label>
+                {!selectAll && (
+                  <div className="grid grid-cols-7 gap-2 mb-4">
+                    {weekDates.map(({ dateStr, dayName, dayOfMonth }) => {
+                      const isSelected = selectedDates.has(dateStr)
+                      const dayFlightsCount = (tour.flights || []).filter((f) => {
+                        const d = typeof f.date === 'string' ? f.date.split('T')[0] : new Date(f.date).toISOString().split('T')[0]
+                        return d === dateStr
+                      }).length
+                      return (
+                        <div
+                          key={dateStr}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleDate(dateStr)}
+                          onKeyDown={(e) => e.key === 'Enter' && toggleDate(dateStr)}
+                          className={`p-3 rounded-lg border text-center cursor-pointer transition ${
+                            isSelected ? 'bg-purple-500/30 border-purple-400' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                          }`}
+                        >
+                          <div className="text-white/70 text-xs">{dayName}</div>
+                          <div className="text-white font-semibold">{dayOfMonth}</div>
+                          {dayFlightsCount > 0 && (
+                            <div className="text-xs text-green-300 mt-1">{dayFlightsCount} рейс.</div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">

@@ -22,6 +22,7 @@ const ruleSchema = z.object({
 
 const moderateSchema = z.object({
   moderation_status: z.enum(['approved', 'rejected']),
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   owner_min_adult_price: requiredPrice,
   owner_min_child_price: requiredPrice,
   owner_min_concession_price: optionalNumber,
@@ -137,6 +138,7 @@ export async function POST(
           },
           include: {
             category: true,
+            flights: true,
             createdBy: {
               select: {
                 id: true,
@@ -152,9 +154,29 @@ export async function POST(
           },
         })
 
+        const dateSet = data.dates && data.dates.length > 0 ? new Set(data.dates) : null
+        if (data.moderation_status === 'approved') {
+          for (const flight of tour.flights) {
+            const flightDateStr = flight.date instanceof Date
+              ? flight.date.toISOString().split('T')[0]
+              : String(flight.date).split('T')[0]
+            const shouldModerate = !dateSet || dateSet.has(flightDateStr)
+            await prisma.flight.update({
+              where: { id: flight.id },
+              data: { is_moderated: shouldModerate },
+            })
+          }
+        } else {
+          await prisma.flight.updateMany({
+            where: { tour_id: id },
+            data: { is_moderated: false },
+          })
+        }
+
+        const { flights, ...tourWithoutFlights } = tour
         return NextResponse.json({
           success: true,
-          data: tour,
+          data: { ...tourWithoutFlights, flights: tour.flights },
         })
       } catch (error) {
         if (error instanceof z.ZodError) {

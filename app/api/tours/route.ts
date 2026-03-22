@@ -111,10 +111,14 @@ export async function GET(request: NextRequest) {
           select: { role: true },
         })
         if (user && (user.role === UserRole.manager || user.role === UserRole.promoter)) {
-          resultTours = tours.map((t) => ({
-            ...t,
-            flights: (t.flights || []).filter((f) => !isFlightStarted(f.departure_time)),
-          }))
+          resultTours = tours.map((t) => {
+            let flights = (t.flights || []).filter((f) => !isFlightStarted(f.departure_time))
+            const hasModerated = flights.some((f) => (f as { is_moderated?: boolean }).is_moderated)
+            if (hasModerated) {
+              flights = flights.filter((f) => (f as { is_moderated?: boolean }).is_moderated)
+            }
+            return { ...t, flights }
+          })
         }
       } catch {
         // ignore

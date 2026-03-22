@@ -237,6 +237,7 @@ model Flight {
   current_booked_places Int             @default(0)
   reserved_for_partner  Int             @default(0) @map("reserved_for_partner")
   is_sale_stopped       Boolean         @default(false)
+  is_moderated          Boolean         @default(false) @map("is_moderated")
   boarding_location_url String?         @map("boarding_location_url")
   created_at            DateTime        @default(now())
   updated_at            DateTime        @updatedAt
