@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { calcIncomeSplit, getPreviewScenarios, type TourParams } from '@/lib/domain/commission-calc'
+import { calcIncomeSplit, getPreviewScenarios, getPreviewScenariosForRule, type TourParams } from '@/lib/domain/commission-calc'
 
 type ModerateFlight = {
   id: string
@@ -110,15 +110,43 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
     commission_rules: rules.length ? rules : undefined,
   }
 
-  const scenarios = getPreviewScenarios(tourParams)
-  const rows = scenarios.map(s => {
-    const split = calcIncomeSplit(s, tourParams)
-    return { sale: s, split }
-  })
-
-  const hasNegativeOwner = rows.some(r => r.split.owner <= 0)
-
   const rowLabels = ['1 взрослый', '1 детский', '1 льготный']
+
+  const renderTable = (rows: { sale: { total_amount: number }; split: { promoter: number; owner: number } }[]) => (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-white/80 border-b border-white/20">
+          <th className="py-2 pr-4">Продажа</th>
+          <th className="py-2 pr-4">Сумма</th>
+          <th className="py-2 pr-4">Промоутер</th>
+          <th className="py-2 pr-4">Владелец</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i} className={row.split.owner <= 0 ? 'text-red-300' : 'text-white/80'}>
+            <td className="py-2 pr-4">{rowLabels[i]}</td>
+            <td className="py-2 pr-4">{row.sale.total_amount.toFixed(0)}₽</td>
+            <td className="py-2 pr-4">{row.split.promoter.toFixed(0)}₽</td>
+            <td className="py-2 pr-4 font-medium">{row.split.owner.toFixed(0)}₽</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+
+  let hasNegativeOwner = false
+  if (rules.length > 0) {
+    for (const rule of rules) {
+      const scenarios = getPreviewScenariosForRule(tourParams, rule)
+      const rows = scenarios.map(s => ({ sale: s, split: calcIncomeSplit(s, { ...tourParams, commission_rules: [rule] }) }))
+      if (rows.some(r => r.split.owner <= 0)) hasNegativeOwner = true
+    }
+  } else {
+    const scenarios = getPreviewScenarios(tourParams)
+    const rows = scenarios.map(s => ({ sale: s, split: calcIncomeSplit(s, tourParams) }))
+    hasNegativeOwner = rows.some(r => r.split.owner <= 0)
+  }
 
   return (
     <div className="p-4 glass rounded-xl border border-white/10">
@@ -128,28 +156,30 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
           ⚠️ При некоторых сценариях владелец не зарабатывает (доход ≤ 0). Одобрение будет заблокировано.
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-white/80 border-b border-white/20">
-              <th className="py-2 pr-4">Продажа</th>
-              <th className="py-2 pr-4">Сумма</th>
-              <th className="py-2 pr-4">Промоутер</th>
-              <th className="py-2 pr-4">Владелец</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => (
-              <tr key={i} className={row.split.owner <= 0 ? 'text-red-300' : 'text-white/80'}>
-                <td className="py-2 pr-4">{rowLabels[i]}</td>
-                <td className="py-2 pr-4">{row.sale.total_amount.toFixed(0)}₽</td>
-                <td className="py-2 pr-4">{row.split.promoter.toFixed(0)}₽</td>
-                <td className="py-2 pr-4 font-medium">{row.split.owner.toFixed(0)}₽</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      {rules.length > 0 ? (
+        <div className="space-y-6">
+          {rules.map((rule, ruleIdx) => {
+            const scenarios = getPreviewScenariosForRule(tourParams, rule)
+            const paramsForRule = { ...tourParams, commission_rules: [rule] }
+            const rows = scenarios.map(s => ({ sale: s, split: calcIncomeSplit(s, paramsForRule) }))
+            return (
+              <div key={ruleIdx} className="border border-white/10 rounded-lg p-3 bg-white/5">
+                <p className="text-sm text-white/90 mb-2">
+                  Порог: взр. {Number(rule.threshold_adult).toFixed(0)}₽, дет. {Number(rule.threshold_child).toFixed(0)}₽, льг. {Number(rule.threshold_concession).toFixed(0)}₽ → {Number(rule.commission_percentage).toFixed(0)}%
+                </p>
+                <div className="overflow-x-auto">{renderTable(rows)}</div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          {renderTable(
+            getPreviewScenarios(tourParams).map(s => ({ sale: s, split: calcIncomeSplit(s, tourParams) }))
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -349,18 +379,30 @@ export default function ModerateTourPage() {
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Модерация экскурсии</h2>
 
-          <div className="mb-6 p-4 glass rounded-xl">
-            <h3 className="font-semibold mb-2 text-white">Информация об экскурсии</h3>
-            <div className="space-y-1 text-sm text-white/70">
-              <p><strong className="text-white/90">Компания:</strong> {tour.company}</p>
-              <p><strong className="text-white/90">Категория:</strong> {tour.category?.name}</p>
-              <p><strong className="text-white/90">Модель партнёра:</strong>{' '}
-                {tour.partner_commission_type === 'percentage' && tour.partner_commission_percentage != null && Number(tour.partner_commission_percentage) > 0
-                  ? `${Number(tour.partner_commission_percentage)}% от суммы продаж`
-                  : `Фикс с билета: взр. ${Number(tour.partner_fixed_adult_price ?? tour.partner_min_adult_price).toFixed(0)}₽, дет. ${Number(tour.partner_fixed_child_price ?? tour.partner_min_child_price).toFixed(0)}₽${(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price) ? `, льг. ${Number(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price).toFixed(0)}₽` : ''}`}
-                . Мин. цены: взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}
-              </p>
-              <p><strong className="text-white/90">Партнер:</strong> {tour.createdBy?.full_name}</p>
+          <div className="mb-6 p-5 glass rounded-2xl border border-white/10 shadow-lg shadow-black/20">
+            <h3 className="font-semibold text-lg text-white mb-4 tracking-tight">Информация об экскурсии</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-xs font-medium uppercase tracking-wider text-white/50">Компания</span>
+                <span className="text-white font-medium">{tour.company}</span>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5">
+                <span className="text-xs font-medium uppercase tracking-wider text-white/50">Категория</span>
+                <span className="text-white font-medium">{tour.category?.name ?? '—'}</span>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5 sm:col-span-2">
+                <span className="text-xs font-medium uppercase tracking-wider text-white/50">Модель партнёра</span>
+                <span className="text-white/90 text-sm leading-relaxed">
+                  {tour.partner_commission_type === 'percentage' && tour.partner_commission_percentage != null && Number(tour.partner_commission_percentage) > 0
+                    ? `${Number(tour.partner_commission_percentage)}% от суммы продаж`
+                    : `Фикс с билета: взр. ${Number(tour.partner_fixed_adult_price ?? tour.partner_min_adult_price).toFixed(0)}₽, дет. ${Number(tour.partner_fixed_child_price ?? tour.partner_min_child_price).toFixed(0)}₽${(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price) ? `, льг. ${Number(tour.partner_fixed_concession_price ?? tour.partner_min_concession_price).toFixed(0)}₽` : ''}`}
+                  . Мин. цены: взр. {Number(tour.partner_min_adult_price).toFixed(0)}₽, дет. {Number(tour.partner_min_child_price).toFixed(0)}₽{tour.partner_min_concession_price ? `, льг. ${Number(tour.partner_min_concession_price).toFixed(0)}₽` : ''}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5 sm:col-span-2">
+                <span className="text-xs font-medium uppercase tracking-wider text-white/50">Партнёр</span>
+                <span className="text-white font-medium">{tour.createdBy?.full_name ?? '—'}</span>
+              </div>
             </div>
           </div>
 
@@ -451,7 +493,7 @@ export default function ModerateTourPage() {
 
             <div className="p-4 glass rounded-xl border border-white/10">
               <h3 className="font-semibold mb-2 text-white">Процент промоутера</h3>
-              <p className="text-sm text-white/60 mb-4">Укажите, сколько получает промоутер или менеджер с каждой продажи. Остаток остаётся вам.</p>
+              <p className="text-sm text-white/60 mb-4">Укажите, сколько получает промоутер или менеджер с каждой продажи.</p>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">

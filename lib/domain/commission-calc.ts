@@ -176,3 +176,20 @@ export function getPreviewScenarios(tour: TourParams): SaleParams[] {
     { adult_count: 0, child_count: 0, concession_count: 1, adult_price: owner_min_adult_price, child_price: childPrice, concession_price: concessionPrice, total_amount: concessionPrice },
   ]
 }
+
+/** Сценарии для конкретного правила: цены ≥ порогов, чтобы правило применилось */
+export function getPreviewScenariosForRule(
+  tour: TourParams,
+  rule: CommissionRule
+): SaleParams[] {
+  const { owner_min_adult_price, owner_min_child_price, owner_min_concession_price } = tour
+  const childPrice = Math.max(owner_min_child_price || 0, rule.threshold_child)
+  const concessionPrice = Math.max(owner_min_concession_price ?? childPrice, rule.threshold_concession)
+  const adultPrice = Math.max(owner_min_adult_price, rule.threshold_adult)
+
+  return [
+    { adult_count: 1, child_count: 0, concession_count: 0, adult_price: adultPrice, child_price: childPrice, concession_price: concessionPrice, total_amount: adultPrice },
+    { adult_count: 0, child_count: 1, concession_count: 0, adult_price: adultPrice, child_price: childPrice, concession_price: concessionPrice, total_amount: childPrice },
+    { adult_count: 0, child_count: 0, concession_count: 1, adult_price: adultPrice, child_price: childPrice, concession_price: concessionPrice, total_amount: concessionPrice },
+  ]
+}
