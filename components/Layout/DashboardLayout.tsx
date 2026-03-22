@@ -117,7 +117,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   return (
     <div className="min-h-screen relative">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/20 bg-white/30 backdrop-blur-xl" style={{
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl" style={{
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         backdropFilter: 'blur(24px) saturate(180%)'
       }}>

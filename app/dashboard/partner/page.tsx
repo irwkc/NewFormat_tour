@@ -69,19 +69,21 @@ export default function PartnerDashboard() {
       .then((d) => d.success && setTours(d.data))
   }
 
-  const handleStopSales = async (tourId: string) => {
-    const confirmed = await customConfirm('Остановить продажи на эту экскурсию?')
-    if (!confirmed) return
+  const handleFlightStopSales = async (flightId: string, stop: boolean) => {
     try {
-      const r = await fetch(`/api/tours/${tourId}/stop-sales`, {
+      const r = await fetch(`/api/flights/${flightId}/stop-sales`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_sale_stopped: stop }),
       })
       const d = await r.json()
       if (d.success) fetchTours()
-      else await customAlert(d.error || 'Ошибка остановки продаж')
+      else await customAlert(d.error || 'Ошибка')
     } catch {
-      await customAlert('Ошибка остановки продаж')
+      await customAlert('Ошибка')
     }
   }
 
@@ -268,15 +270,6 @@ export default function PartnerDashboard() {
                             >
                               Редактировать
                             </Link>
-                            {(tour.flights?.length ?? 0) > 0 && !allFlightsStopped && (
-                              <button
-                                type="button"
-                                onClick={() => handleStopSales(tour.id)}
-                                className="btn-warning text-xs px-3 py-1"
-                              >
-                                Остановить
-                              </button>
-                            )}
                             <button
                               type="button"
                               onClick={() => handleDelete(tour.id)}
@@ -295,7 +288,7 @@ export default function PartnerDashboard() {
                                   const addPlaces = addPlacesInputs[flight.id] ?? 0
                                   return (
                                     <div key={flight.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-white/5">
-                                      <span className="text-white/90 text-sm">
+                                      <span className="text-white/90 text-sm flex-1 min-w-[200px]">
                                         {flight.flight_number} · {new Date(flight.date).toLocaleDateString('ru-RU')} · мест: {flight.max_places}, забронировано: {flight.current_booked_places}
                                       </span>
                                       <input
@@ -307,7 +300,7 @@ export default function PartnerDashboard() {
                                           ...s,
                                           [flight.id]: Math.max(0, Number(e.target.value) || 0),
                                         }))}
-                                        className="input-glass w-24 text-sm"
+                                        className="input-glass w-28 min-w-[7rem] text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
@@ -317,6 +310,23 @@ export default function PartnerDashboard() {
                                       >
                                         Добавить
                                       </button>
+                                      {flight.is_sale_stopped ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleFlightStopSales(flight.id, false)}
+                                          className="btn-secondary text-xs px-3 py-1"
+                                        >
+                                          Возобновить
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleFlightStopSales(flight.id, true)}
+                                          className="btn-warning text-xs px-3 py-1"
+                                        >
+                                          Остановить рейс
+                                        </button>
+                                      )}
                                     </div>
                                   )
                                 })}
