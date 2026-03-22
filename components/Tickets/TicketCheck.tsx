@@ -2,54 +2,14 @@
 
 import { useState } from 'react'
 import { useAuthStore } from '@/store/auth'
-import { useRouter } from 'next/navigation'
 
 export default function TicketCheck() {
   const { token } = useAuthStore()
-  const router = useRouter()
-  const [qrData, setQrData] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [ticket, setTicket] = useState<any>(null)
   const [canConfirm, setCanConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<'qr' | 'number'>('qr')
-
-  const checkByQR = async () => {
-    if (!qrData) {
-      setError('Введите данные QR кода')
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const response = await fetch(`/api/tickets/check/qr/${qrData}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      const result = await response.json()
-      
-      if (result.success && result.data.is_valid) {
-        setTicket(result.data.ticket)
-        setCanConfirm(result.data.can_confirm ?? false)
-        setError(result.data.message)
-      } else {
-        setError(result.data.message || 'Билет не найден')
-        setTicket(null)
-        setCanConfirm(false)
-      }
-    } catch (err) {
-      setError('Ошибка при проверке билета')
-      setTicket(null)
-      setCanConfirm(false)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const checkByNumber = async () => {
     const trimmed = ticketNumber.trim()
@@ -109,12 +69,12 @@ export default function TicketCheck() {
       if (result.success) {
         setError('Билет успешно подтвержден!')
         setCanConfirm(false)
-        // После подтверждения sale_number обнуляется — обновляем по QR
-        const qrToRefresh = mode === 'qr' ? qrData : ticket?.qr_code_data
-        if (qrToRefresh) {
-          setQrData(qrToRefresh)
-          setMode('qr')
-          await checkByQR()
+        if (ticket?.qr_code_data) {
+          const res = await fetch(`/api/tickets/check/qr/${encodeURIComponent(ticket.qr_code_data)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const data = await res.json()
+          if (data.success && data.data?.ticket) setTicket(data.data.ticket)
         }
       } else {
         setError(result.error || 'Ошибка при подтверждении билета')
@@ -132,56 +92,9 @@ export default function TicketCheck() {
         <h2 className="text-2xl font-bold mb-6 text-gradient">Проверка билетов</h2>
 
         <div className="mb-6">
-          <div className="flex space-x-2 mb-4 bg-purple-50/50 p-1 rounded-xl">
-            <button
-              onClick={() => {
-                setMode('qr')
-                setTicket(null)
-                setError(null)
-              }}
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                mode === 'qr'
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md shadow-purple-500/30'
-                  : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
-              }`}
-            >
-              По QR коду
-            </button>
-            <button
-              onClick={() => {
-                setMode('number')
-                setTicket(null)
-                setError(null)
-              }}
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                mode === 'number'
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md shadow-purple-500/30'
-                  : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
-              }`}
-            >
-              По коду
-            </button>
-          </div>
-
-          {mode === 'qr' ? (
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={qrData}
-                onChange={(e) => setQrData(e.target.value)}
-                placeholder="Введите данные QR кода"
-                className="input-glass"
-              />
-              <button
-                onClick={checkByQR}
-                disabled={loading}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Проверка...' : 'Проверить'}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">Код заказа (6 цифр с чека)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -191,16 +104,15 @@ export default function TicketCheck() {
                 maxLength={6}
                 className="input-glass"
               />
-              <p className="text-white/60 text-xs">6 цифр с чека</p>
-              <button
-                onClick={checkByNumber}
-                disabled={loading}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Проверка...' : 'Проверить'}
-              </button>
             </div>
-          )}
+            <button
+              onClick={checkByNumber}
+              disabled={loading}
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Проверка...' : 'Проверить по коду'}
+            </button>
+          </div>
         </div>
 
         {error && (

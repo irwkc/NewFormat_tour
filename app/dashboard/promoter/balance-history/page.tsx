@@ -15,16 +15,33 @@ type BalanceHistoryItem = {
 }
 
 export default function PromoterBalanceHistoryPage() {
-  const { token, user } = useAuthStore()
+  const { token, user, updateUser } = useAuthStore()
+  const [balance, setBalance] = useState<number | null>(null)
   const [history, setHistory] = useState<BalanceHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<{ transaction_type?: string }>({})
 
   useEffect(() => {
-    if (token) {
-      fetchHistory()
-    }
+    if (token) fetchMe()
+  }, [token])
+
+  useEffect(() => {
+    if (token) fetchHistory()
   }, [token, filter])
+
+  const fetchMe = async () => {
+    try {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      if (data.success && data.data) {
+        const freshBalance = Number(data.data.balance ?? 0)
+        setBalance(freshBalance)
+        updateUser({ balance: freshBalance })
+      }
+    } catch {
+      setBalance(null)
+    }
+  }
 
   const fetchHistory = async () => {
     try {
@@ -62,7 +79,7 @@ export default function PromoterBalanceHistoryPage() {
         <div className="glass-card">
           <h2 className="text-xl font-bold mb-4 text-white">Кошелёк доходов</h2>
           <div className="text-3xl font-bold text-green-300">
-            {Number(user?.balance || 0).toFixed(2)}₽
+            {balance !== null ? Number(balance).toFixed(2) : Number(user?.balance ?? 0).toFixed(2)}₽
           </div>
         </div>
 

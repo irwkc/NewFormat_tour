@@ -9,7 +9,6 @@ const QrScanner = dynamic(() => import('@/components/Tickets/QrScanner'), {
   loading: () => <div className="p-8 text-center text-white/70">Загрузка сканера...</div>,
 })
 import { useAuthStore } from '@/store/auth'
-import { useRouter } from 'next/navigation'
 import { customAlert } from '@/utils/modals'
 
 type TicketInfo = {
@@ -43,14 +42,12 @@ type TicketInfo = {
 }
 
 export default function TicketCheckPage() {
-  const router = useRouter()
   const { token } = useAuthStore()
   const [ticketNumber, setTicketNumber] = useState('')
-  const [qrData, setQrData] = useState('')
   const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [method, setMethod] = useState<'qr' | 'number' | 'camera'>('qr')
+  const [method, setMethod] = useState<'camera' | 'number'>('camera')
 
   const doCheckByQrData = useCallback(async (data: string) => {
     if (!data?.trim()) return
@@ -75,14 +72,6 @@ export default function TicketCheckPage() {
       setLoading(false)
     }
   }, [token])
-
-  const checkByQR = async () => {
-    if (!qrData.trim()) {
-      setError('Введите данные QR кода')
-      return
-    }
-    await doCheckByQrData(qrData)
-  }
 
   const checkByNumber = async () => {
     const trimmed = ticketNumber.trim()
@@ -137,7 +126,7 @@ export default function TicketCheckPage() {
       const result = await response.json()
       if (result.success) {
         // Обновить информацию — после подтверждения sale_number обнуляется, используем QR
-        const qrForRefresh = method === 'qr' ? qrData : ticketInfo?.ticket?.qr_code_data
+        const qrForRefresh = ticketInfo?.ticket?.qr_code_data
         if (qrForRefresh) {
           await doCheckByQrData(qrForRefresh)
         }
@@ -172,7 +161,6 @@ export default function TicketCheckPage() {
                   setMethod('camera')
                   setTicketInfo(null)
                   setError(null)
-                  setQrData('')
                   setTicketNumber('')
                 }}
                 className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
@@ -183,24 +171,9 @@ export default function TicketCheckPage() {
               </button>
               <button
                 onClick={() => {
-                  setMethod('qr')
-                  setTicketInfo(null)
-                  setError(null)
-                  setQrData('')
-                  setTicketNumber('')
-                }}
-                className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
-                  method === 'qr' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                Ввод QR
-              </button>
-              <button
-                onClick={() => {
                   setMethod('number')
                   setTicketInfo(null)
                   setError(null)
-                  setQrData('')
                   setTicketNumber('')
                 }}
                 className={`flex-1 min-w-[120px] px-4 py-2 rounded-xl transition-all ${
@@ -217,28 +190,6 @@ export default function TicketCheckPage() {
                   onScan={(data) => doCheckByQrData(data)}
                   onError={(msg) => setError(msg)}
                 />
-              </div>
-            ) : method === 'qr' ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/90 mb-2">
-                    Данные QR кода
-                  </label>
-                  <input
-                    type="text"
-                    value={qrData}
-                    onChange={(e) => setQrData(e.target.value)}
-                    placeholder="Введите данные QR кода или отсканируйте"
-                    className="input-glass"
-                  />
-                </div>
-                <button
-                  onClick={checkByQR}
-                  disabled={loading}
-                  className="btn-primary w-full"
-                >
-                  {loading ? 'Проверка...' : 'Проверить по QR'}
-                </button>
               </div>
             ) : (
               <div className="space-y-4">

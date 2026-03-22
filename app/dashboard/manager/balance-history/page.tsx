@@ -16,16 +16,36 @@ type BalanceHistoryItem = {
 }
 
 export default function ManagerBalanceHistoryPage() {
-  const { token, user } = useAuthStore()
+  const { token, user, updateUser } = useAuthStore()
+  const [balances, setBalances] = useState<{ balance: number; debt_to_company: number } | null>(null)
   const [history, setHistory] = useState<BalanceHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<{ balance_type?: string; transaction_type?: string }>({})
 
   useEffect(() => {
-    if (token) {
-      fetchHistory()
-    }
+    if (token) fetchMe()
+  }, [token])
+
+  useEffect(() => {
+    if (token) fetchHistory()
   }, [token, filter])
+
+  const fetchMe = async () => {
+    try {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      if (data.success && data.data) {
+        const fresh = {
+          balance: Number(data.data.balance ?? 0),
+          debt_to_company: Number(data.data.debt_to_company ?? 0),
+        }
+        setBalances(fresh)
+        updateUser(fresh)
+      }
+    } catch {
+      setBalances(null)
+    }
+  }
 
   const fetchHistory = async () => {
     try {
@@ -65,13 +85,13 @@ export default function ManagerBalanceHistoryPage() {
             <div>
               <div className="text-sm text-white/70">Доходы</div>
               <div className="text-2xl font-bold text-green-300">
-                {Number(user?.balance || 0).toFixed(2)}₽
+                {(balances ? balances.balance : Number(user?.balance ?? 0)).toFixed(2)}₽
               </div>
             </div>
             <div>
               <div className="text-sm text-white/70">Должен компании</div>
               <div className="text-2xl font-bold text-red-300">
-                {Number(user?.debt_to_company || 0).toFixed(2)}₽
+                {(balances ? balances.debt_to_company : Number(user?.debt_to_company ?? 0)).toFixed(2)}₽
               </div>
             </div>
           </div>
