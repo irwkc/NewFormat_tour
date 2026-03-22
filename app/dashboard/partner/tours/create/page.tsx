@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -23,20 +23,20 @@ const flightSchema = z.object({
 })
 
 const createTourSchema = z.object({
-  category_id: z.string().uuid('Выберите категорию'),
+  category_id: z.string().min(1, 'Выберите категорию'),
   company: z.string().min(1, 'Название компании обязательно'),
   partner_pricing_type: z.enum(['min_prices', 'percentage']),
-  partner_min_adult_price: z.number().min(0),
-  partner_min_child_price: z.number().min(0),
+  partner_min_adult_price: z.number().min(0).optional().default(0),
+  partner_min_child_price: z.number().min(0).optional().default(0),
   partner_min_concession_price: z.number().min(0).optional(),
   partner_commission_percentage: z.number().min(0).max(100).optional(),
   flights: z.array(flightSchema).min(1, 'Необходимо добавить хотя бы один рейс'),
 }).refine((data) => {
   if (data.partner_pricing_type === 'min_prices') {
-    return data.partner_min_adult_price > 0 && data.partner_min_child_price > 0
+    return (data.partner_min_adult_price ?? 0) > 0 && (data.partner_min_child_price ?? 0) > 0
   }
   return (data.partner_commission_percentage ?? 0) > 0
-}, { message: 'Укажите мин. цены или процент партнёра' })
+}, { message: 'Укажите мин. цены или процент партнёра', path: ['partner_commission_percentage'] })
 
 type CreateTourFormData = z.infer<typeof createTourSchema>
 
@@ -46,6 +46,7 @@ export default function CreateTourPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const errorRef = useRef<HTMLDivElement>(null)
 
   const {
     register,
@@ -54,9 +55,13 @@ export default function CreateTourPage() {
     watch,
     formState: { errors },
   } = useForm<CreateTourFormData>({
+    mode: 'onTouched',
     resolver: zodResolver(createTourSchema),
     defaultValues: {
       partner_pricing_type: 'min_prices',
+      partner_min_adult_price: 0,
+      partner_min_child_price: 0,
+      partner_commission_percentage: 0,
       flights: [
         {
           flight_number: '',
@@ -159,7 +164,30 @@ export default function CreateTourPage() {
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Создать экскурсию</h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={handleSubmit(
+              onSubmit,
+              (err) => {
+                const collect = (obj: object): string[] => {
+                  const out: string[] = []
+                  for (const v of Object.values(obj)) {
+                    if (v && typeof v === 'object' && 'message' in v) out.push(String((v as { message: string }).message))
+                    else if (v && typeof v === 'object') out.push(...collect(v as Record<string, unknown>))
+                  }
+                  return out
+                }
+                const msgs = collect(err as object)
+                setError(msgs.length ? msgs.join('. ') : 'Заполните обязательные поля')
+                setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
+              }
+            )}
+            className="space-y-6"
+          >
+            {error && (
+              <div ref={errorRef} className="alert-error">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
             {/* Основная информация об экскурсии */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white/90">Основная информация</h3>
@@ -425,12 +453,6 @@ export default function CreateTourPage() {
                 </div>
               ))}
             </div>
-
-            {error && (
-              <div className="alert-error">
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
 
             <div className="flex space-x-4">
               <button
