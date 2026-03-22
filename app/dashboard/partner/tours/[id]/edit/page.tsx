@@ -6,7 +6,7 @@ import Link from 'next/link'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { getNavForRole } from '@/lib/dashboard-nav'
-import { customAlert, customConfirm } from '@/utils/modals'
+import { customAlert } from '@/utils/modals'
 
 type FlightTemplate = {
   flight_number: string
@@ -254,7 +254,7 @@ export default function EditTourPage() {
           </Link>
         </div>
 
-        <div className="rounded-lg border border-white/10 p-4">
+        <div className="glass-card">
           <h3 className="text-lg font-semibold text-white mb-4">Цены и доля партнёра</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -348,7 +348,7 @@ export default function EditTourPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 p-4">
+        <div className="glass-card">
           <h3 className="text-lg font-semibold text-white mb-2">Рейсы (шаблон)</h3>
           <p className="text-sm text-white/60 mb-4">Заполните рейсы и выберите дни — они будут применены к выбранным датам.</p>
           <div className="space-y-4">
@@ -420,7 +420,7 @@ export default function EditTourPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 p-4">
+        <div className="glass-card">
           <h3 className="text-lg font-semibold text-white mb-4">Календарь (текущая неделя)</h3>
           <p className="text-sm text-white/70 mb-4">Выберите дни и нажмите «Применить».</p>
           <div className="grid grid-cols-7 gap-2">
@@ -477,7 +477,7 @@ export default function EditTourPage() {
 
         {editingDay && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="rounded-lg border border-white/10 bg-slate-900/95 max-w-lg w-full max-h-[80vh] overflow-y-auto p-4">
+            <div className="glass-card max-w-lg w-full max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">
                   Рейсы на {editingDay}
@@ -520,31 +520,6 @@ function DayFlightRow({ flight, token, onSaved }: { flight: Flight; token: strin
   const [dur, setDur] = useState(flight.duration_minutes ?? 60)
   const [url, setUrl] = useState(flight.boarding_location_url ?? '')
   const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const canDelete = (flight.current_booked_places ?? 0) === 0
-
-  const handleDelete = async () => {
-    if (!canDelete) return
-    const ok = await customConfirm('Удалить этот рейс?')
-    if (!ok) return
-    try {
-      setDeleting(true)
-      const r = await fetch(`/api/flights/${flight.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const d = await r.json()
-      if (d.success) {
-        onSaved()
-      } else {
-        await customAlert(d.error || 'Ошибка')
-      }
-    } catch {
-      await customAlert('Ошибка удаления')
-    } finally {
-      setDeleting(false)
-    }
-  }
 
   const handleSave = async () => {
     try {
@@ -579,25 +554,13 @@ function DayFlightRow({ flight, token, onSaved }: { flight: Flight; token: strin
 
   if (!edit) {
     return (
-      <div className="flex justify-between items-center gap-2 p-3 bg-white/5 rounded-lg">
-        <span className="text-white text-sm flex-1 min-w-0">
+      <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+        <span className="text-white text-sm">
           {flight.flight_number} · {time} · мест: {flight.max_places} (забр.: {flight.current_booked_places})
         </span>
-        <div className="flex gap-2 shrink-0">
-          <button type="button" onClick={() => setEdit(true)} className="btn-secondary text-xs">
-            Изменить
-          </button>
-          {canDelete && (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-red-300 hover:text-red-200 text-xs disabled:opacity-50"
-            >
-              {deleting ? '...' : 'Удалить'}
-            </button>
-          )}
-        </div>
+        <button type="button" onClick={() => setEdit(true)} className="btn-secondary text-xs">
+          Изменить
+        </button>
       </div>
     )
   }
@@ -634,23 +597,13 @@ function DayFlightRow({ flight, token, onSaved }: { flight: Flight; token: strin
         placeholder="Ссылка на место посадки"
         className="input-glass w-full text-sm"
       />
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2">
         <button type="button" onClick={handleSave} disabled={saving} className="btn-primary text-sm">
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
         <button type="button" onClick={() => setEdit(false)} className="btn-secondary text-sm">
           Отмена
         </button>
-        {canDelete && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-red-300 hover:text-red-200 text-sm disabled:opacity-50"
-          >
-            {deleting ? '...' : 'Удалить'}
-          </button>
-        )}
       </div>
     </div>
   )
