@@ -14,10 +14,10 @@ export function getMoscowDateString(): string {
 export function getMoscowWeekStart(): Date {
   const today = getMoscowDateString()
   const [y, m, d] = today.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = date.getDate() - (day === 0 ? 6 : day - 1)
-  return new Date(date.getFullYear(), date.getMonth(), diff)
+  const date = new Date(Date.UTC(y, m - 1, d, 12, 0, 0))
+  const day = date.getUTCDay()
+  const diff = date.getUTCDate() - (day === 0 ? 6 : day - 1)
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), diff))
 }
 
 /** Даты текущей недели (Пн–Вс) по Москве */
@@ -25,17 +25,17 @@ export function getMoscowWeekDates(): Date[] {
   const start = getMoscowWeekStart()
   const dates: Date[] = []
   for (let i = 0; i < 7; i++) {
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+    const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + i))
     dates.push(d)
   }
   return dates
 }
 
-/** YYYY-MM-DD для даты (по локальному времени сервера — для дат из getMoscowWeekDates) */
+/** YYYY-MM-DD для даты (UTC, для дат из getMoscowWeekDates) */
 export function toDateString(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
 

@@ -9,7 +9,15 @@ export async function GET() {
   const result = dates.map((d, i) => ({
     dateStr: toDateString(d),
     dayName: WEEKDAY_NAMES[i],
-    dayOfMonth: d.getDate(),
+    dayOfMonth: d.getUTCDate(),
   }))
-  return NextResponse.json({ success: true, data: result })
+  return NextResponse.json(
+    { success: true, data: result },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      },
+    }
+  )
 }

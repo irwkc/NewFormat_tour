@@ -75,7 +75,7 @@ export default function EditTourPage() {
   const [weekDates, setWeekDates] = useState<WeekDay[]>([])
 
   useEffect(() => {
-    fetch('/api/moscow-week')
+    fetch('/api/moscow-week', { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => d.success && setWeekDates(d.data))
   }, [])
