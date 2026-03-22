@@ -5,10 +5,10 @@ import { UserRole, TicketStatus } from '@prisma/client'
 import { z } from 'zod'
 
 const checkNumberSchema = z.object({
-  ticket_number: z.string().regex(/^[A-Z]{2}\d{8}$/),
+  sale_number: z.string().regex(/^\d{6}$/, 'sale_number must be 6 digits'),
 })
 
-// POST /api/tickets/check/number - получение информации о билете по номеру
+// POST /api/tickets/check/number - получение информации о билете по номеру или коду продажи
 export async function POST(request: NextRequest) {
   return withAuth(
     request,
@@ -22,49 +22,32 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { ticket_number } = checkNumberSchema.parse(body)
+        const data = checkNumberSchema.parse(body)
 
-        const ticket = await prisma.ticket.findUnique({
-          where: {
-            ticket_number,
-          },
-          include: {
-            tour: {
-              include: {
-                category: true,
-              },
-            },
-            sale: {
-              include: {
-                flight: true,
-                seller: {
-                  select: {
-                    id: true,
-                    full_name: true,
-                  },
-                },
-                promoter: {
-                  select: {
-                    id: true,
-                    full_name: true,
-                  },
-                },
-              },
-            },
-            usedBy: {
-              select: {
-                id: true,
-                full_name: true,
-              },
-            },
-            cancelledBy: {
-              select: {
-                id: true,
-                full_name: true,
-              },
+        let ticket: Awaited<ReturnType<typeof prisma.ticket.findUnique>> = null
+
+        const ticketInclude = {
+          tour: {
+            include: {
+              category: true,
             },
           },
+          sale: {
+            include: {
+              flight: true,
+              seller: { select: { id: true, full_name: true } },
+              promoter: { select: { id: true, full_name: true } },
+            },
+          },
+          usedBy: { select: { id: true, full_name: true } },
+          cancelledBy: { select: { id: true, full_name: true } },
+        }
+
+        const sale = await prisma.sale.findUnique({
+          where: { sale_number: data.sale_number },
+          include: { ticket: { include: ticketInclude } },
         })
+        ticket = sale?.ticket ?? null
 
         if (!ticket) {
           return NextResponse.json({
@@ -115,6 +98,7 @@ export async function POST(request: NextRequest) {
               ticket_number: ticket.ticket_number,
               ticket_photo_url: ticket.ticket_photo_url,
               photo_url: ticket.ticket_photo_url,
+              qr_code_data: ticket.qr_code_data,
               used_at: ticket.used_at,
               used_by_user_id: ticket.used_by_user_id,
               usedBy: ticket.usedBy,

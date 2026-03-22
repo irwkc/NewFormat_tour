@@ -26,6 +26,7 @@ export async function confirmTicketDomain(
     where: { id: ticketId },
     select: {
       id: true,
+      sale_id: true,
       ticket_status: true,
     },
   })
@@ -38,17 +39,23 @@ export async function confirmTicketDomain(
     return { status: 'invalid_status', currentStatus: ticket.ticket_status }
   }
 
-  await prisma.ticket.update({
-    where: { id: ticketId },
-    data: {
-      ticket_status: TicketStatus.used,
-      used_at: new Date(),
-      used_by_user_id: usedByUserId ?? undefined,
-    },
-  })
-
-  // Балансы считаем через существующую доменную функцию
+  // Обновление баланса вызываем до смены статуса — updateBalanceOnTicketConfirm ожидает sold
   await updateBalanceOnTicketConfirm(ticketId, usedByUserId ?? undefined)
+
+  await prisma.$transaction([
+    prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        ticket_status: TicketStatus.used,
+        used_at: new Date(),
+        used_by_user_id: usedByUserId ?? undefined,
+      },
+    }),
+    prisma.sale.update({
+      where: { id: ticket.sale_id },
+      data: { sale_number: null },
+    }),
+  ])
 
   return { status: 'ok' }
 }

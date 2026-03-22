@@ -85,15 +85,14 @@ export default function TicketCheckPage() {
   }
 
   const checkByNumber = async () => {
-    if (!ticketNumber.trim()) {
-      setError('Введите номер билета')
+    const trimmed = ticketNumber.trim()
+    if (!trimmed) {
+      setError('Введите 6-значный код заказа')
       return
     }
 
-    // Проверка формата: AA00000000 (2 заглавные буквы + 8 цифр)
-    const ticketNumberRegex = /^[A-Z]{2}\d{8}$/
-    if (!ticketNumberRegex.test(ticketNumber.toUpperCase())) {
-      setError('Неверный формат номера билета. Ожидается: AA00000000 (2 заглавные буквы + 8 цифр)')
+    if (!/^\d{6}$/.test(trimmed)) {
+      setError('Код заказа — 6 цифр (с чека)')
       return
     }
 
@@ -106,9 +105,7 @@ export default function TicketCheckPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ticket_number: ticketNumber.toUpperCase(),
-        }),
+        body: JSON.stringify({ sale_number: trimmed }),
       })
 
       const result = await response.json()
@@ -139,13 +136,10 @@ export default function TicketCheckPage() {
 
       const result = await response.json()
       if (result.success) {
-        // Обновить информацию о билете
-        if (method === 'qr') {
-          await doCheckByQrData(qrData)
-        } else if (method === 'camera' && ticketInfo?.ticket?.qr_code_data) {
-          await doCheckByQrData(ticketInfo.ticket.qr_code_data)
-        } else {
-          await checkByNumber()
+        // Обновить информацию — после подтверждения sale_number обнуляется, используем QR
+        const qrForRefresh = method === 'qr' ? qrData : ticketInfo?.ticket?.qr_code_data
+        if (qrForRefresh) {
+          await doCheckByQrData(qrForRefresh)
         }
         await customAlert('Билет подтвержден!')
       } else {
@@ -213,7 +207,7 @@ export default function TicketCheckPage() {
                   method === 'number' ? 'btn-primary' : 'btn-secondary'
                 }`}
               >
-                По номеру
+                По коду
               </button>
             </div>
 
@@ -250,27 +244,24 @@ export default function TicketCheckPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Номер билета (формат: AA00000000)
+                    Код заказа (6 цифр с чека)
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={ticketNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase()
-                      setTicketNumber(value)
-                    }}
-                    placeholder="AB12345678"
-                    maxLength={10}
-                    className="input-glass uppercase"
+                    onChange={(e) => setTicketNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="704261"
+                    maxLength={6}
+                    className="input-glass"
                   />
-                  <p className="text-xs text-white/60 mt-1">Формат: 2 заглавные буквы + 8 цифр</p>
                 </div>
                 <button
                   onClick={checkByNumber}
                   disabled={loading}
                   className="btn-primary w-full"
                 >
-                  {loading ? 'Проверка...' : 'Проверить по номеру'}
+                  {loading ? 'Проверка...' : 'Проверить по коду'}
                 </button>
               </div>
             )}
