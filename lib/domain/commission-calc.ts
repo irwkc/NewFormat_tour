@@ -8,10 +8,10 @@
  */
 
 export type CommissionRule = {
-  threshold_amount: number
-  commission_type: 'percentage' | 'fixed'
-  commission_percentage?: number
-  commission_fixed_amount?: number
+  threshold_adult: number
+  threshold_child: number
+  threshold_concession: number
+  commission_percentage: number
 }
 
 export type SaleParams = {
@@ -77,26 +77,24 @@ function calcPartnerShare(
   return 0
 }
 
-/**
- * Процент промоутера за одну позицию: правило по цене билета (порог ≤ цена за билет).
- * Если правило не найдено — используется базовый процент (фикс применяется только ко всей продаже).
- */
+type TicketType = 'adult' | 'child' | 'concession'
+
+/** Процент промоутера за одну позицию: правило по цене билета (порог для типа ≤ цена). */
 function calcCommissionForUnitPrice(
   unitPrice: number,
+  ticketType: TicketType,
   rules: CommissionRule[] | undefined,
   fallbackPercent: number | null | undefined
 ): number {
   if (rules && rules.length > 0) {
-    const sorted = [...rules].filter((r) => r.threshold_amount <= unitPrice)
-      .sort((a, b) => b.threshold_amount - a.threshold_amount)
+    const threshold = ticketType === 'adult' ? (r: CommissionRule) => r.threshold_adult
+      : ticketType === 'child' ? (r: CommissionRule) => r.threshold_child
+      : (r: CommissionRule) => r.threshold_concession
+    const sorted = [...rules].filter((r) => threshold(r) <= unitPrice)
+      .sort((a, b) => threshold(b) - threshold(a))
     const rule = sorted[0]
-    if (rule) {
-      if (rule.commission_type === 'percentage' && rule.commission_percentage != null) {
-        return unitPrice * (rule.commission_percentage / 100)
-      }
-      if (rule.commission_type === 'fixed' && rule.commission_fixed_amount != null) {
-        return rule.commission_fixed_amount
-      }
+    if (rule && rule.commission_percentage != null) {
+      return unitPrice * (rule.commission_percentage / 100)
     }
   }
   if (fallbackPercent != null) {
@@ -119,13 +117,13 @@ function calcPromoterShare(
 
   let total = 0
   for (let i = 0; i < sale.adult_count; i++) {
-    total += calcCommissionForUnitPrice(sale.adult_price, rules, fallbackPercent)
+    total += calcCommissionForUnitPrice(sale.adult_price, 'adult', rules, fallbackPercent)
   }
   for (let i = 0; i < sale.child_count; i++) {
-    total += calcCommissionForUnitPrice(childPrice, rules, fallbackPercent)
+    total += calcCommissionForUnitPrice(childPrice, 'child', rules, fallbackPercent)
   }
   for (let i = 0; i < sale.concession_count; i++) {
-    total += calcCommissionForUnitPrice(concessionPrice, rules, fallbackPercent)
+    total += calcCommissionForUnitPrice(concessionPrice, 'concession', rules, fallbackPercent)
   }
 
   // Без правил и при базовом фиксе — одна сумма на всю продажу

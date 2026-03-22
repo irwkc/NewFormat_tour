@@ -50,10 +50,10 @@ const optionalNumber = z.preprocess((v) => {
 const requiredPrice = z.preprocess((v) => Number(v), z.number().min(0.01))
 
 const ruleSchema = z.object({
-  threshold_amount: z.number().min(0),
-  commission_type: z.enum(['percentage', 'fixed']),
-  commission_percentage: optionalNumber,
-  commission_fixed_amount: optionalNumber,
+  threshold_adult: z.number().min(0),
+  threshold_child: z.number().min(0),
+  threshold_concession: z.number().min(0),
+  commission_percentage: z.number().min(0).max(100),
 })
 
 const moderateSchema = z.object({
@@ -84,12 +84,12 @@ function EarningsPreviewTable({ tour, formValues }: { tour: ModerateTour; formVa
   const commissionType = (data.commission_type as string) || tour.commission_type || 'percentage'
   const commissionPercent = data.commission_percentage != null ? Number(data.commission_percentage) : Number(tour.commission_percentage) || 0
   const commissionFixed = data.commission_fixed_amount != null ? Number(data.commission_fixed_amount) : Number(tour.commission_fixed_amount) || 0
-  const rulesRaw = (data.commission_rules as Array<{ threshold_amount: number; commission_type: string; commission_percentage?: number; commission_fixed_amount?: number }>) || []
-  const rules = rulesRaw.filter(r => r && r.threshold_amount > 0).map(r => ({
-    threshold_amount: r.threshold_amount,
-    commission_type: r.commission_type as 'percentage' | 'fixed',
-    commission_percentage: r.commission_percentage,
-    commission_fixed_amount: r.commission_fixed_amount,
+  const rulesRaw = (data.commission_rules as Array<{ threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }>) || []
+  const rules = rulesRaw.filter(r => r && (r.commission_percentage ?? 0) >= 0).map(r => ({
+    threshold_adult: Number(r.threshold_adult ?? 0),
+    threshold_child: Number(r.threshold_child ?? 0),
+    threshold_concession: Number(r.threshold_concession ?? 0),
+    commission_percentage: Number(r.commission_percentage ?? 0),
   }))
 
   const tourParams: TourParams = {
@@ -161,7 +161,7 @@ function buildTourParams(data: ModerateFormData, tour?: ModerateTour | null): To
   const partnerMinAdult = tour ? Number(tour.partner_min_adult_price) : ownerMinAdult
   const partnerMinChild = tour ? Number(tour.partner_min_child_price) : ownerMinChild
   const partnerMinConcession = tour && tour.partner_min_concession_price ? Number(tour.partner_min_concession_price) : 0
-  const rules = (data.commission_rules || []).filter(r => r.threshold_amount > 0 && (r.commission_percentage != null || r.commission_fixed_amount != null))
+  const rules = (data.commission_rules || []).filter((r: { commission_percentage?: number }) => (r.commission_percentage ?? 0) >= 0)
   return {
     partner_min_adult_price: partnerMinAdult,
     partner_min_child_price: partnerMinChild,
@@ -177,11 +177,11 @@ function buildTourParams(data: ModerateFormData, tour?: ModerateTour | null): To
     commission_type: data.commission_type,
     commission_percentage: data.commission_percentage,
     commission_fixed_amount: data.commission_fixed_amount,
-    commission_rules: rules.length ? rules.map(r => ({
-      threshold_amount: r.threshold_amount,
-      commission_type: r.commission_type,
-      commission_percentage: r.commission_percentage,
-      commission_fixed_amount: r.commission_fixed_amount,
+    commission_rules: rules.length ? rules.map((r: { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }) => ({
+      threshold_adult: Number(r.threshold_adult ?? 0),
+      threshold_child: Number(r.threshold_child ?? 0),
+      threshold_concession: Number(r.threshold_concession ?? 0),
+      commission_percentage: Number(r.commission_percentage ?? 0),
     })) : undefined,
   }
 }
@@ -208,7 +208,7 @@ export default function ModerateTourPage() {
     resolver: zodResolver(moderateSchema),
     defaultValues: {
       commission_type: 'percentage',
-      commission_rules: [] as { threshold_amount: number; commission_type: 'percentage' | 'fixed'; commission_percentage?: number; commission_fixed_amount?: number }[],
+      commission_rules: [] as { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }[],
     },
   })
 
@@ -250,10 +250,10 @@ export default function ModerateTourPage() {
       const rulesData = await rulesRes.json()
       if (rulesData.success && Array.isArray(rulesData.data) && rulesData.data.length > 0) {
         setValue('commission_rules', rulesData.data.map((r: any) => ({
-          threshold_amount: Number(r.threshold_amount),
-          commission_type: r.commission_type,
-          commission_percentage: r.commission_percentage != null ? Number(r.commission_percentage) : undefined,
-          commission_fixed_amount: r.commission_fixed_amount != null ? Number(r.commission_fixed_amount) : undefined,
+          threshold_adult: Number(r.threshold_adult ?? r.threshold_amount ?? 0),
+          threshold_child: Number(r.threshold_child ?? r.threshold_amount ?? 0),
+          threshold_concession: Number(r.threshold_concession ?? r.threshold_amount ?? 0),
+          commission_percentage: Number(r.commission_percentage ?? 0),
         })))
       }
     } catch (error) {
@@ -303,10 +303,10 @@ export default function ModerateTourPage() {
         },
         body: JSON.stringify({
           rules: (data.commission_rules || []).map((r, i) => ({
-            threshold_amount: r.threshold_amount,
-            commission_type: r.commission_type,
-            commission_percentage: r.commission_type === 'percentage' ? r.commission_percentage : undefined,
-            commission_fixed_amount: r.commission_type === 'fixed' ? r.commission_fixed_amount : undefined,
+            threshold_adult: r.threshold_adult ?? 0,
+            threshold_child: r.threshold_child ?? 0,
+            threshold_concession: r.threshold_concession ?? 0,
+            commission_percentage: r.commission_percentage ?? 0,
             order: i,
           })),
         }),
@@ -510,50 +510,53 @@ export default function ModerateTourPage() {
 
             <div className="p-4 glass rounded-xl border border-white/10">
               <h3 className="font-semibold mb-2 text-white">Дополнительные условия процента промоутера</h3>
-              <p className="text-sm text-white/60 mb-4">Пороги — по цене за билет (за каждую позицию). Если цена билета ≥ порога, применяется правило. Процент промоутера считается с каждой позиции отдельно (взр. 1200₽ → 30%, взр. 18000₽ → 40%).</p>
+              <p className="text-sm text-white/60 mb-4">Пороги по цене за билет для каждого типа. Если цена ≥ порога, применяется процент. Считается с каждой позиции отдельно.</p>
               {fields.map((field, index) => (
                 <div key={field.id} className="flex flex-wrap gap-2 items-end mb-3 p-3 bg-white/5 rounded-lg">
-                  <div className="flex-1 min-w-[100px]">
-                    <label className="block text-xs text-white/70 mb-1">Порог (₽)</label>
+                  <div className="min-w-[90px]">
+                    <label className="block text-xs text-white/70 mb-1">Порог взр. (₽)</label>
                     <input
-                      {...register(`commission_rules.${index}.threshold_amount`, { valueAsNumber: true })}
+                      {...register(`commission_rules.${index}.threshold_adult`, { valueAsNumber: true })}
                       type="number"
                       step="0.01"
                       min="0"
+                      placeholder="0"
                       className="input-glass text-sm"
                     />
                   </div>
-                  <div className="min-w-[120px]">
-                    <label className="block text-xs text-white/70 mb-1">Тип</label>
-                    <select {...register(`commission_rules.${index}.commission_type`)} className="input-glass text-sm">
-                      <option value="percentage">%</option>
-                      <option value="fixed">₽</option>
-                    </select>
+                  <div className="min-w-[90px]">
+                    <label className="block text-xs text-white/70 mb-1">Порог дет. (₽)</label>
+                    <input
+                      {...register(`commission_rules.${index}.threshold_child`, { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      className="input-glass text-sm"
+                    />
                   </div>
-                  {watch(`commission_rules.${index}.commission_type`) === 'percentage' ? (
-                    <div className="min-w-[80px]">
-                      <label className="block text-xs text-white/70 mb-1">%</label>
-                      <input
-                        {...register(`commission_rules.${index}.commission_percentage`, { valueAsNumber: true })}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        className="input-glass text-sm"
-                      />
-                    </div>
-                  ) : (
-                    <div className="min-w-[100px]">
-                      <label className="block text-xs text-white/70 mb-1">₽</label>
-                      <input
-                        {...register(`commission_rules.${index}.commission_fixed_amount`, { valueAsNumber: true })}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="input-glass text-sm"
-                      />
-                    </div>
-                  )}
+                  <div className="min-w-[90px]">
+                    <label className="block text-xs text-white/70 mb-1">Порог льг. (₽)</label>
+                    <input
+                      {...register(`commission_rules.${index}.threshold_concession`, { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      className="input-glass text-sm"
+                    />
+                  </div>
+                  <div className="min-w-[70px]">
+                    <label className="block text-xs text-white/70 mb-1">%</label>
+                    <input
+                      {...register(`commission_rules.${index}.commission_percentage`, { valueAsNumber: true })}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      className="input-glass text-sm"
+                    />
+                  </div>
                   <button type="button" onClick={() => remove(index)} className="text-red-400 hover:text-red-300 text-sm">
                     Удалить
                   </button>
@@ -561,7 +564,7 @@ export default function ModerateTourPage() {
               ))}
               <button
                 type="button"
-                onClick={() => append({ threshold_amount: 0, commission_type: 'percentage' as const, commission_percentage: 0 })}
+                onClick={() => append({ threshold_adult: 0, threshold_child: 0, threshold_concession: 0, commission_percentage: 0 })}
                 className="text-sm text-blue-400 hover:text-blue-300"
               >
                 + Добавить условие

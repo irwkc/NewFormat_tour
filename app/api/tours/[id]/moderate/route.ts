@@ -14,10 +14,10 @@ const optionalNumber = z.preprocess((v) => {
 const requiredPrice = z.preprocess((v) => Number(v), z.number().min(0.01))
 
 const ruleSchema = z.object({
-  threshold_amount: z.number().min(0),
-  commission_type: z.enum(['percentage', 'fixed']),
-  commission_percentage: optionalNumber,
-  commission_fixed_amount: optionalNumber,
+  threshold_adult: z.number().min(0),
+  threshold_child: z.number().min(0),
+  threshold_concession: z.number().min(0),
+  commission_percentage: z.number().min(0).max(100),
 })
 
 const moderateSchema = z.object({
@@ -64,7 +64,7 @@ export async function POST(
           if (!existing) {
             return NextResponse.json({ success: false, error: 'Tour not found' }, { status: 404 })
           }
-          const rules = (data.commission_rules || []).filter((r: { threshold_amount: number }) => r.threshold_amount > 0)
+          const rules = (data.commission_rules || []).filter((r: { commission_percentage?: number }) => (r.commission_percentage ?? 0) >= 0)
           const tourParams = {
             partner_min_adult_price: Number(existing.partner_min_adult_price),
             partner_min_child_price: Number(existing.partner_min_child_price),
@@ -80,11 +80,11 @@ export async function POST(
             commission_type: data.commission_type,
             commission_percentage: data.commission_percentage,
             commission_fixed_amount: data.commission_fixed_amount,
-            commission_rules: rules.length ? rules.map((r: { threshold_amount: number; commission_type: string; commission_percentage?: number; commission_fixed_amount?: number }) => ({
-              threshold_amount: r.threshold_amount,
-              commission_type: r.commission_type as 'percentage' | 'fixed',
-              commission_percentage: r.commission_percentage,
-              commission_fixed_amount: r.commission_fixed_amount,
+            commission_rules: rules.length ? rules.map((r: { threshold_adult: number; threshold_child: number; threshold_concession: number; commission_percentage: number }) => ({
+              threshold_adult: Number(r.threshold_adult ?? 0),
+              threshold_child: Number(r.threshold_child ?? 0),
+              threshold_concession: Number(r.threshold_concession ?? 0),
+              commission_percentage: Number(r.commission_percentage ?? 0),
             })) : undefined,
           }
           const scenarios = getPreviewScenarios(tourParams)

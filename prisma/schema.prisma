@@ -204,15 +204,18 @@ model Tour {
 }
 
 model TourCommissionRule {
-  id                     String          @id @default(uuid())
-  tour_id                String          @map("tour_id")
-  threshold_amount       Decimal         @map("threshold_amount") @db.Decimal(10, 2)
-  commission_type        CommissionType
-  commission_percentage  Decimal?        @map("commission_percentage") @db.Decimal(5, 2)
-  commission_fixed_amount Decimal?       @map("commission_fixed_amount") @db.Decimal(10, 2)
-  order                  Int             @default(0)
+  id                       String          @id @default(uuid())
+  tour_id                  String          @map("tour_id")
+  threshold_amount         Decimal?        @map("threshold_amount") @db.Decimal(10, 2)
+  threshold_adult          Decimal?        @map("threshold_adult") @db.Decimal(10, 2)
+  threshold_child          Decimal?        @map("threshold_child") @db.Decimal(10, 2)
+  threshold_concession     Decimal?        @map("threshold_concession") @db.Decimal(10, 2)
+  commission_type          CommissionType  @default(percentage)
+  commission_percentage    Decimal?        @map("commission_percentage") @db.Decimal(5, 2)
+  commission_fixed_amount  Decimal?        @map("commission_fixed_amount") @db.Decimal(10, 2)
+  order                    Int             @default(0)
 
-  tour                   Tour            @relation(fields: [tour_id], references: [id], onDelete: Cascade)
+  tour                     Tour            @relation(fields: [tour_id], references: [id], onDelete: Cascade)
 
   @@index([tour_id])
   @@map("tour_commission_rules")

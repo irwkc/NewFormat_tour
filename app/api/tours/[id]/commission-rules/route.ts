@@ -5,17 +5,12 @@ import { UserRole, CommissionType } from '@prisma/client'
 import { z } from 'zod'
 
 const ruleSchema = z.object({
-  threshold_amount: z.number().min(0),
-  commission_type: z.enum(['percentage', 'fixed']),
-  commission_percentage: z.number().min(0).max(100).optional(),
-  commission_fixed_amount: z.number().min(0).optional(),
+  threshold_adult: z.number().min(0),
+  threshold_child: z.number().min(0),
+  threshold_concession: z.number().min(0),
+  commission_percentage: z.number().min(0).max(100),
   order: z.number().int().min(0).optional(),
-}).refine((data) => {
-  if (data.commission_type === 'percentage') {
-    return data.commission_percentage !== undefined
-  }
-  return data.commission_fixed_amount !== undefined
-}, { message: 'commission_percentage or commission_fixed_amount required' })
+})
 
 const updateRulesSchema = z.object({
   rules: z.array(ruleSchema),
@@ -72,10 +67,11 @@ export async function PATCH(
         await prisma.tourCommissionRule.createMany({
           data: rules.map((r, i) => ({
             tour_id: params.id,
-            threshold_amount: r.threshold_amount,
-            commission_type: r.commission_type as CommissionType,
-            commission_percentage: r.commission_type === 'percentage' ? r.commission_percentage : null,
-            commission_fixed_amount: r.commission_type === 'fixed' ? r.commission_fixed_amount : null,
+            threshold_adult: r.threshold_adult,
+            threshold_child: r.threshold_child,
+            threshold_concession: r.threshold_concession,
+            commission_type: 'percentage' as CommissionType,
+            commission_percentage: r.commission_percentage,
             order: r.order ?? i,
           })),
         })
