@@ -8,7 +8,7 @@ import { customAlert } from '@/utils/modals'
 
 type Metric = 'turnover' | 'income' | 'salary'
 type Scope = 'total' | 'partner' | 'tour'
-type PaymentScope = 'all' | 'cash' | 'cashless'
+type PaymentScope = 'all' | 'cash' | 'acquiring' | 'qr'
 
 type SalesMetricsItem = {
   id: string
@@ -55,7 +55,7 @@ export default function OwnerStatisticsPage() {
 
   const titleByMetric: Record<Metric, string> = {
     turnover: 'Оборот',
-    income: 'Доход',
+    income: 'Чистая прибыль',
     salary: 'Зп',
   }
 
@@ -182,11 +182,12 @@ export default function OwnerStatisticsPage() {
               ))}
             </div>
 
-            {metric === 'turnover' && (
+            {(metric === 'turnover' || metric === 'income') && (
               <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
                 {([
                   ['all', 'Общий'],
-                  ['cashless', 'Безнал (эквайринг, QR)'],
+                  ['acquiring', 'Эквайринг'],
+                  ['qr', 'QR'],
                   ['cash', 'Нал'],
                 ] as Array<[PaymentScope, string]>).map(([p, label]) => (
                   <button

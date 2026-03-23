@@ -6,7 +6,7 @@ import { calcIncomeSplit } from '@/lib/domain/commission-calc'
 
 type Metric = 'turnover' | 'income' | 'salary'
 type Group = 'total' | 'partner' | 'tour'
-type PaymentScope = 'all' | 'cash' | 'cashless'
+type PaymentScope = 'all' | 'cash' | 'acquiring' | 'qr'
 
 function parseDateRange(searchParams: URLSearchParams) {
   const startRaw = searchParams.get('start_date')
@@ -45,8 +45,10 @@ export async function GET(request: NextRequest) {
         const paymentWhere =
           payment === 'cash'
             ? { payment_method: PaymentMethod.cash }
-            : payment === 'cashless'
-              ? { payment_method: { in: [PaymentMethod.acquiring, PaymentMethod.online_yookassa] } }
+            : payment === 'acquiring'
+              ? { payment_method: PaymentMethod.acquiring }
+              : payment === 'qr'
+                ? { payment_method: PaymentMethod.online_yookassa }
               : {}
 
         const sales = await prisma.sale.findMany({
