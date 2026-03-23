@@ -128,6 +128,30 @@ export default function PartnerDashboard() {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const r = await fetch('/api/statistics/export', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (r.ok) {
+        const blob = await r.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `statistics-partner-${new Date().toISOString().split('T')[0]}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        const d = await r.json()
+        await customAlert(d.error || 'Ошибка экспорта')
+      }
+    } catch {
+      await customAlert('Ошибка экспорта статистики')
+    }
+  }
+
   const navItems = getNavForRole(user?.role || 'partner')
 
   return (
@@ -137,7 +161,8 @@ export default function PartnerDashboard() {
       )}
       <div className="space-y-6">
         {/* Статистика */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-w-0">
           <div className="glass-card p-5">
             <h3 className="text-sm font-semibold mb-1 text-white/70">Всего продаж</h3>
             <div className="text-2xl font-bold text-purple-300">
@@ -156,6 +181,10 @@ export default function PartnerDashboard() {
               {stats?.tickets?.total ?? (loading ? '—' : 0)}
             </div>
           </div>
+          </div>
+          <button onClick={handleExport} className="btn-success shrink-0">
+            Экспорт в Excel
+          </button>
         </div>
 
         {/* Экскурсии */}
