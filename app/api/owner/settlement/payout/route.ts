@@ -10,8 +10,8 @@ function getCurrentMonthRange(now = new Date()) {
   return { start, end }
 }
 
-// GET /api/owner/settlement - расчёт сколько владелец должен каждому партнёру
-export async function GET(request: NextRequest) {
+// POST /api/owner/settlement/payout - выплата партнёру из расчёта
+export async function POST(request: NextRequest) {
   return withAuth(
     request,
     async (req) => {
@@ -20,18 +20,28 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
         }
 
-        const ownerId = req.user!.userId
+        const body = await request.json()
+        const partnerId = body?.partner_id as string | undefined
+        const amountRaw = body?.amount as number | undefined
+        const amount = typeof amountRaw === 'number' ? amountRaw : Number(amountRaw)
 
-        const { searchParams } = new URL(request.url)
-        const startDateRaw = searchParams.get('start_date')
-        const endDateRaw = searchParams.get('end_date')
+        if (!partnerId) {
+          return NextResponse.json({ success: false, error: 'partner_id is required' }, { status: 400 })
+        }
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return NextResponse.json({ success: false, error: 'amount must be > 0' }, { status: 400 })
+        }
+
+        const partner = await prisma.user.findUnique({ where: { id: partnerId } })
+        if (!partner || partner.role !== UserRole.partner) {
+          return NextResponse.json({ success: false, error: 'Partner not found' }, { status: 404 })
+        }
 
         const now = new Date()
-        const { start: monthStart, end: monthEnd } = getCurrentMonthRange(now)
+        const { start, end } = getCurrentMonthRange(now)
+        const ownerId = req.user!.userId
 
-        const start = startDateRaw ? new Date(startDateRaw) : monthStart
-        const end = endDateRaw ? new Date(endDateRaw) : monthEnd
-
+        // Прибыль партнёра за период
         const sales = await prisma.sale.findMany({
           where: {
             payment_status: PaymentStatus.completed,
@@ -39,42 +49,18 @@ export async function GET(request: NextRequest) {
               gte: start,
               lte: end,
             },
-          },
-          include: {
             tour: {
-              include: {
-                createdBy: {
-                  select: {
-                    id: true,
-                    full_name: true,
-                    email: true,
-                  },
-                },
-              },
+              created_by_user_id: partnerId,
             },
           },
-          orderBy: { created_at: 'desc' },
+          include: {
+            tour: true,
+          },
         })
 
-        // Прибыль партнёра = доля партнёра из расчёта комиссий (не оборот).
-        const byPartner = new Map<
-          string,
-          {
-            partner: { id: string; full_name: string | null; email: string | null }
-            profit: number
-            sales_count: number
-            places: number
-          }
-        >()
-
+        let profit = 0
         for (const sale of sales) {
           const tour = sale.tour
-          const partnerUser = tour.createdBy
-          if (!partnerUser) continue
-
-          // В текущей модели партнёрами являются создатели тура
-          const partnerId = partnerUser.id
-          const key = partnerId
 
           const saleChildPrice = sale.child_price != null ? Number(sale.child_price) : 0
           const saleConcessionPrice = sale.concession_price != null ? Number(sale.concession_price) : 0
@@ -120,76 +106,63 @@ export async function GET(request: NextRequest) {
             }
           )
 
-          const existing =
-            byPartner.get(key) ||
-            ({
-              partner: {
-                id: partnerId,
-                full_name: partnerUser.full_name,
-                email: partnerUser.email,
-              },
-              profit: 0,
-              sales_count: 0,
-              places: 0,
-            } as const)
-
-          const profitAfter = existing.profit + split.partner
-          const salesCountAfter = existing.sales_count + 1
-          const placesAfter =
-            existing.places + sale.adult_count + (sale.child_count ?? 0) + (sale.concession_count ?? 0)
-
-          byPartner.set(key, {
-            ...existing,
-            profit: profitAfter,
-            sales_count: salesCountAfter,
-            places: placesAfter,
-          })
+          profit += split.partner
         }
 
-        const partnerIds = [...byPartner.keys()]
-        const paidByPartner = new Map<string, number>()
+        const paidSumRow = await prisma.balanceHistory.aggregate({
+          where: {
+            user_id: partnerId,
+            balance_type: BalanceType.balance,
+            transaction_type: TransactionType.debit,
+            performed_by_user_id: ownerId,
+            description: { startsWith: 'Выплата партнёру' },
+            created_at: {
+              gte: start,
+              lte: end,
+            },
+          },
+          _sum: { amount: true },
+        })
 
-        if (partnerIds.length > 0) {
-          const payoutEntries = await prisma.balanceHistory.findMany({
-            where: {
-              user_id: { in: partnerIds },
+        const paid = Number(paidSumRow._sum.amount || 0)
+        const remaining = Math.max(0, profit - paid)
+
+        if (amount - remaining > 0.0001) {
+          return NextResponse.json(
+            { success: false, error: `Сумма выплаты превышает остаток. Остаток: ${remaining.toFixed(2)}₽` },
+            { status: 400 }
+          )
+        }
+
+        // Логируем выплату в историю баланса (для расчёта "сколько уже выплатили")
+        // Баланс партнёра в текущей логике не используется для партнёрской прибыли, поэтому просто уменьшаем его
+        // чтобы запись была консистентной.
+        const balanceBefore = Number(partner.balance)
+        const balanceAfter = balanceBefore - amount
+
+        await prisma.$transaction(async (tx) => {
+          await tx.user.update({
+            where: { id: partnerId },
+            data: { balance: balanceAfter },
+          })
+
+          await tx.balanceHistory.create({
+            data: {
+              user_id: partnerId,
               balance_type: BalanceType.balance,
               transaction_type: TransactionType.debit,
+              amount,
+              balance_before: balanceBefore,
+              balance_after: balanceAfter,
+              description: `Выплата партнёру за период: ${start.toISOString().slice(0, 10)}..${end.toISOString().slice(0, 10)}`,
               performed_by_user_id: ownerId,
-              description: { startsWith: 'Выплата партнёру' },
-              created_at: {
-                gte: start,
-                lte: end,
-              },
             },
-            select: { user_id: true, amount: true },
           })
-
-          for (const p of payoutEntries) {
-            paidByPartner.set(p.user_id, (paidByPartner.get(p.user_id) || 0) + Number(p.amount))
-          }
-        }
-
-        const items = [...byPartner.values()]
-          .map((it) => {
-            const paid = paidByPartner.get(it.partner.id) || 0
-            const remaining = Math.max(0, it.profit - paid)
-            return { ...it, paid, remaining }
-          })
-          .sort((a, b) => b.remaining - a.remaining)
-
-        const totalDebt = items.reduce((sum, i) => sum + i.remaining, 0)
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            range: { start, end },
-            total_debt: totalDebt,
-            items,
-          },
         })
+
+        return NextResponse.json({ success: true })
       } catch (error) {
-        console.error('Owner settlement error:', error)
+        console.error('Owner settlement payout error:', error)
         return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
       }
     },

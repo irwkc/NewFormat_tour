@@ -8,7 +8,9 @@ import { customAlert } from '@/utils/modals'
 
 type PartnerDebtItem = {
   partner: { id: string; full_name: string | null; email: string | null }
-  debt: number
+  profit: number
+  paid: number
+  remaining: number
   sales_count: number
   places: number
 }
@@ -23,6 +25,8 @@ export default function OwnerSettlementPage() {
   const { token, user } = useAuthStore()
   const [data, setData] = useState<OwnerSettlementResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [payoutAmounts, setPayoutAmounts] = useState<Record<string, string>>({})
+  const [payoutLoading, setPayoutLoading] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -38,6 +42,55 @@ export default function OwnerSettlementPage() {
       .catch(() => customAlert('Ошибка загрузки расчёта'))
       .finally(() => setLoading(false))
   }, [token])
+
+  const refresh = async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const r = await fetch('/api/owner/settlement', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const d = await r.json()
+      if (d.success) setData(d.data)
+      else customAlert(d.error || 'Ошибка загрузки расчёта')
+    } catch {
+      customAlert('Ошибка загрузки расчёта')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePayout = async (partnerId: string) => {
+    const raw = payoutAmounts[partnerId]
+    const amount = Number(raw)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      await customAlert('Введите сумму выплаты')
+      return
+    }
+
+    try {
+      setPayoutLoading(true)
+      const r = await fetch('/api/owner/settlement/payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ partner_id: partnerId, amount }),
+      })
+      const d = await r.json()
+      if (!d.success) {
+        await customAlert(d.error || 'Ошибка выплаты')
+        return
+      }
+      setPayoutAmounts((s) => ({ ...s, [partnerId]: '' }))
+      await refresh()
+    } catch {
+      await customAlert('Ошибка выплаты')
+    } finally {
+      setPayoutLoading(false)
+    }
+  }
 
   const navItems = getNavForRole(user?.role || 'owner')
 
@@ -60,15 +113,18 @@ export default function OwnerSettlementPage() {
               <thead>
                 <tr>
                   <th>Партнёр</th>
-                  <th>Сумма к выплате</th>
+                  <th>Прибыль партнёра</th>
+                  <th>Выплачено</th>
+                  <th>Остаток к выплате</th>
                   <th>Продаж</th>
                   <th>Мест</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="text-center text-white/70">
+                    <td colSpan={7} className="text-center text-white/70">
                       Загрузка...
                     </td>
                   </tr>
@@ -82,15 +138,48 @@ export default function OwnerSettlementPage() {
                         <div className="text-xs text-white/60">{it.partner.email || ''}</div>
                       </td>
                       <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
-                        {Number(it.debt || 0).toFixed(2)}₽
+                        {Number(it.profit || 0).toFixed(2)}₽
+                      </td>
+                      <td className="text-sm font-medium text-white/70 whitespace-nowrap">
+                        {Number(it.paid || 0).toFixed(2)}₽
+                      </td>
+                      <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
+                        {Number(it.remaining || 0).toFixed(2)}₽
                       </td>
                       <td className="text-sm text-white/70 whitespace-nowrap">{it.sales_count}</td>
                       <td className="text-sm text-white/70 whitespace-nowrap">{it.places}</td>
+                      <td className="text-sm whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            placeholder="₽"
+                            value={payoutAmounts[it.partner.id] ?? ''}
+                            onChange={(e) =>
+                              setPayoutAmounts((s) => ({
+                                ...s,
+                                [it.partner.id]: e.target.value,
+                              }))
+                            }
+                            className="input-glass w-28 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            disabled={payoutLoading || (it.remaining || 0) <= 0}
+                          />
+                          <button
+                            type="button"
+                            className="btn-success text-xs px-3 py-2"
+                            disabled={payoutLoading || (it.remaining || 0) <= 0}
+                            onClick={() => handlePayout(it.partner.id)}
+                          >
+                            Выплатить
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="text-center text-white/60">
+                    <td colSpan={7} className="text-center text-white/60">
                       Нет данных
                     </td>
                   </tr>
