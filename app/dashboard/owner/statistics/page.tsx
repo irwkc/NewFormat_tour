@@ -69,7 +69,7 @@ export default function OwnerStatisticsPage() {
     if (!token) return
     setLoading(true)
     try {
-      const paymentParam = metric === 'turnover' ? `&payment=${turnoverPayment}` : ''
+      const paymentParam = metric === 'turnover' || metric === 'income' ? `&payment=${turnoverPayment}` : ''
       const endpoint = `/api/statistics/sales-metrics?metric=${metric}&group=${scope}&start_date=${startDate}&end_date=${endDate}${paymentParam}`
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
