@@ -58,14 +58,33 @@ export async function GET(
         }
 
         const tours = partner.toursCreated
+
+        // По умолчанию — только текущий месяц (обнуление в начале каждого месяца)
+        const now = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const monthEnd = new Date()
+        const isInCurrentMonth = (d: Date) => {
+          const t = new Date(d).getTime()
+          return t >= monthStart.getTime() && t <= monthEnd.getTime()
+        }
+
         const totalTours = tours.length
         const approvedTours = tours.filter((t) => t.moderation_status === 'approved').length
-        const totalRevenue = tours.reduce((sum, tour) => {
-          return sum + tour.sales.reduce((saleSum, sale) => saleSum + Number(sale.total_amount), 0)
+        const currentMonthSales = tours.flatMap((t) => t.sales).filter((s) => isInCurrentMonth(s.created_at))
+        const totalRevenue = currentMonthSales.reduce((sum, sale) => sum + Number(sale.total_amount), 0)
+        const totalSales = currentMonthSales.length
+        // Всего мест = сумма (adult_count + child_count + concession_count) по билетам из продаж текущего месяца
+        const currentMonthTicketIds = new Set(currentMonthSales.map((s) => s.ticket?.id).filter(Boolean))
+        const totalPlaces = tours.reduce((sum, tour) => {
+          return sum + tour.tickets
+            .filter((t) => currentMonthTicketIds.has(t.id))
+            .reduce((s, t) => s + (t.adult_count + t.child_count + t.concession_count), 0)
         }, 0)
-        const totalSales = tours.reduce((sum, tour) => sum + tour.sales.length, 0)
-        const totalTickets = tours.reduce((sum, tour) => sum + tour.tickets.length, 0)
-        const usedTickets = tours.reduce((sum, tour) => sum + tour.tickets.filter((t) => t.ticket_status === 'used').length, 0)
+        const usedTickets = tours.reduce(
+          (sum, tour) =>
+            sum + tour.tickets.filter((t) => t.ticket_status === 'used' && currentMonthTicketIds.has(t.id)).length,
+          0
+        )
 
         return NextResponse.json({
           success: true,
@@ -85,7 +104,7 @@ export async function GET(
               revenue: totalRevenue,
             },
             tickets: {
-              total: totalTickets,
+              total: totalPlaces,
               used: usedTickets,
             },
             tours_details: tours.map((tour) => ({

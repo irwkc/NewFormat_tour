@@ -151,7 +151,7 @@ export default function PartnerDashboard() {
             </div>
           </div>
           <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-1 text-white/70">Всего билетов</h3>
+            <h3 className="text-sm font-semibold mb-1 text-white/70">Всего мест</h3>
             <div className="text-2xl font-bold text-blue-300">
               {stats?.tickets?.total ?? (loading ? '—' : 0)}
             </div>

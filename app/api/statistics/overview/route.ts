@@ -20,20 +20,38 @@ export async function GET(request: NextRequest) {
         const startDate = searchParams.get('start_date')
         const endDate = searchParams.get('end_date')
 
-        const dateFilter: any = {}
+        const dateFilter: { gte?: Date; lte?: Date } = {}
         if (startDate) {
           dateFilter.gte = new Date(startDate)
         }
         if (endDate) {
           dateFilter.lte = new Date(endDate)
         }
+        // По умолчанию — только текущий месяц (обнуление в начале каждого месяца)
+        if (!startDate && !endDate) {
+          const now = new Date()
+          dateFilter.gte = new Date(now.getFullYear(), now.getMonth(), 1)
+          dateFilter.lte = new Date()
+        }
 
-        const where = startDate || endDate ? { created_at: dateFilter } : {}
+        const where = Object.keys(dateFilter).length > 0 ? { created_at: dateFilter } : {}
+
+        const ticketDateFilter = where.created_at as { gte?: Date; lte?: Date } | undefined
+        const totalPlacesPromise = ticketDateFilter?.gte && ticketDateFilter?.lte
+          ? prisma.$queryRaw<[{ total: bigint | null }]>`
+              SELECT COALESCE(SUM(adult_count + child_count + concession_count), 0)::bigint as total
+              FROM tickets
+              WHERE created_at >= ${ticketDateFilter.gte} AND created_at <= ${ticketDateFilter.lte}
+            `
+          : prisma.$queryRaw<[{ total: bigint | null }]>`
+              SELECT COALESCE(SUM(adult_count + child_count + concession_count), 0)::bigint as total
+              FROM tickets
+            `
 
         const [
           totalSales,
           totalRevenue,
-          totalTickets,
+          totalPlacesResult,
           usedTickets,
           cancelledTickets,
           totalUsers,
@@ -59,11 +77,7 @@ export async function GET(request: NextRequest) {
               total_amount: true,
             },
           }),
-          prisma.ticket.count({
-            where: {
-              ...where,
-            },
-          }),
+          totalPlacesPromise.then((r) => Number(r[0]?.total ?? 0)),
           prisma.ticket.count({
             where: {
               ...where,
@@ -130,10 +144,10 @@ export async function GET(request: NextRequest) {
               revenue: totalRevenue._sum.total_amount || 0,
             },
             tickets: {
-              total: totalTickets,
+              total: totalPlacesResult,
               used: usedTickets,
               cancelled: cancelledTickets,
-              sold: totalTickets - usedTickets - cancelledTickets,
+              sold: totalPlacesResult - usedTickets - cancelledTickets,
             },
             users: {
               total: totalUsers,

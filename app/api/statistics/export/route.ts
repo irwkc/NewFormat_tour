@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, PaymentStatus } from '@prisma/client'
 import ExcelJS from 'exceljs'
 
+const MONTH_NAMES: Record<number, string> = {
+  1: 'Январь', 2: 'Февраль', 3: 'Март', 4: 'Апрель', 5: 'Май', 6: 'Июнь',
+  7: 'Июль', 8: 'Август', 9: 'Сентябрь', 10: 'Октябрь', 11: 'Ноябрь', 12: 'Декабрь',
+}
+
 // GET /api/statistics/export - экспорт статистики в Excel (для владельца)
 export async function GET(request: NextRequest) {
   return withAuth(
@@ -33,7 +38,11 @@ export async function GET(request: NextRequest) {
           where: { payment_status: PaymentStatus.completed },
           _sum: { total_amount: true },
         })
-        const totalTickets = await prisma.ticket.count()
+        const totalPlacesResult = await prisma.$queryRaw<[{ total: bigint | null }]>`
+          SELECT COALESCE(SUM(adult_count + child_count + concession_count), 0)::bigint as total
+          FROM tickets
+        `
+        const totalPlaces = Number(totalPlacesResult[0]?.total ?? 0)
         const usedTickets = await prisma.ticket.count({
           where: { ticket_status: 'used' },
         })
@@ -41,7 +50,7 @@ export async function GET(request: NextRequest) {
         overviewSheet.addRows([
           { indicator: 'Всего продаж', value: totalSales },
           { indicator: 'Общая выручка', value: totalRevenue._sum.total_amount || 0 },
-          { indicator: 'Всего билетов', value: totalTickets },
+          { indicator: 'Всего мест', value: totalPlaces },
           { indicator: 'Использовано билетов', value: usedTickets },
         ])
 
@@ -66,6 +75,7 @@ export async function GET(request: NextRequest) {
           { header: 'Способ оплаты', key: 'method', width: 15 },
           { header: 'Email клиента', key: 'customer_email', width: 30 },
           { header: 'Точка посадки', key: 'boarding_location', width: 40 },
+          { header: 'Месяц', key: 'month', width: 15 },
           { header: 'Дата продажи', key: 'date', width: 20 },
         ]
 
@@ -123,6 +133,7 @@ export async function GET(request: NextRequest) {
               method: sale.payment_method,
               customer_email: sale.customer_email || '',
               boarding_location: flight?.boarding_location_url || '',
+              month: MONTH_NAMES[new Date(sale.created_at).getMonth() + 1] || '',
               date: sale.created_at.toISOString(),
             }
           })
@@ -138,6 +149,7 @@ export async function GET(request: NextRequest) {
           { header: 'Детских', key: 'children', width: 10 },
           { header: 'Льготных', key: 'concessions', width: 10 },
           { header: 'Статус', key: 'status', width: 15 },
+          { header: 'Месяц', key: 'month', width: 15 },
           { header: 'Дата создания', key: 'created', width: 20 },
         ]
 
@@ -162,6 +174,7 @@ export async function GET(request: NextRequest) {
             children: ticket.child_count,
             concessions: (ticket as any).concession_count || 0,
             status: ticket.ticket_status,
+            month: MONTH_NAMES[new Date(ticket.created_at).getMonth() + 1] || '',
             created: ticket.created_at.toISOString(),
           }))
         )

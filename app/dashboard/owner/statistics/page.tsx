@@ -205,7 +205,7 @@ export default function OwnerStatisticsPage() {
               </div>
             </div>
             <div className="glass-card">
-              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего билетов</h3>
+              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего мест</h3>
               <div className="text-3xl font-bold text-blue-300">
                 {overview.tickets?.total ?? 0}
               </div>
