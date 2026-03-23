@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { BalanceType, PaymentStatus, TransactionType, UserRole } from '@prisma/client'
+import { BalanceType, TransactionType, TicketStatus, UserRole } from '@prisma/client'
 import { calcIncomeSplit } from '@/lib/domain/commission-calc'
 
 function getCurrentMonthRange(now = new Date()) {
@@ -41,11 +41,11 @@ export async function POST(request: NextRequest) {
         const { start, end } = getCurrentMonthRange(now)
         const ownerId = req.user!.userId
 
-        // Прибыль партнёра за период
-        const sales = await prisma.sale.findMany({
+        // Прибыль партнёра за период — только по билетам, которые прошли посадку.
+        const tickets = await prisma.ticket.findMany({
           where: {
-            payment_status: PaymentStatus.completed,
-            created_at: {
+            ticket_status: TicketStatus.used,
+            used_at: {
               gte: start,
               lte: end,
             },
@@ -54,26 +54,27 @@ export async function POST(request: NextRequest) {
             },
           },
           include: {
+            sale: true,
             tour: true,
           },
         })
 
         let profit = 0
-        for (const sale of sales) {
-          const tour = sale.tour
+        for (const ticket of tickets) {
+          const tour = ticket.tour
 
-          const saleChildPrice = sale.child_price != null ? Number(sale.child_price) : 0
-          const saleConcessionPrice = sale.concession_price != null ? Number(sale.concession_price) : 0
+          const saleChildPrice = ticket.sale.child_price != null ? Number(ticket.sale.child_price) : 0
+          const saleConcessionPrice = ticket.sale.concession_price != null ? Number(ticket.sale.concession_price) : 0
 
           const split = calcIncomeSplit(
             {
-              adult_count: sale.adult_count,
-              child_count: sale.child_count ?? 0,
-              concession_count: sale.concession_count ?? 0,
-              adult_price: Number(sale.adult_price),
+              adult_count: ticket.adult_count,
+              child_count: ticket.child_count ?? 0,
+              concession_count: ticket.concession_count ?? 0,
+              adult_price: Number(ticket.sale.adult_price),
               child_price: saleChildPrice,
               concession_price: saleConcessionPrice,
-              total_amount: Number(sale.total_amount),
+              total_amount: Number(ticket.sale.total_amount),
             },
             {
               partner_min_adult_price: Number(tour.partner_min_adult_price),
