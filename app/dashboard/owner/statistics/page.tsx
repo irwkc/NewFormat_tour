@@ -1,113 +1,99 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 import { getNavForRole } from '@/lib/dashboard-nav'
 import { customAlert } from '@/utils/modals'
 
-type OverviewData = {
-  sales?: { total: number; revenue: number }
-  tickets?: { total: number }
+type Metric = 'turnover' | 'income' | 'salary'
+type Scope = 'total' | 'partner' | 'tour'
+
+type SalesMetricsItem = {
+  id: string
+  name: string
+  value: number
+  sales_count: number
+  places: number
 }
 
-type TourStat = {
-  tour?: { id?: string; company?: string; flights_count?: number }
-  sales?: { total: number; revenue: number }
-  count?: number
-  total?: number | string
+type SalesMetricsResponse = {
+  total_value: number
+  sales_count: number
+  places: number
+  items: SalesMetricsItem[]
 }
 
-type SellerStat = {
-  seller?: { full_name?: string | null }
-  promoter?: { full_name?: string | null }
-  user?: { full_name?: string | null }
-  sales?: { total: number; revenue: number }
-  count?: number
-  total?: number | string
-}
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
-type PaymentStat = {
-  payment_method: 'online_yookassa' | 'cash' | 'acquiring'
-  count?: number
-  total?: number | string
+function toDateInputValue(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
 export default function OwnerStatisticsPage() {
   const { token, user } = useAuthStore()
-  const [overview, setOverview] = useState<OverviewData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'by-tour' | 'by-seller' | 'by-payment'>('overview')
-  const [stats, setStats] = useState<(TourStat | SellerStat | PaymentStat)[]>([])
 
-  useEffect(() => {
-    if (token) {
-      fetchData()
-    }
-  }, [token, activeTab])
+  const now = useMemo(() => new Date(), [])
+  const defaultStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now])
+  const defaultEnd = useMemo(() => new Date(), [])
+
+  const [metric, setMetric] = useState<Metric>('turnover')
+  const [scope, setScope] = useState<Scope>('total')
+
+  const [startInput, setStartInput] = useState<string>(toDateInputValue(defaultStart))
+  const [endInput, setEndInput] = useState<string>(toDateInputValue(defaultEnd))
+
+  const [startDate, setStartDate] = useState<string>(toDateInputValue(defaultStart))
+  const [endDate, setEndDate] = useState<string>(toDateInputValue(defaultEnd))
+
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<SalesMetricsResponse | null>(null)
+
+  const navItems = getNavForRole(user?.role || 'owner')
+
+  const titleByMetric: Record<Metric, string> = {
+    turnover: 'Оборот',
+    income: 'Доход',
+    salary: 'Зп',
+  }
+
+  const scopeLabel: Record<Scope, string> = {
+    total: 'Общий',
+    partner: 'По партнёрам',
+    tour: 'По экскурсиям',
+  }
 
   const fetchData = async () => {
+    if (!token) return
+    setLoading(true)
     try {
-      setLoading(true)
-      if (activeTab !== 'overview') setStats([])
-      let endpoint = '/api/statistics/overview'
-      
-      if (activeTab === 'by-tour') endpoint = '/api/statistics/by-tour'
-      else if (activeTab === 'by-seller') endpoint = '/api/statistics/by-seller'
-      else if (activeTab === 'by-payment') endpoint = '/api/statistics/by-payment-method'
-
+      const endpoint = `/api/statistics/sales-metrics?metric=${metric}&group=${scope}&start_date=${startDate}&end_date=${endDate}`
       const response = await fetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      const data = await response.json()
-      if (data.success) {
-        if (activeTab === 'overview') {
-          setOverview(data.data)
-        } else if (activeTab === 'by-tour') {
-          setStats((data.data as TourStat[]).map((s) => ({
-            ...s,
-            count: s.sales?.total ?? s.count ?? 0,
-            total: s.sales?.revenue ?? s.total ?? 0,
-          })))
-        } else if (activeTab === 'by-seller') {
-          const d = data.data as { managers?: SellerStat[]; promoters?: SellerStat[] }
-          const managers = (d.managers || []).map((m) => ({
-            seller: m.user,
-            count: m.sales?.total ?? 0,
-            total: m.sales?.revenue ?? 0,
-          }))
-          const promoters = (d.promoters || []).map((p) => ({
-            promoter: p.user,
-            count: p.sales?.total ?? 0,
-            total: p.sales?.revenue ?? 0,
-          }))
-          setStats([...managers, ...promoters] as SellerStat[])
-        } else if (activeTab === 'by-payment') {
-          const d = data.data as Record<string, { count: number; revenue: number }>
-          const items: PaymentStat[] = [
-            { payment_method: 'online_yookassa', count: d.online_yookassa?.count ?? 0, total: d.online_yookassa?.revenue ?? 0 },
-            { payment_method: 'cash', count: d.cash?.count ?? 0, total: d.cash?.revenue ?? 0 },
-            { payment_method: 'acquiring', count: d.acquiring?.count ?? 0, total: d.acquiring?.revenue ?? 0 },
-          ]
-          setStats(items)
-        }
+      const d = await response.json()
+      if (!d.success) {
+        await customAlert(d.error || 'Ошибка загрузки статистики')
+        return
       }
+      setData(d.data as SalesMetricsResponse)
     } catch (error) {
-      console.error('Error fetching statistics:', error)
+      console.error('Error fetching sales metrics:', error)
+      await customAlert('Ошибка загрузки статистики')
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, metric, scope, startDate, endDate])
+
   const handleExport = async () => {
     try {
       const response = await fetch('/api/statistics/export', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
 
       if (response.ok) {
@@ -123,246 +109,140 @@ export default function OwnerStatisticsPage() {
       } else {
         await customAlert('Ошибка экспорта статистики')
       }
-    } catch (error) {
+    } catch {
       await customAlert('Ошибка экспорта статистики')
     }
   }
 
-  const navItems = getNavForRole(user?.role || 'owner')
+  const formatValue = (v: number) => Number(v || 0).toFixed(2)
 
   return (
     <DashboardLayout title="Статистика" navItems={navItems}>
       <div className="space-y-6">
         <div className="flex justify-between items-center gap-3 flex-wrap">
           <h2 className="text-2xl font-bold text-white">Статистика продаж</h2>
-          <button
-            onClick={handleExport}
-            className="btn-success"
-          >
+          <button onClick={handleExport} className="btn-success">
             Экспорт в Excel
           </button>
         </div>
 
-        <div className="glass-card">
-          <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2 rounded-xl transition-all ${
-                activeTab === 'overview'
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Общая статистика
-            </button>
-            <button
-              onClick={() => setActiveTab('by-tour')}
-              className={`px-4 py-2 rounded-xl transition-all ${
-                activeTab === 'by-tour'
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              По экскурсиям
-            </button>
-            <button
-              onClick={() => setActiveTab('by-seller')}
-              className={`px-4 py-2 rounded-xl transition-all ${
-                activeTab === 'by-seller'
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              По продавцам
-            </button>
-            <button
-              onClick={() => setActiveTab('by-payment')}
-              className={`px-4 py-2 rounded-xl transition-all ${
-                activeTab === 'by-payment'
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              По способам оплаты
-            </button>
+        <div className="glass-card p-5">
+          <div className="flex flex-wrap items-end gap-4 justify-between">
+            <div className="space-y-1">
+              <div className="text-sm text-white/70">Период</div>
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="space-y-1">
+                  <div className="text-xs text-white/60">С</div>
+                  <input
+                    type="date"
+                    value={startInput}
+                    onChange={(e) => setStartInput(e.target.value)}
+                    className="input-glass text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs text-white/60">По</div>
+                  <input
+                    type="date"
+                    value={endInput}
+                    onChange={(e) => setEndInput(e.target.value)}
+                    className="input-glass text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    setStartDate(startInput)
+                    setEndDate(endInput)
+                  }}
+                >
+                  Применить
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {(['turnover', 'income', 'salary'] as Metric[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMetric(m)}
+                  className={`px-4 py-2 rounded-xl transition-all ${
+                    metric === m ? 'bg-white/20 text-white border border-white/30' : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {titleByMetric[m]}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
+              {(['total', 'partner', 'tour'] as Scope[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setScope(s)}
+                  className={`px-4 py-2 rounded-xl transition-all ${
+                    scope === s ? 'bg-white/20 text-white border border-white/30' : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {scopeLabel[s]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {loading ? (
           <div className="glass-card text-center text-white/70">Загрузка...</div>
-        ) : activeTab === 'overview' && overview ? (
+        ) : !data ? (
+          <div className="glass-card text-center text-white/70">Нет данных</div>
+        ) : scope === 'total' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-card">
-              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего продаж</h3>
-              <div className="text-3xl font-bold text-purple-300">
-                {overview.sales?.total ?? 0}
-              </div>
-            </div>
-            <div className="glass-card">
-              <h3 className="text-lg font-semibold mb-2 text-white/70">Общая сумма</h3>
-              <div className="text-3xl font-bold text-green-300">
-                {Number(overview.sales?.revenue ?? 0).toFixed(2)}₽
-              </div>
-            </div>
-            <div className="glass-card">
-              <h3 className="text-lg font-semibold mb-2 text-white/70">Всего мест</h3>
-              <div className="text-3xl font-bold text-blue-300">
-                {overview.tickets?.total ?? 0}
+            <div className="glass-card p-5">
+              <h3 className="text-lg font-semibold mb-2 text-white/70">{titleByMetric[metric]}</h3>
+              <div className="text-3xl font-bold text-purple-300">{formatValue(data.total_value)}₽</div>
+              <div className="text-sm text-white/60 mt-2">
+                Продаж: {data.sales_count} · Мест: {data.places}
               </div>
             </div>
           </div>
         ) : (
-          <>
-            {/* Мобильный вид: карточки без горизонтального скролла */}
-            <div className="space-y-3 md:hidden">
-              {stats.map((stat, index) => (
-                <div key={index} className="glass-card">
-                  {activeTab === 'by-tour' && 'tour' in stat && (
-                    <div className="space-y-1 text-sm">
-                      <div className="text-white/70">Экскурсия</div>
-                      <div className="text-white font-medium">
-                        {stat.tour?.company}
-                        {stat.tour?.flights_count != null ? ` (${stat.tour.flights_count} рейсов)` : ''}
-                      </div>
-                      <div className="flex justify-between pt-2 text-sm">
-                        <span className="text-white/60">Продаж</span>
-                        <span className="text-white">{stat.count || 0}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Сумма</span>
-                        <span className="text-green-300 font-semibold">
-                          {Number(stat.total || 0).toFixed(2)}₽
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
-                    <div className="space-y-1 text-sm">
-                      <div className="text-white/70">Продавец</div>
-                      <div className="text-white font-medium">
-                        {(stat.seller || stat.promoter)?.full_name || '-'}
-                      </div>
-                      <div className="flex justify-between pt-2 text-sm">
-                        <span className="text-white/60">Продаж</span>
-                        <span className="text-white">{stat.count || 0}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Сумма</span>
-                        <span className="text-green-300 font-semibold">
-                          {Number(stat.total || 0).toFixed(2)}₽
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {activeTab === 'by-payment' && 'payment_method' in stat && (
-                    <div className="space-y-1 text-sm">
-                      <div className="text-white/70">Способ оплаты</div>
-                      <div className="text-white font-medium">
-                        {stat.payment_method === 'online_yookassa'
-                          ? 'Онлайн'
-                          : stat.payment_method === 'cash'
-                          ? 'Наличные'
-                          : 'Эквайринг'}
-                      </div>
-                      <div className="flex justify-between pt-2 text-sm">
-                        <span className="text-white/60">Продаж</span>
-                        <span className="text-white">{stat.count || 0}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Сумма</span>
-                        <span className="text-green-300 font-semibold">
-                          {Number(stat.total || 0).toFixed(2)}₽
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Десктопный вид: таблица как раньше */}
-            <div className="hidden md:block table-container">
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
+          <div className="glass-card p-5">
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{scope === 'partner' ? 'Партнёр' : 'Экскурсия'}</th>
+                    <th>Продаж</th>
+                    <th>Мест</th>
+                    <th>{titleByMetric[metric]}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.length === 0 ? (
                     <tr>
-                      {activeTab === 'by-tour' && (
-                        <>
-                          <th>Экскурсия</th>
-                          <th>Продаж</th>
-                          <th>Сумма</th>
-                        </>
-                      )}
-                      {activeTab === 'by-seller' && (
-                        <>
-                          <th>Продавец</th>
-                          <th>Продаж</th>
-                          <th>Сумма</th>
-                        </>
-                      )}
-                      {activeTab === 'by-payment' && (
-                        <>
-                          <th>Способ оплаты</th>
-                          <th>Продаж</th>
-                          <th>Сумма</th>
-                        </>
-                      )}
+                      <td colSpan={4} className="text-center text-white/60">
+                        Нет данных
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {stats.map((stat, index) => (
-                      <tr key={index}>
-                        {activeTab === 'by-tour' && 'tour' in stat && (
-                          <>
-                            <td className="text-sm text-white whitespace-nowrap">
-                              {stat.tour?.company}
-                            {stat.tour?.flights_count != null ? ` (${stat.tour.flights_count} рейсов)` : ''}
-                            </td>
-                            <td className="text-sm text-white/70 whitespace-nowrap">
-                              {stat.count || 0}
-                            </td>
-                            <td className="text-sm font-medium text-white whitespace-nowrap">
-                              {Number(stat.total || 0).toFixed(2)}₽
-                            </td>
-                          </>
-                        )}
-                        {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
-                          <>
-                            <td className="text-sm text-white whitespace-nowrap">
-                              {(stat.seller || stat.promoter)?.full_name || '-'}
-                            </td>
-                            <td className="text-sm text-white/70 whitespace-nowrap">
-                              {stat.count || 0}
-                            </td>
-                            <td className="text-sm font-medium text-white whitespace-nowrap">
-                              {Number(stat.total || 0).toFixed(2)}₽
-                            </td>
-                          </>
-                        )}
-                        {activeTab === 'by-payment' && 'payment_method' in stat && (
-                          <>
-                            <td className="text-sm text-white whitespace-nowrap">
-                              {stat.payment_method === 'online_yookassa'
-                                ? 'Онлайн'
-                                : stat.payment_method === 'cash'
-                                ? 'Наличные'
-                                : 'Эквайринг'}
-                            </td>
-                            <td className="text-sm text-white/70 whitespace-nowrap">
-                              {stat.count || 0}
-                            </td>
-                            <td className="text-sm font-medium text-white whitespace-nowrap">
-                              {Number(stat.total || 0).toFixed(2)}₽
-                            </td>
-                          </>
-                        )}
+                  ) : (
+                    data.items.map((it) => (
+                      <tr key={it.id}>
+                        <td className="text-sm text-white whitespace-nowrap">{it.name}</td>
+                        <td className="text-sm text-white/70 whitespace-nowrap">{it.sales_count}</td>
+                        <td className="text-sm text-white/70 whitespace-nowrap">{it.places}</td>
+                        <td className="text-sm font-medium text-purple-300 whitespace-nowrap">{formatValue(it.value)}₽</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          </>
+          </div>
         )}
       </div>
     </DashboardLayout>
