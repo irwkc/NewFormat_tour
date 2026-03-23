@@ -6,17 +6,14 @@ import { useAuthStore } from '@/store/auth'
 import { getNavForRole } from '@/lib/dashboard-nav'
 import { customAlert } from '@/utils/modals'
 
-type OverviewStats = {
-  total_sales?: number
-  total_amount?: number | string
-  total_tickets?: number
+type OverviewData = {
+  sales?: { total: number; revenue: number }
+  tickets?: { total: number }
 }
 
 type TourStat = {
-  tour?: {
-    company?: string
-    flight_number?: string
-  }
+  tour?: { id?: string; company?: string; flights_count?: number }
+  sales?: { total: number; revenue: number }
   count?: number
   total?: number | string
 }
@@ -24,6 +21,8 @@ type TourStat = {
 type SellerStat = {
   seller?: { full_name?: string | null }
   promoter?: { full_name?: string | null }
+  user?: { full_name?: string | null }
+  sales?: { total: number; revenue: number }
   count?: number
   total?: number | string
 }
@@ -36,7 +35,7 @@ type PaymentStat = {
 
 export default function OwnerStatisticsPage() {
   const { token, user } = useAuthStore()
-  const [overview, setOverview] = useState<OverviewStats | null>(null)
+  const [overview, setOverview] = useState<OverviewData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'by-tour' | 'by-seller' | 'by-payment'>('overview')
   const [stats, setStats] = useState<(TourStat | SellerStat | PaymentStat)[]>([])
@@ -50,6 +49,7 @@ export default function OwnerStatisticsPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
+      if (activeTab !== 'overview') setStats([])
       let endpoint = '/api/statistics/overview'
       
       if (activeTab === 'by-tour') endpoint = '/api/statistics/by-tour'
@@ -66,8 +66,33 @@ export default function OwnerStatisticsPage() {
       if (data.success) {
         if (activeTab === 'overview') {
           setOverview(data.data)
-        } else {
-          setStats(data.data)
+        } else if (activeTab === 'by-tour') {
+          setStats((data.data as TourStat[]).map((s) => ({
+            ...s,
+            count: s.sales?.total ?? s.count ?? 0,
+            total: s.sales?.revenue ?? s.total ?? 0,
+          })))
+        } else if (activeTab === 'by-seller') {
+          const d = data.data as { managers?: SellerStat[]; promoters?: SellerStat[] }
+          const managers = (d.managers || []).map((m) => ({
+            seller: m.user,
+            count: m.sales?.total ?? 0,
+            total: m.sales?.revenue ?? 0,
+          }))
+          const promoters = (d.promoters || []).map((p) => ({
+            promoter: p.user,
+            count: p.sales?.total ?? 0,
+            total: p.sales?.revenue ?? 0,
+          }))
+          setStats([...managers, ...promoters] as SellerStat[])
+        } else if (activeTab === 'by-payment') {
+          const d = data.data as Record<string, { count: number; revenue: number }>
+          const items: PaymentStat[] = [
+            { payment_method: 'online_yookassa', count: d.online_yookassa?.count ?? 0, total: d.online_yookassa?.revenue ?? 0 },
+            { payment_method: 'cash', count: d.cash?.count ?? 0, total: d.cash?.revenue ?? 0 },
+            { payment_method: 'acquiring', count: d.acquiring?.count ?? 0, total: d.acquiring?.revenue ?? 0 },
+          ]
+          setStats(items)
         }
       }
     } catch (error) {
@@ -170,19 +195,19 @@ export default function OwnerStatisticsPage() {
             <div className="glass-card">
               <h3 className="text-lg font-semibold mb-2 text-white/70">Всего продаж</h3>
               <div className="text-3xl font-bold text-purple-300">
-                {overview.total_sales || 0}
+                {overview.sales?.total ?? 0}
               </div>
             </div>
             <div className="glass-card">
               <h3 className="text-lg font-semibold mb-2 text-white/70">Общая сумма</h3>
               <div className="text-3xl font-bold text-green-300">
-                {Number(overview.total_amount || 0).toFixed(2)}₽
+                {Number(overview.sales?.revenue ?? 0).toFixed(2)}₽
               </div>
             </div>
             <div className="glass-card">
               <h3 className="text-lg font-semibold mb-2 text-white/70">Всего билетов</h3>
               <div className="text-3xl font-bold text-blue-300">
-                {overview.total_tickets || 0}
+                {overview.tickets?.total ?? 0}
               </div>
             </div>
           </div>
@@ -196,7 +221,8 @@ export default function OwnerStatisticsPage() {
                     <div className="space-y-1 text-sm">
                       <div className="text-white/70">Экскурсия</div>
                       <div className="text-white font-medium">
-                        {stat.tour?.company} — {stat.tour?.flight_number}
+                        {stat.tour?.company}
+                        {stat.tour?.flights_count != null ? ` (${stat.tour.flights_count} рейсов)` : ''}
                       </div>
                       <div className="flex justify-between pt-2 text-sm">
                         <span className="text-white/60">Продаж</span>
@@ -214,7 +240,7 @@ export default function OwnerStatisticsPage() {
                     <div className="space-y-1 text-sm">
                       <div className="text-white/70">Продавец</div>
                       <div className="text-white font-medium">
-                        {stat.seller?.full_name || stat.promoter?.full_name || '-'}
+                        {(stat.seller || stat.promoter)?.full_name || '-'}
                       </div>
                       <div className="flex justify-between pt-2 text-sm">
                         <span className="text-white/60">Продаж</span>
@@ -289,7 +315,8 @@ export default function OwnerStatisticsPage() {
                         {activeTab === 'by-tour' && 'tour' in stat && (
                           <>
                             <td className="text-sm text-white whitespace-nowrap">
-                              {stat.tour?.company} - {stat.tour?.flight_number}
+                              {stat.tour?.company}
+                            {stat.tour?.flights_count != null ? ` (${stat.tour.flights_count} рейсов)` : ''}
                             </td>
                             <td className="text-sm text-white/70 whitespace-nowrap">
                               {stat.count || 0}
@@ -302,7 +329,7 @@ export default function OwnerStatisticsPage() {
                         {activeTab === 'by-seller' && ('seller' in stat || 'promoter' in stat) && (
                           <>
                             <td className="text-sm text-white whitespace-nowrap">
-                              {stat.seller?.full_name || stat.promoter?.full_name || '-'}
+                              {(stat.seller || stat.promoter)?.full_name || '-'}
                             </td>
                             <td className="text-sm text-white/70 whitespace-nowrap">
                               {stat.count || 0}
