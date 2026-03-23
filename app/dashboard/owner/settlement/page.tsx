@@ -21,12 +21,21 @@ type OwnerSettlementResponse = {
   items: PartnerDebtItem[]
 }
 
+type PayoutHistoryItem = {
+  id: string
+  amount: number
+  created_at: string
+  description: string
+}
+
 export default function OwnerSettlementPage() {
   const { token, user } = useAuthStore()
   const [data, setData] = useState<OwnerSettlementResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [payoutAmounts, setPayoutAmounts] = useState<Record<string, string>>({})
   const [payoutLoading, setPayoutLoading] = useState(false)
+  const [payoutHistoryByPartner, setPayoutHistoryByPartner] = useState<Record<string, PayoutHistoryItem[]>>({})
+  const [payoutHistoryLoadingByPartner, setPayoutHistoryLoadingByPartner] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!token) return
@@ -89,6 +98,29 @@ export default function OwnerSettlementPage() {
       await customAlert('Ошибка выплаты')
     } finally {
       setPayoutLoading(false)
+    }
+  }
+
+  const fetchPayoutHistory = async (partnerId: string) => {
+    if (!token) return
+    if (payoutHistoryByPartner[partnerId]?.length) return
+    if (payoutHistoryLoadingByPartner[partnerId]) return
+
+    setPayoutHistoryLoadingByPartner((s) => ({ ...s, [partnerId]: true }))
+    try {
+      const r = await fetch(`/api/owner/settlement/payout-history?partner_id=${partnerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const d = await r.json()
+      if (!d.success) {
+        await customAlert(d.error || 'Ошибка истории выплат')
+        return
+      }
+      setPayoutHistoryByPartner((s) => ({ ...s, [partnerId]: d.data.items as PayoutHistoryItem[] }))
+    } catch {
+      await customAlert('Ошибка истории выплат')
+    } finally {
+      setPayoutHistoryLoadingByPartner((s) => ({ ...s, [partnerId]: false }))
     }
   }
 
@@ -170,6 +202,38 @@ export default function OwnerSettlementPage() {
                           >
                             Выплатить
                           </button>
+                        </div>
+
+                        <div className="mt-2">
+                          <details
+                            className="group"
+                            onToggle={(e) => {
+                              const details = e.currentTarget
+                              if (details.open) fetchPayoutHistory(it.partner.id)
+                            }}
+                          >
+                            <summary className="cursor-pointer text-xs text-white/70 hover:text-white">
+                              История выплат
+                            </summary>
+                            <div className="mt-2 text-xs space-y-1">
+                              {payoutHistoryLoadingByPartner[it.partner.id] ? (
+                                <div className="text-white/60">Загрузка...</div>
+                              ) : payoutHistoryByPartner[it.partner.id]?.length ? (
+                                payoutHistoryByPartner[it.partner.id].map((h) => (
+                                  <div key={h.id} className="flex justify-between gap-2">
+                                    <span className="text-white/70 whitespace-nowrap">
+                                      {new Date(h.created_at).toLocaleDateString('ru-RU')}
+                                    </span>
+                                    <span className="text-purple-300 font-medium whitespace-nowrap">
+                                      {Number(h.amount).toFixed(2)}₽
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-white/60">Пока нет выплат</div>
+                              )}
+                            </div>
+                          </details>
                         </div>
                       </td>
                     </tr>
