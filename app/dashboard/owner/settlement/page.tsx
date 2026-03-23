@@ -142,6 +142,7 @@ export default function OwnerSettlementPage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th></th>
                   <th>Партнёр</th>
                   <th>Прибыль партнёра</th>
                   <th>Выплачено</th>
@@ -154,7 +155,7 @@ export default function OwnerSettlementPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-white/70">
+                    <td colSpan={8} className="text-center text-white/70">
                       Загрузка...
                     </td>
                   </tr>
@@ -162,6 +163,20 @@ export default function OwnerSettlementPage() {
                   data.items.map((it) => (
                     <>
                       <tr key={it.partner.id}>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = expandedPartnerId === it.partner.id ? null : it.partner.id
+                              setExpandedPartnerId(next)
+                              if (next) fetchPayoutHistory(it.partner.id)
+                            }}
+                            className="text-white/70 hover:text-white text-lg leading-none"
+                            aria-label="Toggle payout history"
+                          >
+                            {expandedPartnerId === it.partner.id ? '−' : '+'}
+                          </button>
+                        </td>
                         <td>
                           <div className="text-sm font-medium text-white">
                             {it.partner.full_name || 'Без имени'}
@@ -180,19 +195,7 @@ export default function OwnerSettlementPage() {
                         <td className="text-sm text-white/70 whitespace-nowrap">{it.sales_count}</td>
                         <td className="text-sm text-white/70 whitespace-nowrap">{it.places}</td>
                         <td className="text-sm whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = expandedPartnerId === it.partner.id ? null : it.partner.id
-                                setExpandedPartnerId(next)
-                                if (next) fetchPayoutHistory(it.partner.id)
-                              }}
-                              className="text-white/70 hover:text-white text-lg leading-none"
-                              aria-label="Toggle payout history"
-                            >
-                              {expandedPartnerId === it.partner.id ? '−' : '+'}
-                            </button>
+                          <div className="flex items-center gap-2 justify-start">
                             <input
                               type="number"
                               min={0}
@@ -221,7 +224,7 @@ export default function OwnerSettlementPage() {
                       </tr>
                       {expandedPartnerId === it.partner.id && (
                         <tr key={`${it.partner.id}-history`}>
-                          <td colSpan={7} className="bg-white/5 p-4">
+                          <td colSpan={8} className="bg-white/5 p-4">
                             <div className="space-y-2">
                               <div className="text-sm font-semibold text-white">История выплат</div>
                               {payoutHistoryLoadingByPartner[it.partner.id] ? (
@@ -254,7 +257,7 @@ export default function OwnerSettlementPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center text-white/60">
+                    <td colSpan={8} className="text-center text-white/60">
                       Нет данных
                     </td>
                   </tr>
