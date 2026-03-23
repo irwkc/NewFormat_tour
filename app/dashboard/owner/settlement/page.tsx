@@ -36,6 +36,7 @@ export default function OwnerSettlementPage() {
   const [payoutLoading, setPayoutLoading] = useState(false)
   const [payoutHistoryByPartner, setPayoutHistoryByPartner] = useState<Record<string, PayoutHistoryItem[]>>({})
   const [payoutHistoryLoadingByPartner, setPayoutHistoryLoadingByPartner] = useState<Record<string, boolean>>({})
+  const [expandedPartnerId, setExpandedPartnerId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -159,84 +160,97 @@ export default function OwnerSettlementPage() {
                   </tr>
                 ) : data && data.items.length > 0 ? (
                   data.items.map((it) => (
-                    <tr key={it.partner.id}>
-                      <td>
-                        <div className="text-sm font-medium text-white">
-                          {it.partner.full_name || 'Без имени'}
-                        </div>
-                        <div className="text-xs text-white/60">{it.partner.email || ''}</div>
-                      </td>
-                      <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
-                        {Number(it.profit || 0).toFixed(2)}₽
-                      </td>
-                      <td className="text-sm font-medium text-white/70 whitespace-nowrap">
-                        {Number(it.paid || 0).toFixed(2)}₽
-                      </td>
-                      <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
-                        {Number(it.remaining || 0).toFixed(2)}₽
-                      </td>
-                      <td className="text-sm text-white/70 whitespace-nowrap">{it.sales_count}</td>
-                      <td className="text-sm text-white/70 whitespace-nowrap">{it.places}</td>
-                      <td className="text-sm whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            placeholder="₽"
-                            value={payoutAmounts[it.partner.id] ?? ''}
-                            onChange={(e) =>
-                              setPayoutAmounts((s) => ({
-                                ...s,
-                                [it.partner.id]: e.target.value,
-                              }))
-                            }
-                            className="input-glass w-28 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            disabled={payoutLoading || (it.remaining || 0) <= 0}
-                          />
-                          <button
-                            type="button"
-                            className="btn-success text-xs px-3 py-2"
-                            disabled={payoutLoading || (it.remaining || 0) <= 0}
-                            onClick={() => handlePayout(it.partner.id)}
-                          >
-                            Выплатить
-                          </button>
-                        </div>
-
-                        <div className="mt-2">
-                          <details
-                            className="group"
-                            onToggle={(e) => {
-                              const details = e.currentTarget
-                              if (details.open) fetchPayoutHistory(it.partner.id)
-                            }}
-                          >
-                            <summary className="cursor-pointer text-xs text-white/70 hover:text-white">
-                              История выплат
-                            </summary>
-                            <div className="mt-2 text-xs space-y-1">
+                    <>
+                      <tr key={it.partner.id}>
+                        <td>
+                          <div className="text-sm font-medium text-white">
+                            {it.partner.full_name || 'Без имени'}
+                          </div>
+                          <div className="text-xs text-white/60">{it.partner.email || ''}</div>
+                        </td>
+                        <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
+                          {Number(it.profit || 0).toFixed(2)}₽
+                        </td>
+                        <td className="text-sm font-medium text-white/70 whitespace-nowrap">
+                          {Number(it.paid || 0).toFixed(2)}₽
+                        </td>
+                        <td className="text-sm font-medium text-purple-300 whitespace-nowrap">
+                          {Number(it.remaining || 0).toFixed(2)}₽
+                        </td>
+                        <td className="text-sm text-white/70 whitespace-nowrap">{it.sales_count}</td>
+                        <td className="text-sm text-white/70 whitespace-nowrap">{it.places}</td>
+                        <td className="text-sm whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = expandedPartnerId === it.partner.id ? null : it.partner.id
+                                setExpandedPartnerId(next)
+                                if (next) fetchPayoutHistory(it.partner.id)
+                              }}
+                              className="text-white/70 hover:text-white text-lg leading-none"
+                              aria-label="Toggle payout history"
+                            >
+                              {expandedPartnerId === it.partner.id ? '−' : '+'}
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              placeholder="₽"
+                              value={payoutAmounts[it.partner.id] ?? ''}
+                              onChange={(e) =>
+                                setPayoutAmounts((s) => ({
+                                  ...s,
+                                  [it.partner.id]: e.target.value,
+                                }))
+                              }
+                              className="input-glass w-28 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              disabled={payoutLoading || (it.remaining || 0) <= 0}
+                            />
+                            <button
+                              type="button"
+                              className="btn-success text-xs px-3 py-2"
+                              disabled={payoutLoading || (it.remaining || 0) <= 0}
+                              onClick={() => handlePayout(it.partner.id)}
+                            >
+                              Выплатить
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedPartnerId === it.partner.id && (
+                        <tr key={`${it.partner.id}-history`}>
+                          <td colSpan={7} className="bg-white/5 p-4">
+                            <div className="space-y-2">
+                              <div className="text-sm font-semibold text-white">История выплат</div>
                               {payoutHistoryLoadingByPartner[it.partner.id] ? (
-                                <div className="text-white/60">Загрузка...</div>
+                                <div className="text-white/60 text-sm">Загрузка...</div>
                               ) : payoutHistoryByPartner[it.partner.id]?.length ? (
-                                payoutHistoryByPartner[it.partner.id].map((h) => (
-                                  <div key={h.id} className="flex justify-between gap-2">
-                                    <span className="text-white/70 whitespace-nowrap">
-                                      {new Date(h.created_at).toLocaleDateString('ru-RU')}
-                                    </span>
-                                    <span className="text-purple-300 font-medium whitespace-nowrap">
-                                      {Number(h.amount).toFixed(2)}₽
-                                    </span>
-                                  </div>
-                                ))
+                                <div className="space-y-1 text-sm">
+                                  {payoutHistoryByPartner[it.partner.id].map((h) => (
+                                    <div key={h.id} className="flex justify-between gap-3">
+                                      <span className="text-white/70 whitespace-nowrap">
+                                        {new Date(h.created_at).toLocaleString('ru-RU', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          year: 'numeric',
+                                        })}
+                                      </span>
+                                      <span className="text-purple-300 font-medium whitespace-nowrap">
+                                        {Number(h.amount).toFixed(2)}₽
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               ) : (
-                                <div className="text-white/60">Пока нет выплат</div>
+                                <div className="text-white/60 text-sm">Пока нет выплат</div>
                               )}
                             </div>
-                          </details>
-                        </div>
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))
                 ) : (
                   <tr>
