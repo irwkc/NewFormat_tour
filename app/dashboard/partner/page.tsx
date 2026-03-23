@@ -26,9 +26,8 @@ type PartnerTourRow = {
 }
 
 type PartnerStats = {
-  total_sales?: number
-  total_amount?: number | string
-  total_tickets?: number
+  sales?: { total: number; revenue: number }
+  tickets?: { total: number; used: number }
 }
 
 export default function PartnerDashboard() {
@@ -142,19 +141,19 @@ export default function PartnerDashboard() {
           <div className="glass-card p-5">
             <h3 className="text-sm font-semibold mb-1 text-white/70">Всего продаж</h3>
             <div className="text-2xl font-bold text-purple-300">
-              {stats?.total_sales ?? (loading ? '—' : 0)}
+              {stats?.sales?.total ?? (loading ? '—' : 0)}
             </div>
           </div>
           <div className="glass-card p-5">
             <h3 className="text-sm font-semibold mb-1 text-white/70">Общая сумма</h3>
             <div className="text-2xl font-bold text-green-300">
-              {stats ? Number(stats.total_amount || 0).toFixed(2) : loading ? '—' : '0.00'}₽
+              {stats ? Number(stats.sales?.revenue || 0).toFixed(2) : loading ? '—' : '0.00'}₽
             </div>
           </div>
           <div className="glass-card p-5">
             <h3 className="text-sm font-semibold mb-1 text-white/70">Всего билетов</h3>
             <div className="text-2xl font-bold text-blue-300">
-              {stats?.total_tickets ?? (loading ? '—' : 0)}
+              {stats?.tickets?.total ?? (loading ? '—' : 0)}
             </div>
           </div>
         </div>
