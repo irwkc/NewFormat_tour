@@ -39,6 +39,11 @@ export async function GET(request: NextRequest) {
             role: UserRole.promoter,
           },
           include: {
+            salesAsSeller: {
+              where: {
+                payment_status: PaymentStatus.completed,
+              },
+            },
             salesAsPromoter: {
               where: {
                 payment_status: PaymentStatus.completed,
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
         })
 
         const promoterStats = promoters.map((promoter) => {
-          const sales = promoter.salesAsPromoter
+          const sales = [...promoter.salesAsSeller, ...promoter.salesAsPromoter]
           const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0)
 
           return {

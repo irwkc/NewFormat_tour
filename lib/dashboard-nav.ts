@@ -9,6 +9,7 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   owner: [
     { label: 'Категории', href: '/dashboard/owner/categories' },
     { label: 'Экскурсии', href: '/dashboard/owner/tours' },
+    { label: 'Расчёт', href: '/dashboard/owner/settlement' },
     { label: 'Промоутеры и менеджеры', href: '/dashboard/owner/team' },
     { label: 'Выдача вещей', href: '/dashboard/owner/issued-items' },
     { label: 'Статистика', href: '/dashboard/owner/statistics' },
