@@ -98,12 +98,9 @@ export default function OwnerSettlementPage() {
     <DashboardLayout title="Расчёт" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card p-5">
-          <h2 className="text-xl font-bold text-white mb-2">Сколько владелец должен партнёрам</h2>
+          <h2 className="text-xl font-bold text-white mb-2">Общий долг</h2>
           <div className="text-2xl font-bold text-purple-300">
             {data ? Number(data.total_debt || 0).toFixed(2) : loading ? '—' : '0.00'}₽
-          </div>
-          <div className="text-white/60 text-sm mt-2">
-            Показывается за период: текущий месяц (можно передать `start_date` / `end_date` в API).
           </div>
         </div>
 
