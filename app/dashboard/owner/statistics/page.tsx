@@ -8,6 +8,7 @@ import { customAlert } from '@/utils/modals'
 
 type Metric = 'turnover' | 'income' | 'salary'
 type Scope = 'total' | 'partner' | 'tour'
+type PaymentScope = 'all' | 'cash' | 'cashless'
 
 type SalesMetricsItem = {
   id: string
@@ -39,6 +40,7 @@ export default function OwnerStatisticsPage() {
 
   const [metric, setMetric] = useState<Metric>('turnover')
   const [scope, setScope] = useState<Scope>('total')
+  const [turnoverPayment, setTurnoverPayment] = useState<PaymentScope>('all')
 
   const [startInput, setStartInput] = useState<string>(toDateInputValue(defaultStart))
   const [endInput, setEndInput] = useState<string>(toDateInputValue(defaultEnd))
@@ -67,7 +69,8 @@ export default function OwnerStatisticsPage() {
     if (!token) return
     setLoading(true)
     try {
-      const endpoint = `/api/statistics/sales-metrics?metric=${metric}&group=${scope}&start_date=${startDate}&end_date=${endDate}`
+      const paymentParam = metric === 'turnover' ? `&payment=${turnoverPayment}` : ''
+      const endpoint = `/api/statistics/sales-metrics?metric=${metric}&group=${scope}&start_date=${startDate}&end_date=${endDate}${paymentParam}`
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -88,7 +91,7 @@ export default function OwnerStatisticsPage() {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, metric, scope, startDate, endDate])
+  }, [token, metric, scope, turnoverPayment, startDate, endDate])
 
   const handleExport = async () => {
     try {
@@ -131,8 +134,8 @@ export default function OwnerStatisticsPage() {
             <div className="space-y-1">
               <div className="text-sm text-white/70">Период</div>
               <div className="flex flex-wrap gap-3 items-center">
-                <div className="space-y-1">
-                  <div className="text-xs text-white/60">С</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-white/60 whitespace-nowrap">С</div>
                   <input
                     type="date"
                     value={startInput}
@@ -140,8 +143,8 @@ export default function OwnerStatisticsPage() {
                     className="input-glass text-sm"
                   />
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-white/60">По</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-white/60 whitespace-nowrap">По</div>
                   <input
                     type="date"
                     value={endInput}
@@ -178,6 +181,27 @@ export default function OwnerStatisticsPage() {
                 </button>
               ))}
             </div>
+
+            {metric === 'turnover' && (
+              <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                {([
+                  ['all', 'Общий'],
+                  ['cashless', 'Безнал (эквайринг, QR)'],
+                  ['cash', 'Нал'],
+                ] as Array<[PaymentScope, string]>).map(([p, label]) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setTurnoverPayment(p)}
+                    className={`px-4 py-2 rounded-xl transition-all ${
+                      turnoverPayment === p ? 'bg-white/20 text-white border border-white/30' : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2 border-t border-white/10 pt-4">
               {(['total', 'partner', 'tour'] as Scope[]).map((s) => (

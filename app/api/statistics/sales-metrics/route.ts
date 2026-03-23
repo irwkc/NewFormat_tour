@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { PaymentStatus, UserRole } from '@prisma/client'
+import { PaymentMethod, PaymentStatus, UserRole } from '@prisma/client'
 import { calcIncomeSplit } from '@/lib/domain/commission-calc'
 
 type Metric = 'turnover' | 'income' | 'salary'
 type Group = 'total' | 'partner' | 'tour'
+type PaymentScope = 'all' | 'cash' | 'cashless'
 
 function parseDateRange(searchParams: URLSearchParams) {
   const startRaw = searchParams.get('start_date')
@@ -37,8 +38,16 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const metric = (searchParams.get('metric') as Metric | null) ?? 'turnover'
         const group = (searchParams.get('group') as Group | null) ?? 'total'
+        const payment = (searchParams.get('payment') as PaymentScope | null) ?? 'all'
 
         const { start, end } = parseDateRange(searchParams)
+
+        const paymentWhere =
+          payment === 'cash'
+            ? { payment_method: PaymentMethod.cash }
+            : payment === 'cashless'
+              ? { payment_method: { in: [PaymentMethod.acquiring, PaymentMethod.online_yookassa] } }
+              : {}
 
         const sales = await prisma.sale.findMany({
           where: {
@@ -47,6 +56,7 @@ export async function GET(request: NextRequest) {
               gte: start,
               lte: end,
             },
+            ...paymentWhere,
           },
           include: {
             tour: {
