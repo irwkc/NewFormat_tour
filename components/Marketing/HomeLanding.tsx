@@ -1,6 +1,5 @@
 import NextLink from 'next/link'
 import { PublicSiteLayout } from '@/components/Marketing/PublicSiteLayout'
-import { SITE_PUBLIC } from '@/lib/marketing/site-content'
 
 const cards = [
   {
@@ -41,7 +40,6 @@ export function HomeLanding() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(56,189,248,0.2),transparent)] pointer-events-none" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 relative">
-          <p className="text-sky-300/90 text-sm font-medium tracking-wide uppercase mb-3">{SITE_PUBLIC.domain}</p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white max-w-3xl leading-tight font-[family-name:var(--font-poppins)]">
             Экскурсии по городу — на воде и пешком
           </h1>

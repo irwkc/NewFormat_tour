@@ -14,8 +14,8 @@ const navMain = [
 
 export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col relative z-10">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/70 backdrop-blur-xl">
+    <div className="min-h-dvh flex flex-col relative z-10">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-900/70 backdrop-blur-xl pt-[env(safe-area-inset-top,0px)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4 h-16">
           <NextLink href="/" className="flex items-center gap-2 shrink-0">
             <Image src="/logo.png" alt="" width={36} height={36} className="h-9 w-auto rounded-lg" />
@@ -64,7 +64,7 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-white/10 bg-slate-950/80 mt-auto">
+      <footer className="border-t border-white/10 bg-slate-950/80 mt-auto pb-[env(safe-area-inset-bottom,0px)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 gap-8 text-sm">
           <div>
             <div className="font-semibold text-white mb-2">{SITE_PUBLIC.siteName}</div>
