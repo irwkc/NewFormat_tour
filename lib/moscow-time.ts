@@ -31,6 +31,17 @@ export function getMoscowWeekDates(): Date[] {
   return dates
 }
 
+/** Даты на 2 недели (текущая + следующая) по Москве */
+export function getMoscowTwoWeekDates(): Date[] {
+  const start = getMoscowWeekStart()
+  const dates: Date[] = []
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + i))
+    dates.push(d)
+  }
+  return dates
+}
+
 /** YYYY-MM-DD для даты (UTC, для дат из getMoscowWeekDates) */
 export function toDateString(d: Date): string {
   const y = d.getUTCFullYear()
@@ -50,6 +61,13 @@ export function isInCurrentMoscowWeek(dateStr: string): boolean {
   const weekDates = getMoscowWeekDates()
   const weekStr = weekDates.map(toDateString)
   return weekStr.includes(dateStr)
+}
+
+/** Проверить, что дата входит в окно: текущая неделя + следующая (по Москве) */
+export function isInCurrentOrNextMoscowWeeks(dateStr: string): boolean {
+  const dates = getMoscowTwoWeekDates()
+  const dateStrs = dates.map(toDateString)
+  return dateStrs.includes(dateStr)
 }
 
 /** Проверить, начался ли рейс (departure_time должен быть создан с учётом Moscow) */

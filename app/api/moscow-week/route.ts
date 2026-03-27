@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getMoscowWeekDates, toDateString, getMoscowDateString } from '@/lib/moscow-time'
+import { getMoscowTwoWeekDates, toDateString, getMoscowDateString } from '@/lib/moscow-time'
 
 const WEEKDAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
-// GET /api/moscow-week — даты текущей недели по Москве
+// GET /api/moscow-week — даты на 2 недели (текущая + следующая) по Москве
 export async function GET() {
   const today = getMoscowDateString()
-  const dates = getMoscowWeekDates()
+  const dates = getMoscowTwoWeekDates()
   const result = dates.map((d, i) => {
     const dateStr = toDateString(d)
+    const weekdayIndex = i % 7
     return {
       dateStr,
-      dayName: WEEKDAY_NAMES[i],
+      dayName: WEEKDAY_NAMES[weekdayIndex],
       dayOfMonth: d.getUTCDate(),
       isPast: dateStr < today,
     }

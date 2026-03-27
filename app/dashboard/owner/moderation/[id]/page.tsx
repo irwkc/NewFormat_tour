@@ -735,7 +735,7 @@ export default function ModerateTourPage() {
             {tour.flights && tour.flights.length > 0 && (
               <div className="glass rounded-xl border border-white/10 p-4">
                 <h3 className="font-semibold mb-2 text-white">Применить модерацию к дням</h3>
-                <p className="text-sm text-white/60 mb-4">Выберите дни текущей недели. Одобрение и цены применятся только к рейсам на выбранные даты.</p>
+                <p className="text-sm text-white/60 mb-4">Выберите дни текущей и следующей недели. Одобрение и цены применятся только к рейсам на выбранные даты.</p>
                 <div className="grid grid-cols-7 gap-2 mb-4">
                   {weekDates.map(({ dateStr, dayName, dayOfMonth, isPast }) => {
                     const isSelected = selectedDates.has(dateStr)

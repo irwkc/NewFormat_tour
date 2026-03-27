@@ -427,7 +427,7 @@ export default function EditTourPage() {
         </div>
 
         <div className="glass-card">
-          <h3 className="text-lg font-semibold text-white mb-4">Календарь (текущая неделя)</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Календарь (текущая + следующая неделя)</h3>
           <p className="text-sm text-white/70 mb-4">Выберите дни и нажмите «Применить». Прошедшие даты недоступны для создания рейсов.</p>
           <div className="grid grid-cols-7 gap-2">
             {weekDates.map(({ dateStr, dayName, dayOfMonth, isPast }) => {

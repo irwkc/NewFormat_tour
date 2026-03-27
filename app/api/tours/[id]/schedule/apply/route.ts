@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { ModerationStatus, UserRole } from '@prisma/client'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
-import { isInCurrentMoscowWeek, isDateInPast } from '@/lib/moscow-time'
+import { isInCurrentOrNextMoscowWeeks, isDateInPast } from '@/lib/moscow-time'
 
 const flightTemplateSchema = z.object({
   flight_number: z.string().min(1),
@@ -74,9 +74,9 @@ export async function POST(
               { status: 400 }
             )
           }
-          if (!isInCurrentMoscowWeek(d)) {
+          if (!isInCurrentOrNextMoscowWeeks(d)) {
             return NextResponse.json(
-              { success: false, error: `Дата ${d} не входит в текущую неделю` },
+              { success: false, error: `Дата ${d} не входит в окно текущей и следующей недели` },
               { status: 400 }
             )
           }
@@ -131,6 +131,15 @@ export async function POST(
             })
           }
         }
+
+        // Любые изменения партнёра снова отправляют экскурсию на модерацию.
+        // Уже ранее одобренные рейсы остаются в продаже, т.к. их is_moderated не трогаем.
+        await prisma.tour.update({
+          where: { id: tourId },
+          data: {
+            moderation_status: ModerationStatus.pending,
+          },
+        })
 
         return NextResponse.json({
           success: true,

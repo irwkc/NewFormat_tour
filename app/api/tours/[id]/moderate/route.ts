@@ -134,7 +134,7 @@ export async function POST(
         const tour = await prisma.tour.update({
           where: { id },
           data: {
-            moderation_status: data.moderation_status as ModerationStatus,
+            moderation_status: ModerationStatus.pending,
             moderated_by_user_id: req.user!.userId,
             moderated_at: new Date(),
             owner_min_adult_price: data.owner_min_adult_price,
@@ -166,23 +166,42 @@ export async function POST(
         })
 
         const dateSet = data.dates && data.dates.length > 0 ? new Set(data.dates) : null
-        if (data.moderation_status === 'approved') {
-          for (const flight of tour.flights) {
+        const selectedFlightIds = (tour.flights || [])
+          .filter((flight) => {
             const flightDateStr = flight.date instanceof Date
               ? flight.date.toISOString().split('T')[0]
               : String(flight.date).split('T')[0]
-            const shouldModerate = !dateSet || dateSet.has(flightDateStr)
-            await prisma.flight.update({
-              where: { id: flight.id },
-              data: { is_moderated: shouldModerate },
-            })
-          }
-        } else {
+            return !dateSet || dateSet.has(flightDateStr)
+          })
+          .map((flight) => flight.id)
+
+        if (selectedFlightIds.length > 0) {
           await prisma.flight.updateMany({
-            where: { tour_id: id },
-            data: { is_moderated: false },
+            where: { id: { in: selectedFlightIds } },
+            data: { is_moderated: data.moderation_status === 'approved' },
           })
         }
+
+        // После точечной модерации пересчитываем общий статус экскурсии:
+        // - если есть хотя бы один неотмодерированный будущий рейс -> pending
+        // - если все будущие рейсы отмодерированы -> approved
+        // - если будущих рейсов нет -> rejected (или пусто)
+        const refreshedFlights = await prisma.flight.findMany({
+          where: { tour_id: id },
+        })
+        const futureFlights = refreshedFlights.filter((f) => !isFlightStarted(f.departure_time))
+        const hasAnyFuture = futureFlights.length > 0
+        const hasUnmoderatedFuture = futureFlights.some((f) => !f.is_moderated)
+        const nextStatus: ModerationStatus = !hasAnyFuture
+          ? ModerationStatus.rejected
+          : hasUnmoderatedFuture
+            ? ModerationStatus.pending
+            : ModerationStatus.approved
+
+        await prisma.tour.update({
+          where: { id },
+          data: { moderation_status: nextStatus },
+        })
 
         const { flights, ...tourWithoutFlights } = tour
         const filteredFlights = (tour.flights || []).filter((f) => !isFlightStarted(f.departure_time))

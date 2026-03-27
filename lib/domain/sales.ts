@@ -39,9 +39,6 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
   if (!tour) {
     return { status: 'tour_not_found' } as const
   }
-  if (tour.moderation_status !== 'approved') {
-    return { status: 'tour_not_approved' } as const
-  }
 
   // Проверка рейса
   const flight = await prisma.flight.findUnique({
@@ -52,6 +49,12 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
   }
   if (flight.tour_id !== input.tour_id) {
     return { status: 'flight_mismatch' } as const
+  }
+  // Разрешаем продажу, если:
+  // - экскурсия одобрена, ИЛИ
+  // - экскурсия pending, но конкретный рейс уже отмодерирован.
+  if (tour.moderation_status !== 'approved' && !(tour.moderation_status === 'pending' && flight.is_moderated)) {
+    return { status: 'tour_not_approved' } as const
   }
   if (flight.is_sale_stopped) {
     return { status: 'flight_sales_stopped' } as const

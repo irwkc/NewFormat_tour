@@ -54,7 +54,15 @@ export async function GET(request: NextRequest) {
 
         if (user) {
           if (user.role === UserRole.manager || user.role === UserRole.promoter) {
-            where.moderation_status = ModerationStatus.approved
+            where.OR = [
+              { moderation_status: ModerationStatus.approved },
+              {
+                moderation_status: ModerationStatus.pending,
+                flights: {
+                  some: { is_moderated: true },
+                },
+              },
+            ]
           } else if (user.role === UserRole.partner) {
             where.created_by_user_id = payload.userId
             if (moderationStatus) {

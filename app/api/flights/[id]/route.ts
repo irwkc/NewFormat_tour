@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { ModerationStatus, UserRole } from '@prisma/client'
 import { z } from 'zod'
-import { isInCurrentMoscowWeek } from '@/lib/moscow-time'
+import { isInCurrentOrNextMoscowWeeks } from '@/lib/moscow-time'
 
 const updateFlightSchema = z.object({
   flight_number: z.string().min(1).optional(),
@@ -53,9 +53,9 @@ export async function PATCH(
         }
 
         const dateStr = flight.date.toISOString().split('T')[0]
-        if (!isInCurrentMoscowWeek(dateStr)) {
+        if (!isInCurrentOrNextMoscowWeeks(dateStr)) {
           return NextResponse.json(
-            { success: false, error: 'Можно редактировать только рейсы текущей недели' },
+            { success: false, error: 'Можно редактировать только рейсы текущей и следующей недели' },
             { status: 400 }
           )
         }
@@ -74,7 +74,18 @@ export async function PATCH(
 
         const updated = await prisma.flight.update({
           where: { id },
-          data: updateData,
+          data: {
+            ...updateData,
+            // Редактирование рейса партнёром требует повторной модерации этого рейса.
+            is_moderated: false,
+          },
+        })
+
+        await prisma.tour.update({
+          where: { id: flight.tour_id },
+          data: {
+            moderation_status: ModerationStatus.pending,
+          },
         })
 
         return NextResponse.json({
