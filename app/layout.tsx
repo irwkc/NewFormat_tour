@@ -29,10 +29,7 @@ export const metadata: Metadata = {
     // Отключаем zoom при фокусе на input
     interactiveWidget: 'resizes-content',
   },
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#020617' },
-    { media: '(prefers-color-scheme: dark)', color: '#020617' },
-  ],
+  themeColor: '#0f172a',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [{ url: '/logo.png', type: 'image/png' }],
@@ -51,7 +48,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ru" className={`${inter.variable} ${poppins.variable}`} style={{ height: '100%', margin: 0, padding: 0 }}>
+    <html
+      lang="ru"
+      className={`${inter.variable} ${poppins.variable}`}
+      style={{ height: '100%', margin: 0, padding: 0, backgroundColor: '#0f172a' }}
+    >
       <body className="font-sans antialiased" style={{ height: '100%', margin: 0, padding: 0, overflowX: 'hidden' }}>
         <ModalProvider>
           <PushProvider>
