@@ -4,8 +4,13 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { HomeLanding } from '@/components/Marketing/HomeLanding'
+import type { PublicManager } from '@/lib/public-managers'
 
-export function HomeGate() {
+type Props = {
+  initialManagers: PublicManager[]
+}
+
+export function HomeGate({ initialManagers }: Props) {
   const router = useRouter()
   const { user, isAuthenticated, hydrated } = useAuthStore()
 
@@ -38,5 +43,5 @@ export function HomeGate() {
     )
   }
 
-  return <HomeLanding />
+  return <HomeLanding managers={initialManagers} />
 }
