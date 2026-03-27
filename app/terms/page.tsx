@@ -10,8 +10,8 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 pb-12">
       <div className="max-w-3xl mx-auto">
-        <Link href="/auth/login" className="text-white/70 hover:text-white text-sm mb-6 inline-block">
-          ← Назад к входу
+        <Link href="/" className="text-white/70 hover:text-white text-sm mb-6 inline-block">
+          ← На главную
         </Link>
         <h1 className="text-2xl font-bold mb-2">Условия использования сервиса «Новый формат путешествий»</h1>
         <p className="text-white/70 text-sm mb-8">
