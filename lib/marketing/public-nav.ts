@@ -6,5 +6,4 @@ export const PUBLIC_NAV_MAIN = [
   { label: 'Вакансии', href: '/cooperation/vacancies' },
   { label: 'Корпоративным', href: '/cooperation/corporate' },
   { label: 'Поддержка', href: '/support' },
-  { label: 'Проверка билета', href: '/check-ticket' },
 ] as const

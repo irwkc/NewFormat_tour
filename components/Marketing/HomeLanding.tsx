@@ -1,5 +1,6 @@
 import NextLink from 'next/link'
 import { PublicSiteLayout } from '@/components/Marketing/PublicSiteLayout'
+import { PublicTicketCheck } from '@/components/Marketing/PublicTicketCheck'
 
 const cards = [
   {
@@ -40,26 +41,32 @@ export function HomeLanding() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(56,189,248,0.2),transparent)] pointer-events-none" />
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-6 sm:pt-10 md:pt-12 pb-10 sm:pb-16 relative">
-          <h1 className="text-[1.65rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-3xl text-balance font-[family-name:var(--font-poppins)]">
-            Экскурсии по городу — на воде и пешком
-          </h1>
-          <p className="mt-4 sm:mt-5 text-base sm:text-lg text-white/75 max-w-2xl leading-relaxed">
-            Выбирайте маршруты, бронируйте билеты и получайте поддержку нашей команды. Официальное оформление и прозрачные
-            правила.
-          </p>
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
-            <NextLink href="/support" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
-              Связаться с нами
-            </NextLink>
-            <NextLink href="/documents" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
-              Документы
-            </NextLink>
-            <NextLink
-              href="/auth/login"
-              className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-colors text-center font-medium"
-            >
-              Вход для сотрудников
-            </NextLink>
+          <div id="proverka-bileta" className="scroll-mt-[calc(3.25rem+env(safe-area-inset-top)+3rem)] lg:scroll-mt-28">
+            <PublicTicketCheck layout="home" inputId="sale-code-home" />
+          </div>
+
+          <div className="mt-8 sm:mt-10 md:mt-12 border-t border-white/10 pt-8 sm:pt-10 md:pt-12">
+            <h1 className="text-[1.65rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-3xl text-balance font-[family-name:var(--font-poppins)]">
+              Экскурсии по городу — на воде и пешком
+            </h1>
+            <p className="mt-4 sm:mt-5 text-base sm:text-lg text-white/75 max-w-2xl leading-relaxed">
+              Выбирайте маршруты, бронируйте билеты и получайте поддержку нашей команды. Официальное оформление и прозрачные
+              правила.
+            </p>
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
+              <NextLink href="/support" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
+                Связаться с нами
+              </NextLink>
+              <NextLink href="/documents" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
+                Документы
+              </NextLink>
+              <NextLink
+                href="/auth/login"
+                className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-colors text-center font-medium"
+              >
+                Вход для сотрудников
+              </NextLink>
+            </div>
           </div>
         </div>
       </section>
