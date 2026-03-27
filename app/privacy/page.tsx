@@ -7,12 +7,12 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 pb-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white px-3.5 sm:px-6 py-6 sm:py-8 pb-12">
       <div className="max-w-3xl mx-auto">
-        <Link href="/" className="text-white/70 hover:text-white text-sm mb-6 inline-block">
+        <Link href="/" className="text-white/70 hover:text-white text-sm mb-5 sm:mb-6 inline-flex items-center min-h-[44px] sm:min-h-0">
           ← На главную
         </Link>
-        <h1 className="text-2xl font-bold mb-2">Политика конфиденциальности</h1>
+        <h1 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">Политика конфиденциальности</h1>
         <p className="text-white/70 text-sm mb-8">
           ИП Коростелев Никита Дмитриевич (ИНН 410125118968, ОГРНИП 325410000007073). Сайт nf-travel.ru, staff.nf-travel.ru.
         </p>

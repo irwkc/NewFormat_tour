@@ -39,40 +39,43 @@ export function HomeLanding() {
     <PublicSiteLayout>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(56,189,248,0.2),transparent)] pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 relative">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white max-w-3xl leading-tight font-[family-name:var(--font-poppins)]">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-6 sm:pt-10 md:pt-12 pb-10 sm:pb-16 relative">
+          <h1 className="text-[1.65rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-3xl text-balance font-[family-name:var(--font-poppins)]">
             Экскурсии по городу — на воде и пешком
           </h1>
-          <p className="mt-5 text-lg text-white/75 max-w-2xl leading-relaxed">
+          <p className="mt-4 sm:mt-5 text-base sm:text-lg text-white/75 max-w-2xl leading-relaxed">
             Выбирайте маршруты, бронируйте билеты и получайте поддержку нашей команды. Официальное оформление и прозрачные
             правила.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <NextLink href="/support" className="btn-primary inline-flex">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
+            <NextLink href="/support" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
               Связаться с нами
             </NextLink>
-            <NextLink href="/documents" className="btn-secondary inline-flex">
+            <NextLink href="/documents" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
               Документы
             </NextLink>
-            <NextLink href="/auth/login" className="inline-flex items-center px-5 py-2.5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 transition-colors">
+            <NextLink
+              href="/auth/login"
+              className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-colors text-center font-medium"
+            >
               Вход для сотрудников
             </NextLink>
           </div>
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        <h2 className="text-xl font-semibold text-white mb-6">Разделы сайта</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section className="max-w-6xl mx-auto px-3.5 sm:px-6 pb-12 sm:pb-16">
+        <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6">Разделы сайта</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {cards.map((c) => (
             <NextLink
               key={c.href}
               href={c.href}
-              className="glass-card p-6 hover:border-sky-400/30 hover:bg-slate-800/40 transition-all group"
+              className="glass-card p-5 sm:p-6 hover:border-sky-400/30 hover:bg-slate-800/40 transition-all group active:scale-[0.99]"
             >
-              <h3 className="text-lg font-semibold text-white group-hover:text-sky-200 transition-colors">{c.title}</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-white group-hover:text-sky-200 transition-colors">{c.title}</h3>
               <p className="text-sm text-white/65 mt-2 leading-relaxed">{c.desc}</p>
-              <span className="inline-block mt-4 text-sm text-sky-300 group-hover:text-sky-200">Подробнее →</span>
+              <span className="inline-block mt-3 sm:mt-4 text-sm text-sky-300 group-hover:text-sky-200">Подробнее →</span>
             </NextLink>
           ))}
         </div>

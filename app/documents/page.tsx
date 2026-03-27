@@ -22,7 +22,7 @@ export default function DocumentsPage() {
           </li>
         ))}
       </ul>
-      <div className="glass-card p-6 mt-8 text-sm">
+      <div className="glass-card p-5 sm:p-6 mt-6 sm:mt-8 text-sm">
         <h2 className="text-white font-semibold mb-3">Реквизиты</h2>
         <p className="text-white/80">
           ИНН: <span className="text-white">{SITE_PUBLIC.inn}</span>
