@@ -1,6 +1,18 @@
-# Домен staff.nf-travel.ru
+# Домены staff.nf-travel.ru и nf-travel.ru
 
-## Что уже сделано на сервере
+Оба домена указывают на **один** инстанс Next.js (PM2 `newformat-tour`, порт **3000**). Деплой один — через `.github/workflows/deploy.yml`.
+
+## Публичный сайт nf-travel.ru
+
+- Nginx: `/etc/nginx/sites-available/nf-travel.ru` — `server_name nf-travel.ru www.nf-travel.ru`, тот же `proxy_pass http://127.0.0.1:3000`, что и у staff.
+- HTTPS: Let's Encrypt, сертификат в `/etc/letsencrypt/live/nf-travel.ru/` (обновляется certbot).
+- После пуша в `main` health check в GitHub Actions проверяет `staff.nf-travel.ru`, `nf-travel.ru` и `www.nf-travel.ru`.
+
+При необходимости сменить базовый URL в ссылках/платежах (переменная `NEXT_PUBLIC_APP_URL` в `/var/www/newformat_tour/.env`): сейчас для кабинета часто оставляют `https://staff.nf-travel.ru`; для клиентских ссылок можно выставить `https://nf-travel.ru` и пересобрать (`npm run build` выполняется при деплое).
+
+---
+
+## Что уже сделано на сервере (staff)
 
 - Nginx: создан конфиг для `staff.nf-travel.ru`, проксирование на приложение (порт 3000).
 - Сайт доступен по HTTP: `http://staff.nf-travel.ru` после настройки DNS.

@@ -108,5 +108,9 @@ jobs:
         timeout-minutes: 2
         run: |
           sleep 5
-          curl -f --max-time 10 https://staff.nf-travel.ru || exit 1
-          echo "✅ Сайт работает!"
+          curl -f --max-time 15 https://staff.nf-travel.ru/ || exit 1
+          echo "✅ staff.nf-travel.ru"
+          curl -f --max-time 15 https://nf-travel.ru/ || exit 1
+          echo "✅ nf-travel.ru (тот же деплой, публичный сайт + API)"
+          curl -f --max-time 15 https://www.nf-travel.ru/ || exit 1
+          echo "✅ www.nf-travel.ru"
