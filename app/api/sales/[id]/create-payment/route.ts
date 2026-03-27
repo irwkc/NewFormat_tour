@@ -57,6 +57,14 @@ export async function POST(
           )
         }
 
+        const qrSalesDisabled = process.env.NEXT_PUBLIC_DISABLE_QR_SALES !== 'false'
+        if (qrSalesDisabled) {
+          return NextResponse.json(
+            { success: false, error: 'На данный момент продажа таким способом недоступна' },
+            { status: 400 }
+          )
+        }
+
         // Создать платеж в ЮКассе
         const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/${sale.payment_link_token}`
         const flightInfo = sale.flight ? ` - ${sale.flight.flight_number}` : ''

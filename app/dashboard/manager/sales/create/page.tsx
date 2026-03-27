@@ -110,7 +110,7 @@ export default function CreateSalePage() {
     defaultValues: {
       child_count: 0,
       concession_count: 0,
-      payment_method: 'online_yookassa',
+      payment_method: 'cash',
     },
   })
 
@@ -551,13 +551,16 @@ export default function CreateSalePage() {
                   {...register('payment_method')}
                   className="input-glass"
                 >
-                  <option value="online_yookassa">Онлайн (ЮКасса)</option>
+                  <option value="online_yookassa" disabled>QR (временно недоступно)</option>
                   <option value="cash">Наличные</option>
                   <option value="acquiring">Эквайринг</option>
                 </select>
                 {errors.payment_method && (
                   <p className="text-red-300 text-xs mt-1">{errors.payment_method.message}</p>
                 )}
+                <p className="text-xs text-white/60 mt-2">
+                  На данный момент продажа через QR недоступна.
+                </p>
               </div>
 
               {/* ID промоутера только для налички и эквайринга */}

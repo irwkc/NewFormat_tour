@@ -30,6 +30,13 @@ type PartnerStats = {
   tickets?: { total: number; used: number }
 }
 
+type PartnerDashboardMetrics = {
+  turnover: number
+  profit: number
+  sold_places: number
+  tickets_count: number
+}
+
 export default function PartnerDashboard() {
   const { token, user } = useAuthStore()
   const [tours, setTours] = useState<PartnerTourRow[]>([])
@@ -38,6 +45,7 @@ export default function PartnerDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [expandedTourId, setExpandedTourId] = useState<string | null>(null)
   const [addPlacesInputs, setAddPlacesInputs] = useState<Record<string, number>>({})
+  const [metrics, setMetrics] = useState<PartnerDashboardMetrics | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -49,9 +57,11 @@ export default function PartnerDashboard() {
       Promise.all([
         fetch('/api/tours', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
         fetch(`/api/statistics/by-partner/${user.id}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
-      ]).then(([toursRes, statsRes]) => {
+        fetch('/api/statistics/partner', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()),
+      ]).then(([toursRes, statsRes, metricsRes]) => {
         if (toursRes.success) setTours(toursRes.data)
         if (statsRes.success) setStats(statsRes.data)
+        if (metricsRes.success) setMetrics(metricsRes.data)
       }).catch(console.error).finally(() => setLoading(false))
     }
   }, [token, user])
@@ -172,7 +182,7 @@ export default function PartnerDashboard() {
           <div className="glass-card p-5">
             <h3 className="text-sm font-semibold mb-1 text-white/70">Общая сумма</h3>
             <div className="text-2xl font-bold text-green-300">
-              {stats ? Number(stats.sales?.revenue || 0).toFixed(2) : loading ? '—' : '0.00'}₽
+              {metrics ? Number(metrics.profit || 0).toFixed(2) : loading ? '—' : '0.00'}₽
             </div>
           </div>
           <div className="glass-card p-5">

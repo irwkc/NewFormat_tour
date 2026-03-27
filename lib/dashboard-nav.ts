@@ -21,6 +21,7 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   ],
   partner: [
     { label: 'Мои экскурсии', href: '/dashboard/partner' },
+    { label: 'Статистика', href: '/dashboard/partner/statistics' },
     { label: 'Проверка билетов', href: '/dashboard/partner/tickets/check' },
     { label: 'Настройки', href: '/dashboard/partner/settings' },
   ],

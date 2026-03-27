@@ -3,6 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { withAuth } from '@/lib/middleware'
 import { UserRole } from '@prisma/client'
 
+function buildControllerEmail(partnerEmail: string, partnerId: string) {
+  const [localPart, domainPart] = partnerEmail.split('@')
+  if (!localPart || !domainPart) {
+    return `${partnerId.slice(0, 8)}.controller@newformat.local`
+  }
+  return `${localPart}+controller.${partnerId.slice(0, 8)}@${domainPart}`
+}
+
 export async function POST(request: NextRequest) {
   return withAuth(
     request,
@@ -48,9 +56,19 @@ export async function POST(request: NextRequest) {
         const bcrypt = require('bcryptjs')
         const password_hash = await bcrypt.hash(password, 10)
 
+        // У контролера должен быть отдельный уникальный email (email партнера занят им самим).
+        const controllerEmail = buildControllerEmail(partner.email, payload.userId)
+        const existsControllerEmail = await prisma.user.findUnique({ where: { email: controllerEmail } })
+        if (existsControllerEmail) {
+          return NextResponse.json(
+            { success: false, error: 'Контролер уже создан' },
+            { status: 400 }
+          )
+        }
+
         const controller = await prisma.user.create({
           data: {
-            email: partner.email,
+            email: controllerEmail,
             password_hash,
             role: 'partner_controller',
             main_partner_id: payload.userId,
@@ -69,7 +87,7 @@ export async function POST(request: NextRequest) {
       } catch (error: any) {
         console.error('Error creating controller:', error)
         return NextResponse.json(
-          { error: 'Ошибка при создании контролера' },
+          { success: false, error: 'Ошибка при создании контролера' },
           { status: 500 }
         )
       }

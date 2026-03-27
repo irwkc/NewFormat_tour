@@ -105,6 +105,13 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const data = createSaleSchema.parse(body)
 
+        if (data.payment_method === 'online_yookassa') {
+          return NextResponse.json(
+            { success: false, error: 'На данный момент продажа таким способом недоступна' },
+            { status: 400 }
+          )
+        }
+
         // Проверить экскурсию
         const result = await createSaleDomain(data, { id: req.user!.userId, role: req.user!.role as UserRole })
 
