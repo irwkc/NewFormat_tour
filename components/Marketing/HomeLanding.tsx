@@ -40,7 +40,10 @@ const sectionClass =
   'scroll-mt-[calc(4.25rem+env(safe-area-inset-top,0px))] lg:scroll-mt-[calc(4.25rem+env(safe-area-inset-top,0px))]'
 
 const detailsCardClass =
-  'glass-card p-4 sm:p-5 group transition-all duration-300 hover:border-white/20 open:border-sky-400/25 open:shadow-lg open:shadow-sky-500/5'
+  'group glass-card p-4 sm:p-5 transition-all duration-300 hover:border-white/20 open:border-sky-400/25 open:shadow-lg open:shadow-sky-500/5'
+
+const heroGlassClass =
+  'relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent p-6 sm:p-8 md:p-10 shadow-lg shadow-black/20 backdrop-blur-xl'
 
 type Props = {
   managers: PublicManager[]
@@ -54,51 +57,65 @@ export function HomeLanding({ managers }: Props) {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(56,189,248,0.2),transparent)] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-6 sm:pt-10 md:pt-12 pb-6 sm:pb-10 relative space-y-12 sm:space-y-16 md:space-y-20">
-          <RevealOnScroll>
-            <div id="proverka-bileta" className={sectionClass}>
-              <PublicTicketCheck layout="home" inputId="sale-code-home" />
-            </div>
-          </RevealOnScroll>
-
           <section id="glavnaya" className={sectionClass}>
             <RevealOnScroll>
-              <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-sky-400/90">{homeHero.eyebrow}</p>
-              <h1 className="mt-2 text-[1.65rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-3xl text-balance font-[family-name:var(--font-poppins)]">
-                Экскурсии — на воде и пешком
-              </h1>
-              <p className="mt-3 sm:mt-4 text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
-                Бронь и билеты через менеджеров. Официальное оформление и сопровождение до посадки.
-              </p>
+              <div className={heroGlassClass}>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-sky-500/15 blur-3xl"
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-violet-500/10 blur-3xl"
+                />
+                <div className="relative">
+                  <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-sky-400/90">{homeHero.eyebrow}</p>
+                  <h1 className="mt-2 text-[1.65rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-3xl text-balance font-[family-name:var(--font-poppins)]">
+                    Экскурсии — на воде и пешком
+                  </h1>
+                  <p className="mt-3 sm:mt-4 text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
+                    Бронь и билеты через менеджеров. Официальное оформление и сопровождение до посадки.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2 sm:gap-2.5">
+                    {homeHero.bullets.map((t, i) => (
+                      <RevealOnScroll key={t} delayMs={80 + i * 70}>
+                        <span className="inline-flex items-center rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-xs sm:text-sm text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-sky-400/30 hover:bg-white/[0.09] hover:-translate-y-px">
+                          {t}
+                        </span>
+                      </RevealOnScroll>
+                    ))}
+                  </div>
+                  <div className="mt-6 sm:mt-7 flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3">
+                    <RevealOnScroll delayMs={120}>
+                      <a href="#podderzhka" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
+                        Связаться
+                      </a>
+                    </RevealOnScroll>
+                    <RevealOnScroll delayMs={160}>
+                      <a href="#dokumenty" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
+                        Документы
+                      </a>
+                    </RevealOnScroll>
+                    <RevealOnScroll delayMs={200}>
+                      <NextLink
+                        href="/auth/login"
+                        className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-all duration-300 text-center font-medium"
+                      >
+                        Вход для сотрудников
+                      </NextLink>
+                    </RevealOnScroll>
+                  </div>
+                </div>
+              </div>
             </RevealOnScroll>
-            <div className="mt-5 flex flex-wrap gap-2 sm:gap-2.5">
-              {homeHero.bullets.map((t, i) => (
-                <RevealOnScroll key={t} delayMs={80 + i * 70}>
-                  <span className="inline-flex items-center rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-xs sm:text-sm text-white/80 backdrop-blur-sm transition-all duration-300 hover:border-sky-400/30 hover:bg-white/[0.09] hover:-translate-y-px">
-                    {t}
-                  </span>
-                </RevealOnScroll>
-              ))}
-            </div>
-            <div className="mt-6 sm:mt-7 flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3">
-              <RevealOnScroll delayMs={120}>
-                <a href="#podderzhka" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
-                  Связаться
-                </a>
-              </RevealOnScroll>
-              <RevealOnScroll delayMs={160}>
-                <a href="#dokumenty" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
-                  Документы
-                </a>
-              </RevealOnScroll>
-              <RevealOnScroll delayMs={200}>
-                <NextLink
-                  href="/auth/login"
-                  className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-all duration-300 text-center font-medium"
-                >
-                  Вход для сотрудников
-                </NextLink>
-              </RevealOnScroll>
-            </div>
+          </section>
+
+          <section id="proverka-bileta" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14`}>
+            <RevealOnScroll>
+              <div className="max-w-lg mx-auto w-full">
+                <PublicTicketCheck layout="home" inputId="sale-code-home" />
+              </div>
+            </RevealOnScroll>
           </section>
 
           <section id="komanda" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14`}>
@@ -107,49 +124,6 @@ export function HomeLanding({ managers }: Props) {
             </RevealOnScroll>
             <div className="mt-8">
               <PublicManagersGrid managers={managers} />
-            </div>
-          </section>
-
-          <section id="dokumenty" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14 space-y-8`}>
-            <HomeSectionHeader
-              eyebrow={homeDocuments.eyebrow}
-              title={homeDocuments.title}
-              lead={homeDocuments.lead}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-              <HomeSectionCard icon={<IconDoc />} title={homeDocuments.highlights[0].title} delayMs={0}>
-                {homeDocuments.highlights[0].text}
-              </HomeSectionCard>
-              <HomeSectionCard icon={<IconShield />} title={homeDocuments.highlights[1].title} delayMs={70}>
-                {homeDocuments.highlights[1].text}
-              </HomeSectionCard>
-              <HomeSectionCard icon={<IconBriefcase />} title={homeDocuments.highlights[2].title} delayMs={140}>
-                {homeDocuments.highlights[2].text}
-              </HomeSectionCard>
-            </div>
-            <div className="space-y-4 max-w-3xl">
-              <RevealOnScroll delayMs={80}>
-                <details className={detailsCardClass}>
-                  <summary className="cursor-pointer text-sm font-medium text-sky-200/90 list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                    Пользовательское соглашение — полный текст
-                    <span className="text-white/40 text-xs transition-transform duration-300 group-open:rotate-180">▼</span>
-                  </summary>
-                  <pre className="mt-4 text-[12px] sm:text-[13px] leading-relaxed text-white/80 whitespace-pre-wrap font-sans max-h-[min(70vh,28rem)] overflow-y-auto border-t border-white/10 pt-4">
-                    {TERMS_FULL}
-                  </pre>
-                </details>
-              </RevealOnScroll>
-              <RevealOnScroll delayMs={120}>
-                <details className={detailsCardClass}>
-                  <summary className="cursor-pointer text-sm font-medium text-sky-200/90 list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                    Политика конфиденциальности — полный текст
-                    <span className="text-white/40 text-xs transition-transform duration-300 group-open:rotate-180">▼</span>
-                  </summary>
-                  <pre className="mt-4 text-[12px] sm:text-[13px] leading-relaxed text-white/80 whitespace-pre-wrap font-sans max-h-[min(70vh,28rem)] overflow-y-auto border-t border-white/10 pt-4">
-                    {PRIVACY_FULL_TEXT}
-                  </pre>
-                </details>
-              </RevealOnScroll>
             </div>
           </section>
 
@@ -222,7 +196,7 @@ export function HomeLanding({ managers }: Props) {
             </RevealOnScroll>
           </section>
 
-          <section id="podderzhka" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14 pb-6 space-y-8`}>
+          <section id="podderzhka" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14 space-y-8`}>
             <HomeSectionHeader eyebrow={homeSupport.eyebrow} title={homeSupport.title} lead={homeSupport.lead} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <RevealOnScroll delayMs={0}>
@@ -275,6 +249,49 @@ export function HomeLanding({ managers }: Props) {
                   </RevealOnScroll>
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section id="dokumenty" className={`${sectionClass} border-t border-white/10 pt-12 sm:pt-14 space-y-8 pb-2`}>
+            <HomeSectionHeader
+              eyebrow={homeDocuments.eyebrow}
+              title={homeDocuments.title}
+              lead={homeDocuments.lead}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+              <HomeSectionCard icon={<IconDoc />} title={homeDocuments.highlights[0].title} delayMs={0}>
+                {homeDocuments.highlights[0].text}
+              </HomeSectionCard>
+              <HomeSectionCard icon={<IconShield />} title={homeDocuments.highlights[1].title} delayMs={70}>
+                {homeDocuments.highlights[1].text}
+              </HomeSectionCard>
+              <HomeSectionCard icon={<IconBriefcase />} title={homeDocuments.highlights[2].title} delayMs={140}>
+                {homeDocuments.highlights[2].text}
+              </HomeSectionCard>
+            </div>
+            <div className="space-y-4 max-w-3xl">
+              <RevealOnScroll delayMs={80}>
+                <details className={detailsCardClass}>
+                  <summary className="cursor-pointer text-sm font-medium text-sky-200/90 list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                    Пользовательское соглашение — полный текст
+                    <span className="text-white/40 text-xs transition-transform duration-300 group-open:rotate-180">▼</span>
+                  </summary>
+                  <pre className="mt-4 text-[12px] sm:text-[13px] leading-relaxed text-white/80 whitespace-pre-wrap font-sans max-h-[min(70vh,28rem)] overflow-y-auto border-t border-white/10 pt-4">
+                    {TERMS_FULL}
+                  </pre>
+                </details>
+              </RevealOnScroll>
+              <RevealOnScroll delayMs={120}>
+                <details className={detailsCardClass}>
+                  <summary className="cursor-pointer text-sm font-medium text-sky-200/90 list-none flex items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                    Политика конфиденциальности — полный текст
+                    <span className="text-white/40 text-xs transition-transform duration-300 group-open:rotate-180">▼</span>
+                  </summary>
+                  <pre className="mt-4 text-[12px] sm:text-[13px] leading-relaxed text-white/80 whitespace-pre-wrap font-sans max-h-[min(70vh,28rem)] overflow-y-auto border-t border-white/10 pt-4">
+                    {PRIVACY_FULL_TEXT}
+                  </pre>
+                </details>
+              </RevealOnScroll>
             </div>
           </section>
         </div>
