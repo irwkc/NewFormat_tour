@@ -70,7 +70,17 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
             <p className="text-[10px] sm:text-[11px] text-white/35">
               © {new Date().getFullYear()} {SITE_PUBLIC.siteName}. Все права защищены.
             </p>
-            <p className="text-[10px] text-white/28">made by irwkc</p>
+            <p className="text-[10px] text-white/28">
+              made by{' '}
+              <a
+                href="https://github.com/irwkc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/40 hover:text-sky-400/90 underline-offset-2 hover:underline"
+              >
+                irwkc
+              </a>
+            </p>
           </div>
         </div>
       </footer>

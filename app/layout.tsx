@@ -3,6 +3,8 @@ import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
 import { ModalProvider } from '@/components/Providers/ModalProvider'
 import { PushProvider } from '@/components/Providers/PushProvider'
+import { getSiteOrigin } from '@/lib/seo/site-origin'
+import { PUBLIC_SITE_KEYWORDS } from '@/lib/seo/public-keywords'
 
 const inter = Inter({ 
   subsets: ['latin', 'cyrillic'],
@@ -18,8 +20,16 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Система управления продажей экскурсий',
-  description: 'Система управления промоутерами и продажей экскурсий',
+  metadataBase: new URL(getSiteOrigin()),
+  title: {
+    default: 'NF Travel — экскурсии и система продаж',
+    template: '%s | NF Travel',
+  },
+  description:
+    'NF Travel: экскурсии, билеты, личный кабинет партнёров и сотрудников. Ключевые слова: nf-travel, экскурсии, irwkc.',
+  keywords: [...PUBLIC_SITE_KEYWORDS],
+  authors: [{ name: 'irwkc', url: 'https://github.com/irwkc' }],
+  creator: 'irwkc',
   viewport: {
     width: 'device-width',
     initialScale: 1,
