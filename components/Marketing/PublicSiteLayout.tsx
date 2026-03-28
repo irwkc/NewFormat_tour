@@ -38,7 +38,7 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
 
       <footer className="border-t border-white/[0.08] bg-slate-950/90 mt-auto pb-[env(safe-area-inset-bottom,0px)]">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0 space-y-1">
               <div className="text-sm font-semibold text-white tracking-tight">{SITE_PUBLIC.siteName}</div>
               <p className="text-[13px] leading-snug text-white/55 max-w-md">
@@ -46,25 +46,31 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
               </p>
               <p className="text-[11px] text-white/35 break-all sm:break-normal">{SITE_PUBLIC.domain}</p>
             </div>
-            <div className="flex flex-col gap-2 sm:items-end sm:text-right shrink-0 text-[13px]">
-              <a
-                href={SITE_PUBLIC.phoneHref}
-                className="text-sky-400/90 hover:text-sky-300 w-fit sm:ml-auto min-h-[40px] sm:min-h-0 inline-flex items-center py-1 transition-colors"
-              >
+            <div className="flex flex-nowrap items-center gap-x-2 text-[11px] sm:text-xs leading-tight shrink-0 text-sky-400/90 max-w-full overflow-x-auto scrollbar-hide pb-0.5 -mb-0.5">
+              <a href={SITE_PUBLIC.phoneHref} className="hover:text-sky-300 transition-colors whitespace-nowrap shrink-0">
                 {SITE_PUBLIC.phone}
               </a>
+              <span className="text-white/25 select-none shrink-0" aria-hidden>
+                ·
+              </span>
               <a
                 href={`mailto:${SITE_PUBLIC.email}`}
-                className="text-sky-400/90 hover:text-sky-300 w-fit sm:ml-auto break-all max-w-full min-h-[40px] sm:min-h-0 inline-flex items-center py-1 transition-colors"
+                className="hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
               >
                 {SITE_PUBLIC.email}
               </a>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-white/[0.06] text-[11px] leading-tight text-white/40">
-            ИНН {SITE_PUBLIC.inn}
-            <span className="mx-1.5 text-white/25">·</span>
-            ОГРНИП {SITE_PUBLIC.ogrnip}
+          <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1.5">
+            <p className="text-[11px] leading-tight text-white/40">
+              ИНН {SITE_PUBLIC.inn}
+              <span className="mx-1.5 text-white/25">·</span>
+              ОГРНИП {SITE_PUBLIC.ogrnip}
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-white/35">
+              © {new Date().getFullYear()} {SITE_PUBLIC.siteName}. Все права защищены.
+            </p>
+            <p className="text-[10px] text-white/28">made by irwkc</p>
           </div>
         </div>
       </footer>

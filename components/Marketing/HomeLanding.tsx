@@ -1,6 +1,5 @@
 'use client'
 
-import NextLink from 'next/link'
 import { PublicSiteLayout } from '@/components/Marketing/PublicSiteLayout'
 import { PublicTicketCheck } from '@/components/Marketing/PublicTicketCheck'
 import { PublicManagersGrid } from '@/components/Marketing/PublicManagersGrid'
@@ -85,24 +84,11 @@ export function HomeLanding({ managers }: Props) {
                       </RevealOnScroll>
                     ))}
                   </div>
-                  <div className="mt-6 sm:mt-7 flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3">
+                  <div className="mt-6 sm:mt-7">
                     <RevealOnScroll delayMs={120}>
                       <a href="#podderzhka" className="btn-primary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
                         Связаться
                       </a>
-                    </RevealOnScroll>
-                    <RevealOnScroll delayMs={160}>
-                      <a href="#dokumenty" className="btn-secondary inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-6">
-                        Документы
-                      </a>
-                    </RevealOnScroll>
-                    <RevealOnScroll delayMs={200}>
-                      <NextLink
-                        href="/auth/login"
-                        className="inline-flex justify-center items-center min-h-[48px] w-full sm:w-auto px-5 rounded-xl border border-white/25 text-white/90 hover:bg-white/10 active:bg-white/15 transition-all duration-300 text-center font-medium"
-                      >
-                        Вход для сотрудников
-                      </NextLink>
                     </RevealOnScroll>
                   </div>
                 </div>
