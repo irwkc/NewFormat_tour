@@ -132,14 +132,21 @@ function splitForSale(
   )
 }
 
-type LedgerLine = {
+/** Строка кассовой книги: полное распределение при посадке + фактические начисления/выплаты. */
+type CashbookLine = {
   at: Date
   tie: string
   period: string
+  kind: 'boarding' | 'payout_partner' | 'payout_staff' | 'promoter_accrual'
+  /** Кратко для колонки «Тип» */
+  kindLabel: string
   operation: string
-  purpose: string
-  debit: number
-  credit: number
+  partnerShare: number
+  ownerShare: number
+  promoterShare: number
+  /** Исходящая выплата (наличные/перевод с позиции владельца) */
+  payoutOut: number
+  counterparty: string
 }
 
 /** Листы для владельца: ИНФО, сводка, оборотная и зарплатная ведомости, кассовая книга — за выбранный период. */
@@ -150,7 +157,7 @@ export async function addOwnerEconomicsSheets(
 ) {
   const { start, end } = period
 
-  const [sales, usedTickets, payouts, promoterCredits] = await Promise.all([
+  const [sales, usedTickets, cashbookTickets, ownerOutgoingDebits, promoterCredits] = await Promise.all([
     prisma.sale.findMany({
       where: {
         payment_status: PaymentStatus.completed,
@@ -181,16 +188,43 @@ export async function addOwnerEconomicsSheets(
         },
       },
     }),
+    prisma.ticket.findMany({
+      where: {
+        ticket_status: { not: TicketStatus.cancelled },
+        sale: { payment_status: PaymentStatus.completed },
+        OR: [
+          { sale: { created_at: { gte: start, lte: end } } },
+          {
+            ticket_status: TicketStatus.used,
+            used_at: { not: null, gte: start, lte: end },
+          },
+        ],
+      },
+      include: {
+        sale: true,
+        tour: {
+          include: {
+            createdBy: { select: { full_name: true } },
+            commissionRules: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+    }),
     prisma.balanceHistory.findMany({
       where: {
         performed_by_user_id: ownerId,
         balance_type: BalanceType.balance,
         transaction_type: TransactionType.debit,
-        description: { startsWith: 'Выплата партнёру' },
         created_at: { gte: start, lte: end },
+        OR: [
+          { description: { startsWith: 'Выплата партнёру' } },
+          { description: { startsWith: 'Выплата промоутеру' } },
+          { description: { startsWith: 'Выплата менеджеру' } },
+          { description: { equals: 'Выплата владельцем, баланс обнулен' } },
+        ],
       },
       include: {
-        user: { select: { full_name: true, email: true } },
+        user: { select: { full_name: true, email: true, role: true } },
       },
       orderBy: { created_at: 'asc' },
     }),
@@ -210,6 +244,14 @@ export async function addOwnerEconomicsSheets(
       orderBy: { created_at: 'asc' },
     }),
   ])
+
+  const partnerPayouts = ownerOutgoingDebits.filter((d) => d.description.startsWith('Выплата партнёру'))
+  const staffPayouts = ownerOutgoingDebits.filter(
+    (d) =>
+      d.description.startsWith('Выплата промоутеру') ||
+      d.description.startsWith('Выплата менеджеру') ||
+      d.description === 'Выплата владельцем, баланс обнулен'
+  )
 
   let sumRevenue = 0
   let sumOwnerModel = 0
@@ -237,7 +279,8 @@ export async function addOwnerEconomicsSheets(
   }
 
   const sumPromoterFact = promoterCredits.reduce((s, r) => s + Number(r.amount), 0)
-  const sumPartnerPayouts = payouts.reduce((s, p) => s + Number(p.amount), 0)
+  const sumPartnerPayouts = partnerPayouts.reduce((s, p) => s + Number(p.amount), 0)
+  const sumStaffPayouts = staffPayouts.reduce((s, p) => s + Number(p.amount), 0)
 
   const generatedAt = new Date()
 
@@ -265,11 +308,11 @@ export async function addOwnerEconomicsSheets(
   )
   put(
     'Зарплатная ведомость',
-    'Фактические начисления на баланс промоутеров и менеджеров за подтверждённые билеты (записи balance_history, кредит balance).'
+    'Блок 1: начисления системы (кредит balance) за билеты. Блок 2: фактические выплаты владельца с баланса сотрудника (дебет, как у партнёра по смыслу).'
   )
   put(
     'Кассовая книга',
-    'Движение по доходам владельца после посадки (билет used) и выплаты партнёрам, отражённые от имени владельца за период.'
+    'Хронология: приход по оплате (дата продажи в периоде) для sold и used — те же доли, что при посадке; если оплата раньше, а посадка в периоде — строка по дате used. Далее начисления на баланс и выплаты. Сальдо «нетто» — поток владельца по этим строкам минус выплаты.'
   )
   put('Продажи / Билеты', 'Детальные реестры за тот же период (создание записи в периоде).')
   ir++
@@ -290,7 +333,14 @@ export async function addOwnerEconomicsSheets(
   ir++
   put('Выручка (оборот)', 'Сумма полей оплаченных продаж total_amount за период.')
   put('Модель комиссий', 'Расчёт calcIncomeSplit: как делится сумма продажи между владельцем, партнёром и промоутером по правилам тура.')
-  put('После посадки', 'В кассовой книге доход владельца начисляется в дату used (посадка), а не в дату продажи.')
+  put(
+    'Приход в кассовой книге',
+    'По умолчанию приход по дате оплаты (продажи): строка «Приход по оплате» — те же доли, что и при посадке, но деньги уже получены. Если оплата была вне периода, а посадка в периоде — строка «Посадка (used)».'
+  )
+  put(
+    'Выплата промоутеру/менеджеру',
+    'В интерфейсе владелец вводит сумму (как выплата партнёру в расчётах). В истории: «Выплата промоутеру» / «Выплата менеджеру».'
+  )
 
   // ——— 2. Сводка ———
   const summary = workbook.addWorksheet('Сводка за период', { views: [{ state: 'frozen', ySplit: 2 }] })
@@ -312,11 +362,19 @@ export async function addOwnerEconomicsSheets(
     ['Доля владельца по модели, ₽', sumOwnerModel],
     ['Доля партнёра по модели, ₽', sumPartnerModel],
     ['Доля промоутера по модели, ₽', sumPromoterModel],
-    ['Начислено промоутерам/менеджерам (факт по балансу), ₽', sumPromoterFact],
+    ['Начислено промоутерам/менеджерам по системе (кредиты balance), ₽', sumPromoterFact],
+    ['Выплачено промоутерам/менеджерам с баланса (владелец), ₽', sumStaffPayouts],
     ['Выплачено партнёрам (учёт владельца), ₽', sumPartnerPayouts],
     ['в т.ч. выручка наличными, ₽', byPayment.cash],
     ['в т.ч. выручка эквайринг, ₽', byPayment.acquiring],
     ['в т.ч. выручка онлайн, ₽', byPayment.online_yookassa],
+    [
+      'Оплаченных билетов по дате продажи в периоде (для кассовой книги «Приход по оплате»), шт.',
+      cashbookTickets.filter((t) => {
+        const d = new Date(t.sale.created_at)
+        return d >= start && d <= end
+      }).length,
+    ],
     ['Посадок (билетов used) в периоде, шт.', usedTickets.length],
   ]
   let sr = 3
@@ -368,17 +426,11 @@ export async function addOwnerEconomicsSheets(
 
   addSection('3. Исходящие платежи и начисления (факт)')
   addLine('Выплаты партнёрам (дебет balance, владелец)', sumPartnerPayouts)
-  addLine('Начисления на баланс промоутерам/менеджерам', sumPromoterFact)
+  addLine('Выплаты промоутерам/менеджерам с баланса (дебет, владелец)', sumStaffPayouts)
+  addLine('Начисления на баланс промоутерам/менеджерам (система)', sumPromoterFact)
 
   // ——— 4. Зарплатная ведомость ———
-  const payroll = workbook.addWorksheet('Зарплатная ведомость', { views: [{ state: 'frozen', ySplit: 3 }] })
-  payroll.mergeCells(1, 1, 1, 8)
-  payroll.getCell(1, 1).value =
-    'Зарплатная ведомость: начисления на баланс (промоутеры / менеджеры) за подтверждение продажи билета. Период — по дате записи в истории баланса.'
-  payroll.getCell(1, 1).font = { bold: true, size: 11 }
-  payroll.getCell(1, 1).alignment = { wrapText: true }
-  payroll.getRow(1).height = 36
-  payroll.getRow(2).values = [
+  const payrollHeaders = [
     '№',
     'Дата и время',
     'ФИО',
@@ -388,7 +440,23 @@ export async function addOwnerEconomicsSheets(
     '№ билета',
     '№ продажи',
   ]
-  styleHeaderRow(payroll.getRow(2))
+  const payroll = workbook.addWorksheet('Зарплатная ведомость', { views: [{ state: 'frozen', ySplit: 3 }] })
+  payroll.mergeCells(1, 1, 1, 8)
+  payroll.getCell(1, 1).value =
+    'Зарплатная ведомость: (А) начисления системы за билеты; (Б) фактические выплаты владельца с баланса сотрудника. Период — по дате записи в balance_history.'
+  payroll.getCell(1, 1).font = { bold: true, size: 11 }
+  payroll.getCell(1, 1).alignment = { wrapText: true }
+  payroll.getRow(1).height = 40
+  payroll.mergeCells(2, 1, 2, 8)
+  payroll.getCell(2, 1).value = 'А) Начисления системы (кредит balance) — за подтверждённые билеты'
+  payroll.getCell(2, 1).font = { bold: true }
+  payroll.getCell(2, 1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE8E8E8' },
+  }
+  payroll.getRow(3).values = payrollHeaders
+  styleHeaderRow(payroll.getRow(3))
   payroll.columns = [
     { width: 5 },
     { width: 18 },
@@ -400,7 +468,7 @@ export async function addOwnerEconomicsSheets(
     { width: 14 },
   ]
 
-  let pr = 3
+  let pr = 4
   let idx = 1
   for (const row of promoterCredits) {
     const r = payroll.getRow(pr)
@@ -421,100 +489,250 @@ export async function addOwnerEconomicsSheets(
   if (promoterCredits.length === 0) {
     payroll.mergeCells(pr, 1, pr, 8)
     payroll.getCell(pr, 1).value =
-      'За выбранный период нет записей о начислениях на баланс по шаблону «Пополнение от продажи билета».'
+      'За выбранный период нет начислений по шаблону «Пополнение от продажи билета».'
     payroll.getCell(pr, 1).alignment = { wrapText: true }
+    pr++
   } else {
     const totalRow = payroll.getRow(pr)
-    totalRow.getCell(4).value = 'Итого'
+    totalRow.getCell(4).value = 'Итого (начисления)'
     totalRow.getCell(4).font = { bold: true }
     applyMoney(totalRow.getCell(5), sumPromoterFact)
     totalRow.getCell(5).font = { bold: true }
+    pr++
   }
 
-  // ——— 5. Кассовая книга ———
-  const lines: LedgerLine[] = []
+  pr++
+  payroll.mergeCells(pr, 1, pr, 8)
+  payroll.getCell(pr, 1).value =
+    'Б) Выплаты с баланса (дебет balance) — владелец отразил выплату промоутеру/менеджеру (как выплата партнёру по учёту)'
+  payroll.getCell(pr, 1).font = { bold: true }
+  payroll.getCell(pr, 1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE8E8E8' },
+  }
+  pr++
+  payroll.getRow(pr).values = payrollHeaders
+  styleHeaderRow(payroll.getRow(pr))
+  pr++
 
-  for (const ticket of usedTickets) {
+  let idxB = 1
+  for (const row of staffPayouts) {
+    const r = payroll.getRow(pr)
+    const at = new Date(row.created_at)
+    const roleLabel =
+      row.user.role === UserRole.promoter ? 'Промоутер' : row.user.role === UserRole.manager ? 'Менеджер' : row.user.role
+    r.getCell(1).value = idxB
+    r.getCell(2).value = `${formatPeriod(at)} ${at.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+    r.getCell(3).value = row.user.full_name || row.user.email || row.user_id
+    r.getCell(4).value = roleLabel
+    applyMoney(r.getCell(5), Number(row.amount))
+    r.getCell(6).value = row.description
+    r.getCell(7).value = '—'
+    r.getCell(8).value = '—'
+    idxB++
+    pr++
+  }
+  if (staffPayouts.length === 0) {
+    payroll.mergeCells(pr, 1, pr, 8)
+    payroll.getCell(pr, 1).value =
+      'За период нет выплат с баланса (записи «Выплата промоутеру» / «Выплата менеджеру» / устаревшее полное обнуление).'
+    payroll.getCell(pr, 1).alignment = { wrapText: true }
+    pr++
+  } else {
+    const totalRowB = payroll.getRow(pr)
+    totalRowB.getCell(4).value = 'Итого (выплаты)'
+    totalRowB.getCell(4).font = { bold: true }
+    applyMoney(totalRowB.getCell(5), sumStaffPayouts)
+    totalRowB.getCell(5).font = { bold: true }
+  }
+
+  // ——— 5. Кассовая книга (полная: доли при посадке, начисления на баланс, выплаты) ———
+  const cashLines: CashbookLine[] = []
+
+  for (const ticket of cashbookTickets) {
     const sale = ticket.sale
     const tour = ticket.tour as unknown as TourWithRules
-    const usedAt = ticket.used_at ? new Date(ticket.used_at) : new Date(ticket.updated_at)
+    const saleAt = new Date(sale.created_at)
+    const saleInPeriod = saleAt.getTime() >= start.getTime() && saleAt.getTime() <= end.getTime()
+    const usedAt = ticket.used_at ? new Date(ticket.used_at) : null
+    const usedInPeriod =
+      ticket.ticket_status === TicketStatus.used &&
+      usedAt != null &&
+      usedAt.getTime() >= start.getTime() &&
+      usedAt.getTime() <= end.getTime()
+
+    let at: Date
+    let kindLabel: string
+    if (saleInPeriod) {
+      at = saleAt
+      kindLabel = 'Приход по оплате'
+    } else if (usedInPeriod && usedAt) {
+      at = usedAt
+      kindLabel = 'Посадка (used)'
+    } else {
+      continue
+    }
 
     const split = splitForSale(sale, tour)
-    const ownerShare = split.owner
-    if (ownerShare <= 0) continue
-
     const pm = PAYMENT_LABELS[sale.payment_method] || sale.payment_method
     const partnerName = tour.createdBy?.full_name || 'Партнёр'
-    lines.push({
-      at: usedAt,
+    const statusLabel =
+      ticket.ticket_status === TicketStatus.used ? 'used' : ticket.ticket_status === TicketStatus.sold ? 'sold' : String(ticket.ticket_status)
+
+    cashLines.push({
+      at,
       tie: `t:${ticket.id}`,
-      period: formatPeriod(usedAt),
-      operation: `Доход после посадки · ${tour.company} · ${pm} · продажа №${sale.sale_number || '—'} · партнёр: ${partnerName}`,
-      purpose: 'Доход владельца (после used)',
-      debit: 0,
-      credit: ownerShare,
+      period: formatPeriod(at),
+      kind: 'boarding',
+      kindLabel,
+      operation: `${kindLabel} · ${tour.company} · ${pm} · продажа №${sale.sale_number || '—'} · билет #${ticket.ticket_number || ticket.id.slice(0, 8)} · статус: ${statusLabel}`,
+      partnerShare: split.partner,
+      ownerShare: split.owner,
+      promoterShare: split.promoter,
+      payoutOut: 0,
+      counterparty: partnerName,
     })
   }
 
-  for (const p of payouts) {
+  for (const row of promoterCredits) {
+    const at = new Date(row.created_at)
+    const who = row.user.full_name || row.user.email || row.user_id
+    cashLines.push({
+      at,
+      tie: `c:${row.id}`,
+      period: formatPeriod(at),
+      kind: 'promoter_accrual',
+      kindLabel: 'Начисление на баланс',
+      operation: row.description,
+      partnerShare: 0,
+      ownerShare: 0,
+      promoterShare: Number(row.amount),
+      payoutOut: 0,
+      counterparty: who,
+    })
+  }
+
+  for (const p of partnerPayouts) {
     const at = new Date(p.created_at)
     const amt = Number(p.amount)
     const partnerLabel = p.user?.full_name || p.user?.email || 'Партнёр'
-    lines.push({
+    cashLines.push({
       at,
       tie: `p:${p.id}`,
       period: formatPeriod(at),
+      kind: 'payout_partner',
+      kindLabel: 'Выплата партнёру',
       operation: p.description,
-      purpose: `Выплата: ${partnerLabel}`,
-      debit: amt,
-      credit: 0,
+      partnerShare: 0,
+      ownerShare: 0,
+      promoterShare: 0,
+      payoutOut: amt,
+      counterparty: partnerLabel,
     })
   }
 
-  lines.sort((a, b) => {
+  for (const p of staffPayouts) {
+    const at = new Date(p.created_at)
+    const amt = Number(p.amount)
+    const who = p.user?.full_name || p.user?.email || 'Сотрудник'
+    const roleTag =
+      p.user?.role === UserRole.promoter ? 'промоутер' : p.user?.role === UserRole.manager ? 'менеджер' : 'сотрудник'
+    cashLines.push({
+      at,
+      tie: `s:${p.id}`,
+      period: formatPeriod(at),
+      kind: 'payout_staff',
+      kindLabel: 'Выплата сотруднику',
+      operation: p.description,
+      partnerShare: 0,
+      ownerShare: 0,
+      promoterShare: 0,
+      payoutOut: amt,
+      counterparty: `${roleTag}: ${who}`,
+    })
+  }
+
+  cashLines.sort((a, b) => {
     const ta = a.at.getTime()
     const tb = b.at.getTime()
     if (ta !== tb) return ta - tb
     return a.tie.localeCompare(b.tie)
   })
 
-  let running = 0
-  const withSaldo: (LedgerLine & { saldo: number })[] = []
-  for (const L of lines) {
-    running += L.credit - L.debit
-    withSaldo.push({ ...L, saldo: running })
+  let ownerNetRunning = 0
+  const withOwnerSaldo: (CashbookLine & { ownerSaldo: number })[] = []
+  for (const L of cashLines) {
+    if (L.kind === 'boarding') ownerNetRunning += L.ownerShare
+    else if (L.kind === 'payout_partner' || L.kind === 'payout_staff') ownerNetRunning -= L.payoutOut
+    withOwnerSaldo.push({ ...L, ownerSaldo: ownerNetRunning })
   }
 
   const cash = workbook.addWorksheet('Кассовая книга', {
     views: [{ state: 'frozen', ySplit: 3 }],
   })
-  cash.mergeCells(1, 1, 1, 6)
-  cash.getCell(1, 1).value = `Кассовая книга владельца за период ${formatPeriodRu(start, end)} · доход после посадки (used) и выплаты партнёрам`
-  cash.getCell(1, 1).font = { bold: true, size: 12 }
+  cash.mergeCells(1, 1, 1, 10)
+  cash.getCell(1, 1).value = `Кассовая книга за период ${formatPeriodRu(start, end)} · приход по оплате (продажа в периоде) или по посадке (used), доли партнёр/владелец/промоутер; начисления на баланс; выплаты. Сальдо владельца (нетто) — доля владельца в этих строках минус выплаты.`
+  cash.getCell(1, 1).font = { bold: true, size: 11 }
   cash.getCell(1, 1).alignment = { wrapText: true }
-  cash.getRow(1).height = 30
-  cash.getRow(2).values = ['Период', 'Операция', 'Назначение / контрагент', 'Списания', 'Поступления', 'Текущее сальдо в периоде']
+  cash.getRow(1).height = 42
+  cash.getRow(2).values = [
+    'Период',
+    'Тип',
+    'Операция / основание',
+    'Партнёр ₽',
+    'Владелец ₽',
+    'Промоутер ₽',
+    'Расход (выплата) ₽',
+    'Сальдо владельца (нетто) ₽',
+    'Контрагент',
+    'Примечание',
+  ]
   styleHeaderRow(cash.getRow(2))
-  cash.columns = [{ width: 12 }, { width: 56 }, { width: 28 }, { width: 14 }, { width: 14 }, { width: 18 }]
+  cash.columns = [
+    { width: 11 },
+    { width: 18 },
+    { width: 48 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 14 },
+    { width: 16 },
+    { width: 22 },
+    { width: 36 },
+  ]
 
   let cr = 3
-  if (withSaldo.length === 0) {
-    cash.mergeCells(cr, 1, cr, 6)
+  if (withOwnerSaldo.length === 0) {
+    cash.mergeCells(cr, 1, cr, 10)
     cash.getCell(cr, 1).value =
-      'За выбранный период нет строк: нет посадок (used) с доходом владельца и нет выплат партнёрам от вашего имени.'
+      'За выбранный период нет движений: нет оплаченных билетов (по дате продажи или посадки), начислений на баланс и нет выплат от вашего имени.'
     cash.getCell(cr, 1).alignment = { wrapText: true }
   } else {
-    for (let i = 0; i < withSaldo.length; i++) {
-      const row = withSaldo[i]
+    for (let i = 0; i < withOwnerSaldo.length; i++) {
+      const row = withOwnerSaldo[i]
       const excelRow = cash.getRow(cr)
       excelRow.getCell(1).value = row.period
-      excelRow.getCell(2).value = row.operation
-      excelRow.getCell(3).value = row.purpose
-      applyMoneyOptional(excelRow.getCell(4), row.debit)
-      applyMoneyOptional(excelRow.getCell(5), row.credit)
-      applySaldo(excelRow.getCell(6), row.saldo)
+      excelRow.getCell(2).value = row.kindLabel
+      excelRow.getCell(3).value = row.operation
+      applyMoneyOptional(excelRow.getCell(4), row.partnerShare)
+      applyMoneyOptional(excelRow.getCell(5), row.ownerShare)
+      applyMoneyOptional(excelRow.getCell(6), row.promoterShare)
+      applyMoneyOptional(excelRow.getCell(7), row.payoutOut)
+      applySaldo(excelRow.getCell(8), row.ownerSaldo)
+      excelRow.getCell(9).value = row.counterparty
+      excelRow.getCell(10).value =
+        row.kind === 'boarding'
+          ? row.kindLabel === 'Приход по оплате'
+            ? 'Доли по модели на дату оплаты (продажи); билет может быть sold или used'
+            : 'Доли на дату посадки; оплата была вне периода'
+          : row.kind === 'promoter_accrual'
+            ? 'Факт кредита balance; дата может отличаться от посадки'
+            : row.kind === 'payout_partner'
+              ? 'Выплата с баланса партнёра (учёт владельца)'
+              : 'Выплата с баланса промоутера/менеджера'
       if (i % 2 === 1) {
-        for (let c = 1; c <= 6; c++) {
+        for (let c = 1; c <= 10; c++) {
           excelRow.getCell(c).fill = {
             type: 'pattern',
             pattern: 'solid',

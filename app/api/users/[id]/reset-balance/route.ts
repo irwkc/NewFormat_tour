@@ -3,7 +3,7 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 
-// POST /api/users/:id/reset-balance - обнуление баланса (только владелец)
+// POST /api/users/:id/reset-balance — выплата промоутеру/менеджеру с баланса (как выплата партнёру: тело JSON { amount })
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -20,6 +20,22 @@ export async function POST(
         }
 
         const { id } = params
+
+        let body: { amount?: unknown } = {}
+        try {
+          body = (await request.json()) as { amount?: unknown }
+        } catch {
+          body = {}
+        }
+        const amountRaw = body?.amount
+        const amount = typeof amountRaw === 'number' ? amountRaw : Number(amountRaw)
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return NextResponse.json(
+            { success: false, error: 'Укажите сумму выплаты (amount), больше 0' },
+            { status: 400 }
+          )
+        }
 
         const user = await prisma.user.findUnique({
           where: { id },
@@ -41,31 +57,42 @@ export async function POST(
 
         const balanceBefore = Number(user.balance)
 
-        // Обнулить баланс
-        await prisma.user.update({
-          where: { id },
-          data: {
-            balance: 0,
-          },
-        })
+        if (amount - balanceBefore > 0.0001) {
+          return NextResponse.json(
+            { success: false, error: `Сумма превышает баланс. Доступно: ${balanceBefore.toFixed(2)}₽` },
+            { status: 400 }
+          )
+        }
 
-        // Записать историю
-        await prisma.balanceHistory.create({
-          data: {
-            user_id: id,
-            balance_type: 'balance',
-            transaction_type: 'debit',
-            amount: balanceBefore,
-            balance_before: balanceBefore,
-            balance_after: 0,
-            description: 'Выплата владельцем, баланс обнулен',
-            performed_by_user_id: req.user!.userId,
-          },
+        const balanceAfter = Math.round((balanceBefore - amount) * 100) / 100
+
+        const payoutLabel =
+          user.role === UserRole.promoter ? 'Выплата промоутеру' : 'Выплата менеджеру'
+        const description = `${payoutLabel}: ${amount.toFixed(2)}₽`
+
+        await prisma.$transaction(async (tx) => {
+          await tx.user.update({
+            where: { id },
+            data: { balance: balanceAfter },
+          })
+
+          await tx.balanceHistory.create({
+            data: {
+              user_id: id,
+              balance_type: 'balance',
+              transaction_type: 'debit',
+              amount,
+              balance_before: balanceBefore,
+              balance_after: balanceAfter,
+              description,
+              performed_by_user_id: req.user!.userId,
+            },
+          })
         })
 
         return NextResponse.json({
           success: true,
-          message: 'Balance reset successfully',
+          message: 'Payout recorded',
         })
       } catch (error) {
         console.error('Reset balance error:', error)

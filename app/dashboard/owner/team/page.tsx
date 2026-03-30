@@ -35,6 +35,9 @@ function OwnerTeamContent() {
   const tabFromUrl = searchParams.get('tab') as Tab | null
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>(tabFromUrl === 'managers' ? 'managers' : 'promoters')
+  const [payoutTarget, setPayoutTarget] = useState<{ id: string; balance: number; label: string } | null>(null)
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutSubmitting, setPayoutSubmitting] = useState(false)
 
   useEffect(() => {
     if (tabFromUrl === 'managers' || tabFromUrl === 'promoters') {
@@ -68,27 +71,51 @@ function OwnerTeamContent() {
       .then((d) => d.success && setManagers(d.data))
   }
 
-  const handleResetBalance = async (userId: string) => {
-    const confirmed = await customConfirm(
-      activeTab === 'promoters' ? 'Обнулить баланс этого промоутера?' : 'Обнулить баланс этого менеджера?'
-    )
-    if (!confirmed) return
+  const openPayoutModal = (userId: string, balance: number, label: string) => {
+    if (balance <= 0) {
+      void customAlert('Нет средств на балансе для выплаты')
+      return
+    }
+    setPayoutTarget({ id: userId, balance, label })
+    setPayoutAmount(balance.toFixed(2))
+  }
 
+  const submitPayout = async () => {
+    if (!token || !payoutTarget) return
+    const raw = payoutAmount.replace(',', '.').trim()
+    const amount = Number(raw)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      await customAlert('Введите сумму больше 0')
+      return
+    }
+    if (amount - payoutTarget.balance > 0.0001) {
+      await customAlert(`Сумма не может превышать баланс (${payoutTarget.balance.toFixed(2)}₽)`)
+      return
+    }
+    setPayoutSubmitting(true)
     try {
-      const r = await fetch(`/api/users/${userId}/reset-balance`, {
+      const r = await fetch(`/api/users/${payoutTarget.id}/reset-balance`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount }),
       })
       const d = await r.json()
       if (d.success) {
+        setPayoutTarget(null)
+        setPayoutAmount('')
         if (activeTab === 'promoters') fetchPromoters()
         else fetchManagers()
-        await customAlert('Баланс обнулен')
+        await customAlert('Выплата отражена в балансе и истории')
       } else {
-        await customAlert(d.error || 'Ошибка обнуления баланса')
+        await customAlert(d.error || 'Ошибка выплаты')
       }
     } catch {
-      await customAlert('Ошибка обнуления баланса')
+      await customAlert('Ошибка выплаты')
+    } finally {
+      setPayoutSubmitting(false)
     }
   }
 
@@ -139,6 +166,62 @@ function OwnerTeamContent() {
 
   return (
     <DashboardLayout title="Промоутеры и менеджеры" navItems={navItems}>
+      {payoutTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payout-modal-title"
+        >
+          <div className="glass-card max-w-md w-full p-6 space-y-4">
+            <h2 id="payout-modal-title" className="text-lg font-bold text-white">
+              Выплата с баланса
+            </h2>
+            <p className="text-sm text-white/80">{payoutTarget.label}</p>
+            <p className="text-xs text-white/60">
+              Как при расчёте с партнёром: укажите сумму фактической выплаты (не больше текущего баланса).
+            </p>
+            <div>
+              <label className="block text-xs text-white/60 mb-1">Сумма, ₽</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={payoutAmount}
+                onChange={(e) => setPayoutAmount(e.target.value)}
+                className="w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2 text-white"
+                placeholder="0.00"
+              />
+              <p className="text-xs text-amber-200/90 mt-1">
+                Доступно: {payoutTarget.balance.toFixed(2)}₽
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-end">
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                disabled={payoutSubmitting}
+                onClick={() => {
+                  setPayoutTarget(null)
+                  setPayoutAmount('')
+                }}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                disabled={payoutSubmitting}
+                onClick={() => setPayoutAmount(payoutTarget.balance.toFixed(2))}
+              >
+                Вся сумма
+              </button>
+              <button type="button" className="btn-success text-sm" disabled={payoutSubmitting} onClick={() => void submitPayout()}>
+                {payoutSubmitting ? '…' : 'Выплатить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="space-y-6">
         <div className="flex gap-2 border-b border-white/20 pb-2">
           <button
@@ -190,8 +273,11 @@ function OwnerTeamContent() {
                         </span>
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <button onClick={() => handleResetBalance(p.id)} className="btn-secondary text-xs px-3 py-2 flex-1">
-                          Обнулить баланс
+                        <button
+                          onClick={() => openPayoutModal(p.id, Number(p.balance), p.full_name || p.email || 'Промоутер')}
+                          className="btn-secondary text-xs px-3 py-2 flex-1"
+                        >
+                          Выплатить с баланса
                         </button>
                         <button
                           onClick={() => handleToggleStatus(p.id, p.is_active)}
@@ -232,8 +318,11 @@ function OwnerTeamContent() {
                             </span>
                           </td>
                           <td className="text-sm space-x-2">
-                            <button onClick={() => handleResetBalance(p.id)} className="btn-secondary text-xs px-3 py-1">
-                              Обнулить баланс
+                            <button
+                              onClick={() => openPayoutModal(p.id, Number(p.balance), p.full_name || p.email || 'Промоутер')}
+                              className="btn-secondary text-xs px-3 py-1"
+                            >
+                              Выплатить с баланса
                             </button>
                             <button
                               onClick={() => handleToggleStatus(p.id, p.is_active)}
@@ -284,8 +373,11 @@ function OwnerTeamContent() {
                         {m.is_active ? 'Активен' : 'Заблокирован'}
                       </span>
                       <div className="flex flex-wrap gap-2 mt-4">
-                        <button onClick={() => handleResetBalance(m.id)} className="btn-secondary text-xs px-3 py-2 flex-1">
-                          Обнулить баланс
+                        <button
+                          onClick={() => openPayoutModal(m.id, Number(m.balance), m.full_name || m.email || 'Менеджер')}
+                          className="btn-secondary text-xs px-3 py-2 flex-1"
+                        >
+                          Выплатить с баланса
                         </button>
                         {Number(m.debt_to_company) > 0 && (
                           <button onClick={() => handleResetDebt(m.id)} className="btn-warning text-xs px-3 py-2 flex-1">
@@ -331,8 +423,11 @@ function OwnerTeamContent() {
                             </span>
                           </td>
                           <td className="text-sm space-x-2">
-                            <button onClick={() => handleResetBalance(m.id)} className="btn-secondary text-xs px-3 py-1">
-                              Обнулить баланс
+                            <button
+                              onClick={() => openPayoutModal(m.id, Number(m.balance), m.full_name || m.email || 'Менеджер')}
+                              className="btn-secondary text-xs px-3 py-1"
+                            >
+                              Выплатить с баланса
                             </button>
                             {Number(m.debt_to_company) > 0 && (
                               <button onClick={() => handleResetDebt(m.id)} className="btn-warning text-xs px-3 py-1">
