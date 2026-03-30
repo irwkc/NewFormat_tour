@@ -235,7 +235,6 @@ export async function addOwnerEconomicsSheets(
       },
       include: {
         user: { select: { full_name: true, email: true, role: true } },
-        ticket: { select: { used_at: true, ticket_status: true } },
       },
       orderBy: { created_at: 'asc' },
     }),
@@ -330,12 +329,6 @@ export async function addOwnerEconomicsSheets(
   const sumPromoterAccrualBoarded = promoterCredits
     .filter((c) => boardingInPeriod(c.ticket))
     .reduce((s, r) => s + Number(r.amount), 0)
-  const sumStaffPayoutsBoarded = staffPayouts
-    .filter((d) => boardingInPeriod(d.ticket))
-    .reduce((s, p) => s + Number(p.amount), 0)
-  const sumPartnerPayoutsBoarded = partnerPayouts
-    .filter((d) => boardingInPeriod(d.ticket))
-    .reduce((s, p) => s + Number(p.amount), 0)
 
   const generatedAt = new Date()
 
@@ -498,9 +491,9 @@ export async function addOwnerEconomicsSheets(
     },
     {
       kind: 'row',
-      label: 'Выплачено промоутерам и менеджерам (по билетам с посадкой в периоде), ₽',
-      value: sumStaffPayoutsBoarded,
-      note: 'Выплаты владельцем за период, привязанные к билетам, у которых посадка в этом периоде (остальные выплаты в детальных листах).',
+      label: 'Выплачено промоутерам и менеджерам за период отчёта, ₽',
+      value: sumStaffPayouts,
+      note: 'Все выплаты владельца промоутерам и менеджерам с баланса за выбранный период (по дате проводки). В учёте выплата не привязана к билету, поэтому сумма не делится по посадке.',
     },
     {
       kind: 'row',
@@ -510,9 +503,9 @@ export async function addOwnerEconomicsSheets(
     },
     {
       kind: 'row',
-      label: 'Выплачено партнёрам (по билетам с посадкой в периоде), ₽',
-      value: sumPartnerPayoutsBoarded,
-      note: 'Выплаты партнёрам за период, привязанные к билетам с посадкой в этом периоде.',
+      label: 'Выплачено партнёрам за период отчёта, ₽',
+      value: sumPartnerPayouts,
+      note: 'Все выплаты партнёрам за выбранный период (по дате проводки). В учёте выплата не привязана к билету.',
     },
     { kind: 'blank' },
     {
