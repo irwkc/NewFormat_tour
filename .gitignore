@@ -44,3 +44,6 @@ next-env.d.ts
 # Uploads
 /public/uploads
 /uploads
+
+# Local fonts (optional / не коммитить бинарники)
+/lib/fonts/

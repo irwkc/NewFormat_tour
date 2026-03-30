@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { useAuthStore } from '@/store/auth'
 import FaceVerifyStep from './FaceVerifyStep'
 import { Turnstile } from '@marsidev/react-turnstile'
+import { getPublicMarketingSiteOrigin } from '@/lib/urls/public-marketing-site'
 
 const GOD_KEY_SEQUENCE = 'irwkcgod'
 
@@ -521,6 +522,20 @@ export default function LoginForm() {
                 className="text-sm font-medium text-white/80 hover:text-white transition-colors"
               >
                 Забыли пароль?
+              </a>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+              <p className="text-xs text-white/55 mb-2">
+                Сайт для гостей и экскурсий — отдельно от входа сотрудников.
+              </p>
+              <a
+                href={getPublicMarketingSiteOrigin()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-sky-300 hover:text-sky-200 underline-offset-2 hover:underline"
+              >
+                Открыть nf-travel.ru (витрина)
               </a>
             </div>
 

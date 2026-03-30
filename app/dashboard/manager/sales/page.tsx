@@ -7,7 +7,6 @@ import Link from 'next/link'
 
 type ManagerSalesRow = {
   id: string
-  sale_number?: string | null
   tour: {
     company: string
   }
@@ -21,11 +20,7 @@ type ManagerSalesRow = {
   child_count: number
   concession_count: number
   total_amount: number | string
-  payment_method: 'online_yookassa' | 'cash' | 'acquiring'
   payment_status: 'pending' | 'completed' | 'failed'
-  promoter?: {
-    full_name?: string | null
-  } | null
 }
 
 export default function ManagerSalesPage() {
@@ -62,6 +57,7 @@ export default function ManagerSalesPage() {
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
+    { label: 'Реферальная программа', href: '/dashboard/manager/invitations' },
   ]
 
   return (
@@ -92,9 +88,6 @@ export default function ManagerSalesPage() {
                 {sales.map((sale) => (
                   <div key={sale.id} className="glass-card">
                     <div className="text-sm font-semibold text-white">
-                      {sale.sale_number && (
-                        <span className="text-white/60 mr-2">#{sale.sale_number}</span>
-                      )}
                       {sale.tour.company}
                       {sale.flight && ` — ${sale.flight.flight_number}`}
                     </div>
@@ -116,18 +109,6 @@ export default function ManagerSalesPage() {
                       <div className="text-white font-semibold">
                         {Number(sale.total_amount).toFixed(2)}₽
                       </div>
-                    </div>
-                    <div className="flex justify-between items-center mt-2 text-xs text-white/70">
-                      <span>
-                        {sale.payment_method === 'online_yookassa'
-                          ? 'Онлайн'
-                          : sale.payment_method === 'cash'
-                          ? 'Наличные'
-                          : 'Эквайринг'}
-                      </span>
-                      <span>
-                        {sale.promoter ? sale.promoter.full_name : 'Без промоутера'}
-                      </span>
                     </div>
                     <div className="mt-3">
                       <span
@@ -156,22 +137,16 @@ export default function ManagerSalesPage() {
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>№</th>
                         <th>Экскурсия</th>
                         <th>Дата</th>
                         <th>Билеты</th>
                         <th>Сумма</th>
-                        <th>Способ оплаты</th>
                         <th>Статус</th>
-                        <th>Промоутер</th>
                       </tr>
                     </thead>
                     <tbody>
                       {sales.map((sale) => (
                         <tr key={sale.id}>
-                          <td className="text-sm text-white/80 whitespace-nowrap">
-                            {sale.sale_number || '-'}
-                          </td>
                           <td>
                             <div className="text-sm font-medium text-white">
                               {sale.tour.company}
@@ -198,13 +173,6 @@ export default function ManagerSalesPage() {
                           <td className="text-sm font-medium text-white whitespace-nowrap">
                             {Number(sale.total_amount).toFixed(2)}₽
                           </td>
-                          <td className="text-sm text-white/70 whitespace-nowrap">
-                            {sale.payment_method === 'online_yookassa'
-                              ? 'Онлайн'
-                              : sale.payment_method === 'cash'
-                              ? 'Наличные'
-                              : 'Эквайринг'}
-                          </td>
                           <td className="whitespace-nowrap">
                             <span
                               className={`px-2 py-1 text-xs rounded-full border ${
@@ -221,9 +189,6 @@ export default function ManagerSalesPage() {
                                 ? 'Ожидание'
                                 : 'Ошибка'}
                             </span>
-                          </td>
-                          <td className="text-sm text-white/70 whitespace-nowrap">
-                            {sale.promoter ? sale.promoter.full_name : '-'}
                           </td>
                         </tr>
                       ))}

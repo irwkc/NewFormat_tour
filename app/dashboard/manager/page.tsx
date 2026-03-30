@@ -89,9 +89,11 @@ export default function ManagerDashboard() {
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
-    { label: 'Приглашения', href: '/dashboard/manager/invitations' },
+    { label: 'Реферальная программа', href: '/dashboard/manager/invitations' },
     { label: 'Настройки', href: '/dashboard/manager/settings' },
   ]
+
+  const netBalance = Number(user?.balance || 0) - Number(user?.debt_to_company || 0)
 
   return (
     <DashboardLayout title="Панель менеджера" navItems={navItems}>
@@ -101,21 +103,21 @@ export default function ManagerDashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-1">Доходы</h2>
-            <div className="text-3xl sm:text-4xl font-bold text-green-300 mb-1">
-              {Number(user?.balance || 0).toFixed(2)}₽
+            <h2 className="text-sm font-medium text-white/80 mb-1">Баланс</h2>
+            <div className={`text-3xl sm:text-4xl font-bold mb-1 ${netBalance >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              {netBalance.toFixed(2)}₽
             </div>
             <p className="text-xs text-white/60">
-              Это сумма, которую вы заработали за подтверждённые билеты.
+              Итог: доходы минус долг компании. Может быть отрицательным.
             </p>
           </div>
           <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-1">Долг компании</h2>
-            <div className="text-3xl sm:text-4xl font-bold text-red-300 mb-1">
-              {Number(user?.debt_to_company || 0).toFixed(2)}₽
+            <h2 className="text-sm font-medium text-white/80 mb-1">Ваш промо‑ID</h2>
+            <div className="text-2xl font-bold text-white mb-1">
+              {user?.promoter_id ?? '—'}
             </div>
             <p className="text-xs text-white/60">
-              Сумма, которую вы должны компании за продажи за наличные/эквайринг.
+              Идентификатор для реферальных продаж в системе.
             </p>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getNavForRole } from '@/lib/dashboard-nav'
+import { getPublicMarketingSiteOrigin } from '@/lib/urls/public-marketing-site'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -231,6 +232,14 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
               {/* Footer with Logout */}
               <div className="px-4 py-4 border-t border-white/10 space-y-2">
+                <a
+                  href={getPublicMarketingSiteOrigin()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full px-4 py-3 rounded-2xl text-center text-white/85 hover:text-white hover:bg-white/10 transition-all duration-200 font-medium border border-white/15"
+                >
+                  Сайт для гостей (nf-travel.ru)
+                </a>
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-3 rounded-2xl text-white/90 hover:text-white hover:bg-red-500/20 transition-all duration-200 font-medium text-left border border-red-500/30"

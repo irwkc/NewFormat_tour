@@ -287,6 +287,7 @@ export default function CreateSalePage() {
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
+    { label: 'Реферальная программа', href: '/dashboard/manager/invitations' },
   ]
 
   const minPrices = useMemo(() => {

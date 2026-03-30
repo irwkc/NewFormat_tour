@@ -26,16 +26,17 @@ type InvitationRow = {
   } | null
 }
 
-export default function InvitationsPage() {
+export default function ManagerInvitationsPage() {
   const { token } = useAuthStore()
   const [invitations, setInvitations] = useState<InvitationRow[]>([])
   const [loading, setLoading] = useState(true)
 
   const {
-    register,
     handleSubmit,
-    reset,
+    watch,
+    setValue,
     formState: { errors },
+    reset,
   } = useForm<CreateInvitationFormData>({
     resolver: zodResolver(createInvitationSchema),
     defaultValues: {
@@ -121,52 +122,74 @@ export default function InvitationsPage() {
 
   const navItems = [
     { label: 'Продажи', href: '/dashboard/manager/sales' },
-    { label: 'Баланс', href: '/dashboard/manager/balance-history' },
+    { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
-    { label: 'Приглашения', href: '/dashboard/manager/invitations' },
+    { label: 'Реферальная программа', href: '/dashboard/manager/invitations' },
   ]
 
   return (
-    <DashboardLayout title="Приглашения" navItems={navItems}>
+    <DashboardLayout title="Реферальная программа" navItems={navItems}>
       <div className="space-y-6">
         <div className="glass-card">
-          <h2 className="text-xl font-bold mb-4 text-white">Создать приглашение для промоутера</h2>
+          <h2 className="text-xl font-bold mb-4 text-white">Пригласить промоутера</h2>
+          
+          <div className="bg-white/10 rounded-2xl p-4 mb-6 border border-white/20">
+            <h3 className="text-lg font-semibold text-white mb-2">О реферальной программе</h3>
+            <p className="text-white/90 text-sm mb-3">
+              Приглашайте других промоутеров по реферальной ссылке и получайте бонусы!
+            </p>
+            <p className="text-white/90 text-sm">
+              Каждый промоутер, зарегистрированный по вашей реферальной ссылке, принесет вам дополнительные преимущества в системе.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <input
-              type="hidden"
-              {...register('target_role')}
-              value="promoter"
-            />
+            <div>
+              <label className="block text-sm font-medium text-white/90 mb-2">
+                Роль приглашаемого
+              </label>
+              <div className="input-glass flex items-center px-4 py-3">
+                <span className="text-white">Промоутер</span>
+              </div>
+              <p className="text-white/60 text-xs mt-1">Вы можете приглашать только других промоутеров</p>
+            </div>
 
             <button
               type="submit"
               className="btn-primary"
             >
-              Создать приглашение
+              Создать реферальное приглашение
             </button>
           </form>
         </div>
 
         <div className="glass-card overflow-hidden">
           <div className="px-6 py-4 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Список приглашений</h2>
+            <h2 className="text-xl font-bold text-white">Мои реферальные приглашения</h2>
           </div>
           {loading ? (
-            <div className="p-6 text-center text-white/70">Загрузка...</div>
+            <div className="p-6 text-center">
+              <div className="inline-flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <span className="ml-3 text-white/70">Загрузка...</span>
+              </div>
+            </div>
           ) : invitations.length === 0 ? (
-            <div className="p-6 text-center text-white/70">Нет приглашений</div>
+            <div className="p-6 text-center text-white/60">Нет приглашений</div>
           ) : (
             <div className="p-6">
               <div className="space-y-4">
                 {invitations.map((invitation) => (
-                  <div key={invitation.id} className="glass rounded-2xl p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="font-semibold text-white">Промоутер</div>
-                        <div className="text-sm text-white/70">
+                  <div key={invitation.id} className="bg-white/20 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-start gap-4 mb-2">
+                      <div className="flex-1">
+                        <div className="font-semibold text-white">
+                          Роль: Промоутер
+                        </div>
+                        <div className="text-sm text-white/90 mt-1">
                           Создано: {new Date(invitation.created_at).toLocaleString('ru-RU')}
                         </div>
-                        <div className="text-sm text-white/70">
+                        <div className="text-sm text-white/90">
                           Действительно до: {new Date(invitation.expires_at).toLocaleString('ru-RU')}
                         </div>
                         {invitation.is_used && invitation.usedBy && (
@@ -175,23 +198,23 @@ export default function InvitationsPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         {invitation.is_used ? (
-                          <span className="px-3 py-1 bg-green-300/30 text-green-200 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-green-500/50 text-green-100 rounded-full text-sm border border-green-400/50 font-medium">
                             Использовано
                           </span>
                         ) : new Date(invitation.expires_at) < new Date() ? (
-                          <span className="px-3 py-1 bg-red-300/30 text-red-200 rounded-full text-sm">
+                          <span className="px-3 py-1 bg-red-500/50 text-red-100 rounded-full text-sm border border-red-400/50 font-medium">
                             Истекло
                           </span>
                         ) : (
                           <>
-                            <span className="px-3 py-1 bg-yellow-300/30 text-yellow-200 rounded-full text-sm">
+                            <span className="px-3 py-1 bg-yellow-500/60 text-yellow-50 rounded-full text-sm border border-yellow-400/70 font-semibold">
                               Активно
                             </span>
                             <button
                               onClick={() => handleDelete(invitation.id)}
-                              className="text-red-300 hover:text-red-200 text-sm transition-colors"
+                              className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors"
                             >
                               Отозвать
                             </button>
@@ -200,18 +223,18 @@ export default function InvitationsPage() {
                       </div>
                     </div>
                     {!invitation.is_used && new Date(invitation.expires_at) >= new Date() && (
-                      <div className="mt-3">
-                        <div className="text-sm font-medium mb-1 text-white/90">Ссылка для регистрации:</div>
-                        <div className="flex items-center space-x-2">
+                      <div className="mt-3 pt-3 border-t border-white/20">
+                        <div className="text-sm font-medium mb-1 text-white">Реферальная ссылка для регистрации:</div>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <input
                             type="text"
                             readOnly
-                            value={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`}
+                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/register/${invitation.token}`}
                             className="flex-1 input-glass text-sm"
                           />
                           <button
-                            onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/register/${invitation.token}`)}
-                            className="btn-secondary text-sm px-3 py-2"
+                            onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/register/${invitation.token}`)}
+                            className="btn-secondary text-sm"
                           >
                             Копировать
                           </button>

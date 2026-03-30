@@ -340,7 +340,7 @@ export default function ManagerSettingsPage() {
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
-    { label: 'Приглашения', href: '/dashboard/manager/invitations' },
+    { label: 'Реферальная программа', href: '/dashboard/manager/invitations' },
     { label: 'Настройки', href: '/dashboard/manager/settings' },
   ]
 
