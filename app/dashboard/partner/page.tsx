@@ -33,6 +33,8 @@ type PartnerStats = {
 type PartnerDashboardMetrics = {
   turnover: number
   profit: number
+  paid?: number
+  unpaid_remaining: number
   sold_places: number
   tickets_count: number
 }
@@ -180,9 +182,10 @@ export default function PartnerDashboard() {
             </div>
           </div>
           <div className="glass-card p-5">
-            <h3 className="text-sm font-semibold mb-1 text-white/70">Общая сумма</h3>
-            <div className="text-2xl font-bold text-green-300">
-              {metrics ? Number(metrics.profit || 0).toFixed(2) : loading ? '—' : '0.00'}₽
+            <h3 className="text-sm font-semibold mb-1 text-white/70">Невыплаченный остаток</h3>
+            <p className="text-xs text-white/50 mb-1">Сколько владелец ещё должен выплатить за текущий период (после посадки минус выплаты).</p>
+            <div className="text-2xl font-bold text-amber-200">
+              {metrics ? Number(metrics.unpaid_remaining ?? 0).toFixed(2) : loading ? '—' : '0.00'}₽
             </div>
           </div>
           <div className="glass-card p-5">

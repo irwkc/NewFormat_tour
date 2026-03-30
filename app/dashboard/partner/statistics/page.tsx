@@ -9,6 +9,8 @@ import { customAlert } from '@/utils/modals'
 type PartnerStatsData = {
   turnover: number
   profit: number
+  paid?: number
+  unpaid_remaining: number
   sold_places: number
   tickets_count: number
 }
@@ -106,8 +108,9 @@ export default function PartnerStatisticsPage() {
               <div className="text-2xl font-bold text-purple-300">{Number(stats?.turnover || 0).toFixed(2)}₽</div>
             </div>
             <div className="glass-card p-5">
-              <h3 className="text-sm font-semibold mb-1 text-white/70">Прибыль</h3>
-              <div className="text-2xl font-bold text-green-300">{Number(stats?.profit || 0).toFixed(2)}₽</div>
+              <h3 className="text-sm font-semibold mb-1 text-white/70">Невыплаченный остаток</h3>
+              <p className="text-xs text-white/50 mb-1">Начислено за период минус выплаты от владельца.</p>
+              <div className="text-2xl font-bold text-amber-200">{Number(stats?.unpaid_remaining ?? 0).toFixed(2)}₽</div>
             </div>
             <div className="glass-card p-5">
               <h3 className="text-sm font-semibold mb-1 text-white/70">Проданных мест</h3>

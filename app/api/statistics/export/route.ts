@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, PaymentStatus } from '@prisma/client'
 import ExcelJS from 'exceljs'
+import { addOwnerEconomicsSheets } from '@/lib/excel/owner-economics'
+import { formatLocalYmd, formatPeriodRu, parseExportPeriod } from '@/lib/excel/parse-export-period'
 
 const MONTH_NAMES: Record<number, string> = {
   1: 'Январь', 2: 'Февраль', 3: 'Март', 4: 'Апрель', 5: 'Май', 6: 'Июнь',
@@ -25,9 +27,16 @@ export async function GET(request: NextRequest) {
         const isPartner = req.user!.role === UserRole.partner
         const partnerId = isPartner ? req.user!.userId : null
 
+        const { searchParams } = new URL(request.url)
+        const period = parseExportPeriod(searchParams)
+
         const workbook = new ExcelJS.Workbook()
-        
-        // Лист 1: Общая статистика
+
+        if (!isPartner) {
+          await addOwnerEconomicsSheets(workbook, req.user!.userId, period)
+        }
+
+        // Лист: Общая статистика
         const overviewSheet = workbook.addWorksheet('Общая статистика')
         overviewSheet.columns = [
           { header: 'Показатель', key: 'indicator', width: 30 },
@@ -36,38 +45,44 @@ export async function GET(request: NextRequest) {
 
         const saleWhere = {
           payment_status: PaymentStatus.completed,
+          created_at: { gte: period.start, lte: period.end },
           ...(partnerId ? { tour: { created_by_user_id: partnerId } } : {}),
         }
-        const ticketWhere = partnerId
-          ? { tour: { created_by_user_id: partnerId } }
-          : {}
+        const ticketWhere = {
+          created_at: { gte: period.start, lte: period.end },
+          ...(partnerId ? { tour: { created_by_user_id: partnerId } } : {}),
+        }
 
         const totalSales = await prisma.sale.count({ where: saleWhere })
         const totalRevenue = await prisma.sale.aggregate({
           where: saleWhere,
           _sum: { total_amount: true },
         })
-        const totalPlacesResult = partnerId
-          ? await prisma.$queryRaw<[{ total: bigint | null }]>`
-              SELECT COALESCE(SUM(t.adult_count + t.child_count + t.concession_count), 0)::bigint as total
-              FROM tickets t
-              JOIN tours tr ON t.tour_id = tr.id
-              WHERE tr.created_by_user_id = ${partnerId}
-            `
-          : await prisma.$queryRaw<[{ total: bigint | null }]>`
-              SELECT COALESCE(SUM(adult_count + child_count + concession_count), 0)::bigint as total
-              FROM tickets
-            `
-        const totalPlaces = Number(totalPlacesResult[0]?.total ?? 0)
+        const salesForPlaces = await prisma.sale.findMany({
+          where: saleWhere,
+          select: { adult_count: true, child_count: true, concession_count: true },
+        })
+        const totalPlaces = salesForPlaces.reduce(
+          (s, r) => s + r.adult_count + (r.child_count ?? 0) + (r.concession_count ?? 0),
+          0
+        )
         const usedTickets = await prisma.ticket.count({
-          where: { ticket_status: 'used', ...ticketWhere },
+          where: {
+            ticket_status: 'used',
+            used_at: { gte: period.start, lte: period.end },
+            ...(partnerId ? { tour: { created_by_user_id: partnerId } } : {}),
+          },
         })
 
         overviewSheet.addRows([
-          { indicator: 'Всего продаж', value: totalSales },
+          {
+            indicator: 'Период (продажи и билеты по дате создания/посадки — см. листы)',
+            value: formatPeriodRu(period.start, period.end),
+          },
+          { indicator: 'Всего продаж (оплачено)', value: totalSales },
           { indicator: 'Общая выручка', value: totalRevenue._sum.total_amount || 0 },
-          { indicator: 'Всего мест', value: totalPlaces },
-          { indicator: 'Использовано билетов', value: usedTickets },
+          { indicator: 'Всего мест (по продажам в периоде)', value: totalPlaces },
+          { indicator: 'Использовано билетов (посадка used в периоде)', value: usedTickets },
         ])
 
         // Лист 2: Продажи — подробная таблица (каждая строка = одна продажа)
@@ -243,10 +258,12 @@ export async function GET(request: NextRequest) {
         // Генерация файла
         const buffer = await workbook.xlsx.writeBuffer()
 
+        const fn = `statistics-${formatLocalYmd(period.start)}_${formatLocalYmd(period.end)}.xlsx`
+
         return new NextResponse(buffer, {
           headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition': `attachment; filename="statistics-${Date.now()}.xlsx"`,
+            'Content-Disposition': `attachment; filename="${fn}"`,
           },
         })
       } catch (error) {

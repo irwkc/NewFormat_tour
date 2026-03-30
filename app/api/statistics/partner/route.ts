@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { TicketStatus, UserRole } from '@prisma/client'
+import { BalanceType, TicketStatus, TransactionType, UserRole } from '@prisma/client'
 import { calcIncomeSplit } from '@/lib/domain/commission-calc'
 
 function parseDateRange(searchParams: URLSearchParams) {
@@ -115,12 +115,30 @@ export async function GET(request: NextRequest) {
           ticketsCount += 1
         }
 
+        const paidSumRow = await prisma.balanceHistory.aggregate({
+          where: {
+            user_id: req.user!.userId,
+            balance_type: BalanceType.balance,
+            transaction_type: TransactionType.debit,
+            description: { startsWith: 'Выплата партнёру' },
+            created_at: {
+              gte: start,
+              lte: end,
+            },
+          },
+          _sum: { amount: true },
+        })
+        const paid = Number(paidSumRow._sum.amount || 0)
+        const unpaid_remaining = Math.max(0, profit - paid)
+
         return NextResponse.json({
           success: true,
           data: {
             range: { start, end },
             turnover,
             profit,
+            paid,
+            unpaid_remaining,
             sold_places: soldPlaces,
             tickets_count: ticketsCount,
           },

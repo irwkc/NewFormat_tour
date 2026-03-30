@@ -95,7 +95,8 @@ export default function OwnerStatisticsPage() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/statistics/export', {
+      const qs = new URLSearchParams({ start_date: startDate, end_date: endDate })
+      const response = await fetch(`/api/statistics/export?${qs.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -104,7 +105,7 @@ export default function OwnerStatisticsPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `statistics-${new Date().toISOString().split('T')[0]}.xlsx`
+        a.download = `statistics-${startDate}_${endDate}.xlsx`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
