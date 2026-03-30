@@ -46,6 +46,11 @@ function applySaldo(cell: ExcelJS.Cell, n: number) {
   cell.numFmt = '#,##0.00'
 }
 
+/** Округление денег для нарастающего сальдо (2 знака). */
+function roundMoney(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100
+}
+
 type TourWithRules = {
   company: string
   createdBy?: { full_name?: string | null } | null
@@ -147,6 +152,11 @@ type CashbookLine = {
   /** Исходящая выплата (наличные/перевод с позиции владельца) */
   payoutOut: number
   counterparty: string
+  /**
+   * Вся сумма продажи, поступившая на счёт владельца (split.total = сумма билета).
+   * Для строк прихода; для выплат/начислений — 0.
+   */
+  grossToOwner: number
 }
 
 /** Листы для владельца: ИНФО, сводка, оборотная и зарплатная ведомости, кассовая книга — за выбранный период. */
@@ -297,6 +307,10 @@ export async function addOwnerEconomicsSheets(
   put('Период', formatPeriodRu(start, end))
   put('Сформировано', `${formatPeriod(generatedAt)} ${generatedAt.toLocaleTimeString('ru-RU')}`)
   put('Валюта', 'RUB (₽)')
+  put(
+    'Поступление денег',
+    'Все оплаты по продажам билетов в системе зачисляются на счёт / в кассу владельца (owner). Колонки «партнёр / промоутер / владелец» в отчётах — это распределение этой выручки по модели (доли и обязательства), а не отдельные входящие платежи на разные счета.'
+  )
   ir++
   info.getRow(ir).getCell(1).value = 'Назначение листов'
   info.getRow(ir).getCell(1).font = { bold: true }
@@ -312,7 +326,7 @@ export async function addOwnerEconomicsSheets(
   )
   put(
     'Кассовая книга',
-    'Хронология: приход по оплате (дата продажи в периоде) для sold и used — те же доли, что при посадке; если оплата раньше, а посадка в периоде — строка по дате used. Далее начисления на баланс и выплаты. Сальдо «нетто» — поток владельца по этим строкам минус выплаты.'
+    'Столбец «Поступило на счёт владельца» — вся сумма билета; далее доли из этой суммы. Сальдо «нетто» — накопленная доля владельца после модели минус фактические выплаты партнёрам и сотрудникам (начисление на баланс промоутеру сальдо владельца не меняет).'
   )
   put('Продажи / Билеты', 'Детальные реестры за тот же период (создание записи в периоде).')
   ir++
@@ -332,14 +346,21 @@ export async function addOwnerEconomicsSheets(
   info.getRow(ir).getCell(1).font = { bold: true }
   ir++
   put('Выручка (оборот)', 'Сумма полей оплаченных продаж total_amount за период.')
-  put('Модель комиссий', 'Расчёт calcIncomeSplit: как делится сумма продажи между владельцем, партнёром и промоутером по правилам тура.')
+  put(
+    'Модель комиссий',
+    'calcIncomeSplit: как из суммы, поступившей на счёт владельца, распределяются доли партнёра, промоутера и остаток владельца по правилам тура.'
+  )
   put(
     'Приход в кассовой книге',
-    'По умолчанию приход по дате оплаты (продажи): строка «Приход по оплате» — те же доли, что и при посадке, но деньги уже получены. Если оплата была вне периода, а посадка в периоде — строка «Посадка (used)».'
+    'Деньги приходят на счёт владельца целиком (столбец «всего» — сумма билета). Строки «Приход по оплате» / «Посадка» — когда отразить в периоде; доли партнёра/промоутера/владельца — это разделение уже поступившей суммы.'
   )
   put(
     'Выплата промоутеру/менеджеру',
     'В интерфейсе владелец вводит сумму (как выплата партнёру в расчётах). В истории: «Выплата промоутеру» / «Выплата менеджеру».'
+  )
+  put(
+    'Почему сальдо в кассовой книге бывает отрицательным',
+    'Колонка «Сальдо» — нарастающий итог только внутри выбранного периода (остаток на начало периода не подставляется). Формула: сумма долей владельца по строкам прихода минус сумма выплат за период. Если за месяц выплатили партнёрам/сотрудникам больше, чем «доля владельца» по билетам, которые попали в отчёт именно за этот период (например, касса за прошлые продажи), итог уйдёт в минус — это нормально при разнесении по периодам.'
   )
 
   // ——— 2. Сводка ———
@@ -592,6 +613,7 @@ export async function addOwnerEconomicsSheets(
       promoterShare: split.promoter,
       payoutOut: 0,
       counterparty: partnerName,
+      grossToOwner: split.total,
     })
   }
 
@@ -610,6 +632,7 @@ export async function addOwnerEconomicsSheets(
       promoterShare: Number(row.amount),
       payoutOut: 0,
       counterparty: who,
+      grossToOwner: 0,
     })
   }
 
@@ -629,6 +652,7 @@ export async function addOwnerEconomicsSheets(
       promoterShare: 0,
       payoutOut: amt,
       counterparty: partnerLabel,
+      grossToOwner: 0,
     })
   }
 
@@ -650,41 +674,53 @@ export async function addOwnerEconomicsSheets(
       promoterShare: 0,
       payoutOut: amt,
       counterparty: `${roleTag}: ${who}`,
+      grossToOwner: 0,
     })
   }
 
+  const kindOrder: Record<CashbookLine['kind'], number> = {
+    boarding: 0,
+    promoter_accrual: 1,
+    payout_partner: 2,
+    payout_staff: 3,
+  }
   cashLines.sort((a, b) => {
     const ta = a.at.getTime()
     const tb = b.at.getTime()
     if (ta !== tb) return ta - tb
+    const oa = kindOrder[a.kind]
+    const ob = kindOrder[b.kind]
+    if (oa !== ob) return oa - ob
     return a.tie.localeCompare(b.tie)
   })
 
   let ownerNetRunning = 0
   const withOwnerSaldo: (CashbookLine & { ownerSaldo: number })[] = []
   for (const L of cashLines) {
-    if (L.kind === 'boarding') ownerNetRunning += L.ownerShare
-    else if (L.kind === 'payout_partner' || L.kind === 'payout_staff') ownerNetRunning -= L.payoutOut
+    if (L.kind === 'boarding') ownerNetRunning = roundMoney(ownerNetRunning + L.ownerShare)
+    else if (L.kind === 'payout_partner' || L.kind === 'payout_staff')
+      ownerNetRunning = roundMoney(ownerNetRunning - L.payoutOut)
     withOwnerSaldo.push({ ...L, ownerSaldo: ownerNetRunning })
   }
 
   const cash = workbook.addWorksheet('Кассовая книга', {
     views: [{ state: 'frozen', ySplit: 3 }],
   })
-  cash.mergeCells(1, 1, 1, 10)
-  cash.getCell(1, 1).value = `Кассовая книга за период ${formatPeriodRu(start, end)} · приход по оплате (продажа в периоде) или по посадке (used), доли партнёр/владелец/промоутер; начисления на баланс; выплаты. Сальдо владельца (нетто) — доля владельца в этих строках минус выплаты.`
+  cash.mergeCells(1, 1, 1, 11)
+  cash.getCell(1, 1).value = `Кассовая книга за период ${formatPeriodRu(start, end)} · деньги поступают на счёт владельца; колонка «всего» — сумма билета; далее доли. Сальдо (нетто) — только за этот период с нуля: доля владельца по приходам минус выплаты. Минус возможен, если выплаты за период больше доли по приходам в том же периоде (см. блок итогов внизу листа).`
   cash.getCell(1, 1).font = { bold: true, size: 11 }
   cash.getCell(1, 1).alignment = { wrapText: true }
-  cash.getRow(1).height = 42
+  cash.getRow(1).height = 48
   cash.getRow(2).values = [
     'Период',
     'Тип',
     'Операция / основание',
-    'Партнёр ₽',
-    'Владелец ₽',
-    'Промоутер ₽',
+    'Поступило на счёт владельца, всего ₽',
+    'Партнёр (доля) ₽',
+    'Владелец (доля) ₽',
+    'Промоутер (доля) ₽',
     'Расход (выплата) ₽',
-    'Сальдо владельца (нетто) ₽',
+    'Сальдо владельца (нетто за период) ₽',
     'Контрагент',
     'Примечание',
   ]
@@ -692,19 +728,20 @@ export async function addOwnerEconomicsSheets(
   cash.columns = [
     { width: 11 },
     { width: 18 },
-    { width: 48 },
+    { width: 44 },
+    { width: 14 },
     { width: 12 },
     { width: 12 },
     { width: 12 },
     { width: 14 },
     { width: 16 },
     { width: 22 },
-    { width: 36 },
+    { width: 34 },
   ]
 
   let cr = 3
   if (withOwnerSaldo.length === 0) {
-    cash.mergeCells(cr, 1, cr, 10)
+    cash.mergeCells(cr, 1, cr, 11)
     cash.getCell(cr, 1).value =
       'За выбранный период нет движений: нет оплаченных билетов (по дате продажи или посадки), начислений на баланс и нет выплат от вашего имени.'
     cash.getCell(cr, 1).alignment = { wrapText: true }
@@ -715,24 +752,25 @@ export async function addOwnerEconomicsSheets(
       excelRow.getCell(1).value = row.period
       excelRow.getCell(2).value = row.kindLabel
       excelRow.getCell(3).value = row.operation
-      applyMoneyOptional(excelRow.getCell(4), row.partnerShare)
-      applyMoneyOptional(excelRow.getCell(5), row.ownerShare)
-      applyMoneyOptional(excelRow.getCell(6), row.promoterShare)
-      applyMoneyOptional(excelRow.getCell(7), row.payoutOut)
-      applySaldo(excelRow.getCell(8), row.ownerSaldo)
-      excelRow.getCell(9).value = row.counterparty
-      excelRow.getCell(10).value =
+      applyMoneyOptional(excelRow.getCell(4), row.grossToOwner)
+      applyMoneyOptional(excelRow.getCell(5), row.partnerShare)
+      applyMoneyOptional(excelRow.getCell(6), row.ownerShare)
+      applyMoneyOptional(excelRow.getCell(7), row.promoterShare)
+      applyMoneyOptional(excelRow.getCell(8), row.payoutOut)
+      applySaldo(excelRow.getCell(9), row.ownerSaldo)
+      excelRow.getCell(10).value = row.counterparty
+      excelRow.getCell(11).value =
         row.kind === 'boarding'
           ? row.kindLabel === 'Приход по оплате'
-            ? 'Доли по модели на дату оплаты (продажи); билет может быть sold или used'
-            : 'Доли на дату посадки; оплата была вне периода'
+            ? 'Вся сумма — на счёт владельца; далее доли из неё. Дата по оплате; билет sold или used'
+            : 'Вся сумма — на счёт владельца; доли на дату посадки; оплата была вне периода'
           : row.kind === 'promoter_accrual'
-            ? 'Факт кредита balance; дата может отличаться от посадки'
+            ? 'Начисление промоутеру; на счёт владельца новых денег нет; сальдо владельца не меняется'
             : row.kind === 'payout_partner'
-              ? 'Выплата с баланса партнёра (учёт владельца)'
-              : 'Выплата с баланса промоутера/менеджера'
+              ? 'Выплата с денег владельца партнёру'
+              : 'Выплата с денег владельца сотруднику'
       if (i % 2 === 1) {
-        for (let c = 1; c <= 10; c++) {
+        for (let c = 1; c <= 11; c++) {
           excelRow.getCell(c).fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -742,5 +780,35 @@ export async function addOwnerEconomicsSheets(
       }
       cr++
     }
+
+    let sumOwnerSharePeriod = 0
+    let sumPayoutPeriod = 0
+    let sumGrossPeriod = 0
+    for (const L of cashLines) {
+      if (L.kind === 'boarding') {
+        sumOwnerSharePeriod = roundMoney(sumOwnerSharePeriod + L.ownerShare)
+        sumGrossPeriod = roundMoney(sumGrossPeriod + L.grossToOwner)
+      } else if (L.kind === 'payout_partner' || L.kind === 'payout_staff') {
+        sumPayoutPeriod = roundMoney(sumPayoutPeriod + L.payoutOut)
+      }
+    }
+    const netOwnerPeriod = roundMoney(sumOwnerSharePeriod - sumPayoutPeriod)
+    const lastSaldo = withOwnerSaldo.length ? withOwnerSaldo[withOwnerSaldo.length - 1].ownerSaldo : 0
+
+    cr++
+    cash.mergeCells(cr, 1, cr, 11)
+    const foot = cash.getCell(cr, 1)
+    foot.value = [
+      'Итого за период (без остатка на начало):',
+      `Σ поступило на счёт владельца по строкам прихода: ${sumGrossPeriod.toFixed(2)} ₽`,
+      `Σ доля владельца по этим строкам: ${sumOwnerSharePeriod.toFixed(2)} ₽`,
+      `Σ выплаты партнёрам и сотрудникам: ${sumPayoutPeriod.toFixed(2)} ₽`,
+      `Нетто владельца за период (= последнее сальдо): ${netOwnerPeriod.toFixed(2)} ₽${Math.abs(netOwnerPeriod - lastSaldo) > 0.02 ? ' — расхождение проверки' : ''}`,
+      '',
+      'Отрицательное итоговое сальдо: в периоде выплатили больше, чем сумма «доли владельца» по билетам, учтённым в отчёте за этот период; часто выплаты покрываются деньгами, полученными раньше (в прошлых периодах).',
+    ].join('\n')
+    foot.alignment = { wrapText: true, vertical: 'top' }
+    foot.font = { size: 10 }
+    cash.getRow(cr).height = 110
   }
 }
