@@ -385,50 +385,121 @@ export async function addOwnerEconomicsSheets(
 
   // ——— 2. Сводка ———
   const summary = workbook.addWorksheet('Сводка за период', { views: [{ state: 'frozen', ySplit: 2 }] })
-  summary.mergeCells(1, 1, 1, 2)
+  summary.mergeCells(1, 1, 1, 3)
   const t1 = summary.getCell(1, 1)
   t1.value = `Сводка за период: ${formatPeriodRu(start, end)}`
   t1.font = { bold: true, size: 13 }
   t1.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true }
   summary.getRow(1).height = 24
-  summary.getRow(2).values = ['Показатель', 'Значение']
+  summary.getRow(2).values = ['Показатель', 'Значение', 'Пояснение для экономиста']
   styleHeaderRow(summary.getRow(2))
-  summary.columns = [{ width: 48 }, { width: 22 }]
+  summary.columns = [{ width: 44 }, { width: 20 }, { width: 62 }]
 
-  const summaryRows: [string, string | number][] = [
-    ['Количество оплаченных продаж, шт.', sales.length],
-    ['Мест (по продажам), шт.', places],
-    ['Мест фактически (прошла посадка, used в периоде), шт.', placesBoardedFact],
+  const summaryRows: [string, string | number, string][] = [
+    [
+      'Количество оплаченных продаж, шт.',
+      sales.length,
+      'Число сделок с успешной оплатой за отчётный период; дата — дата оплаты в системе.',
+    ],
+    [
+      'Мест (по продажам), шт.',
+      places,
+      'Суммарное количество проданных мест (взрослые, детские и льготные) по этим продажам.',
+    ],
+    [
+      'Мест фактически (прошла посадка, used в периоде), шт.',
+      placesBoardedFact,
+      'Места по билетам, у которых в периоде зафиксирована фактическая посадка (оказание услуги).',
+    ],
     [
       'Совокупный приход от несевших (оплачено в периоде, билет sold — посадка не пройдена), ₽',
       revenueSoldNotBoarded,
+      'Деньги, поступившие в периоде за билеты, по которым поездка ещё не состоялась; выручка «до реализации услуги».',
     ],
-    ['Выручка (сумма total_amount), ₽', sumRevenue],
-    ['Оборот по модели (Σ split.total), ₽', sumTurnoverModel],
-    ['Доля владельца по модели, ₽', sumOwnerModel],
-    ['Доля партнёра по модели, ₽', sumPartnerModel],
-    ['Доля промоутера по модели, ₽', sumPromoterModel],
-    ['Начислено промоутерам/менеджерам по системе (кредиты balance), ₽', sumPromoterFact],
-    ['Выплачено промоутерам/менеджерам с баланса (владелец), ₽', sumStaffPayouts],
-    ['Выплачено партнёрам (учёт владельца), ₽', sumPartnerPayouts],
-    ['в т.ч. выручка наличными, ₽', byPayment.cash],
-    ['в т.ч. выручка эквайринг, ₽', byPayment.acquiring],
-    ['в т.ч. выручка онлайн, ₽', byPayment.online_yookassa],
+    [
+      'Выручка (сумма total_amount), ₽',
+      sumRevenue,
+      'Полная сумма по оплаченным продажам за период — основа для анализа денежных поступлений.',
+    ],
+    [
+      'Оборот по модели (Σ split.total), ₽',
+      sumTurnoverModel,
+      'Совокупная стоимость билетов в расчёте распределения выручки между владельцем, партнёром и промоутером по правилам тура.',
+    ],
+    [
+      'Доля владельца по модели, ₽',
+      sumOwnerModel,
+      'Часть выручки после применения договорных минимальных цен и долей — остаётся у оператора (владельца тура).',
+    ],
+    [
+      'Доля партнёра по модели, ₽',
+      sumPartnerModel,
+      'Расчётная часть выручки, причитающаяся партнёру по условиям комиссии и цен на момент продажи.',
+    ],
+    [
+      'Доля промоутера по модели, ₽',
+      sumPromoterModel,
+      'Расчётная часть выручки, относимая на вознаграждение промоутера по правилам тура.',
+    ],
+    [
+      'Начислено промоутерам/менеджерам по системе (кредиты balance), ₽',
+      sumPromoterFact,
+      'Сумма начислений сотрудникам в учёте за период — возникшие обязательства перед ними по начисленной части.',
+    ],
+    [
+      'Выплачено промоутерам/менеджерам с баланса (владелец), ₽',
+      sumStaffPayouts,
+      'Фактические выплаты сотрудникам, проведённые владельцем за период (списание с их учётного баланса в системе).',
+    ],
+    [
+      'Выплачено партнёрам (учёт владельца), ₽',
+      sumPartnerPayouts,
+      'Сумма выплат партнёрам за период по данным учёта владельца.',
+    ],
+    [
+      'в т.ч. выручка наличными, ₽',
+      byPayment.cash,
+      'Доля общей выручки, приходящаяся на оплату наличными.',
+    ],
+    [
+      'в т.ч. выручка эквайринг, ₽',
+      byPayment.acquiring,
+      'Доля выручки, прошедшая через банковский эквайринг (безнал по терминалу).',
+    ],
+    [
+      'в т.ч. выручка онлайн, ₽',
+      byPayment.online_yookassa,
+      'Доля выручки от онлайн-оплат (например, через платёжный шлюз).',
+    ],
     [
       'Оплаченных билетов по дате продажи в периоде (для кассовой книги «Приход по оплате»), шт.',
       cashbookTickets.filter((t) => {
         const d = new Date(t.sale.created_at)
         return d >= start && d <= end
       }).length,
+      'Количество билетов, у которых дата оплаты (продажи) попадает в отчётный период; соответствует приходам по оплате в кассовой книге.',
     ],
-    ['Посадок (билетов used) в периоде, шт.', usedTickets.length],
+    [
+      'Посадок (билетов used) в периоде, шт.',
+      usedTickets.length,
+      'Число билетов с посадкой в периоде по дате использования — для сопоставления с денежным потоком по датам оплаты.',
+    ],
   ]
   let sr = 3
-  for (const [label, val] of summaryRows) {
+  for (const [label, val, economistNote] of summaryRows) {
     const row = summary.getRow(sr)
     row.getCell(1).value = label
+    row.getCell(3).value = economistNote
+    row.getCell(3).alignment = { vertical: 'top', wrapText: true }
     if (typeof val === 'number') {
-      applyMoney(row.getCell(2), val)
+      const cell = row.getCell(2)
+      cell.value = val
+      // Счётчики в штуках — без формата «деньги с копейками»
+      if (label.includes('шт.') || label.includes('штук')) {
+        cell.numFmt = '#,##0'
+      } else {
+        applyMoney(cell, val)
+      }
     } else {
       row.getCell(2).value = val
     }
