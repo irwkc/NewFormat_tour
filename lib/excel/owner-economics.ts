@@ -263,6 +263,23 @@ export async function addOwnerEconomicsSheets(
       d.description === 'Выплата владельцем, баланс обнулен'
   )
 
+  const placesBoardedFact = usedTickets.reduce(
+    (s, t) => s + t.adult_count + (t.child_count ?? 0) + (t.concession_count ?? 0),
+    0
+  )
+
+  const ticketsSoldNotBoarded = await prisma.ticket.findMany({
+    where: {
+      ticket_status: TicketStatus.sold,
+      sale: {
+        payment_status: PaymentStatus.completed,
+        created_at: { gte: start, lte: end },
+      },
+    },
+    include: { sale: { select: { total_amount: true } } },
+  })
+  const revenueSoldNotBoarded = ticketsSoldNotBoarded.reduce((s, t) => s + Number(t.sale.total_amount), 0)
+
   let sumRevenue = 0
   let sumOwnerModel = 0
   let sumPartnerModel = 0
@@ -315,7 +332,10 @@ export async function addOwnerEconomicsSheets(
   info.getRow(ir).getCell(1).value = 'Назначение листов'
   info.getRow(ir).getCell(1).font = { bold: true }
   ir++
-  put('Сводка за период', 'Ключевые показатели по оплаченным продажам за период (дата оплаты = дата продажи в системе).')
+  put(
+    'Сводка за период',
+    'Ключевые показатели по оплаченным продажам за период (дата оплаты = дата продажи). «Мест фактически» — места по билетам с посадкой (used) в периоде. «Приход от несевших» — сумма total_amount по билетам в статусе sold (оплата в периоде, посадка ещё не отмечена).'
+  )
   put(
     'Оборотная ведомость',
     'Структура выручки по способам оплаты и распределение по модели комиссий (владелец / партнёр / промоутер).'
@@ -378,6 +398,11 @@ export async function addOwnerEconomicsSheets(
   const summaryRows: [string, string | number][] = [
     ['Количество оплаченных продаж, шт.', sales.length],
     ['Мест (по продажам), шт.', places],
+    ['Мест фактически (прошла посадка, used в периоде), шт.', placesBoardedFact],
+    [
+      'Совокупный приход от несевших (оплачено в периоде, билет sold — посадка не пройдена), ₽',
+      revenueSoldNotBoarded,
+    ],
     ['Выручка (сумма total_amount), ₽', sumRevenue],
     ['Оборот по модели (Σ split.total), ₽', sumTurnoverModel],
     ['Доля владельца по модели, ₽', sumOwnerModel],
