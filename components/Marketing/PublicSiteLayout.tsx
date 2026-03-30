@@ -14,7 +14,7 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
         className="sticky top-0 z-50 border-b border-white/10 bg-[#0f172a]"
         style={headerSurfaceStyle}
       >
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-3 min-h-[3.25rem] sm:min-h-16 py-2 sm:py-0">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 flex items-center min-h-[3.25rem] sm:min-h-16 py-2 sm:py-0">
           <NextLink
             href="/"
             className="flex items-center gap-2 sm:gap-2.5 min-h-[44px] min-w-0 -ml-0.5 sm:ml-0 rounded-xl active:bg-white/5"
@@ -30,12 +30,6 @@ export function PublicSiteLayout({ children }: { children: React.ReactNode }) {
             <span className="font-semibold text-white text-sm sm:text-base leading-tight font-[family-name:var(--font-poppins)]">
               {SITE_PUBLIC.siteName}
             </span>
-          </NextLink>
-          <NextLink
-            href="/auth/login"
-            className="shrink-0 rounded-xl border border-amber-300/35 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-100 hover:bg-amber-400/18 hover:border-amber-300/50 transition-colors min-h-[44px] inline-flex items-center justify-center"
-          >
-            Войти
           </NextLink>
         </div>
       </header>
