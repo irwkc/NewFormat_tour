@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole, PaymentMethod, PaymentStatus } from '@prisma/client'
+import { deleteSaleCascadeById } from '@/lib/domain/cleanup-stale-sales'
 
 // GET /api/sales/:id - детали продажи
 export async function GET(
@@ -177,11 +178,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.$transaction(async (tx) => {
-          await tx.balanceHistory.deleteMany({ where: { sale_id: id } })
-          await tx.yookassaPayment.deleteMany({ where: { sale_id: id } })
-          await tx.sale.delete({ where: { id } })
-        })
+        await deleteSaleCascadeById(id)
 
         return NextResponse.json({ success: true })
       } catch (error) {
