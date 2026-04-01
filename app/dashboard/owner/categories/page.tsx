@@ -86,7 +86,7 @@ export default function OwnerCategoriesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    const confirmed = await customConfirm('Удалить категорию?')
+    const confirmed = await customConfirm('Удалить категорию?', undefined, { destructive: true })
     if (!confirmed) return
 
     try {

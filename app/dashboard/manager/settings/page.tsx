@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { normalizeUserFacingMessage } from '@/utils/user-facing-message'
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Минимум 2 символа'),
@@ -176,7 +177,7 @@ export default function ManagerSettingsPage() {
       } else {
         setProfileMessage({
           type: 'error',
-          text: result.error || 'Ошибка обновления профиля',
+          text: normalizeUserFacingMessage(result.error || 'Ошибка обновления профиля'),
         })
       }
     } catch {
@@ -208,7 +209,7 @@ export default function ManagerSettingsPage() {
       } else {
         setPasswordMessage({
           type: 'error',
-          text: result.error || 'Ошибка изменения пароля',
+          text: normalizeUserFacingMessage(result.error || 'Ошибка изменения пароля'),
         })
       }
     } catch {
@@ -243,7 +244,7 @@ export default function ManagerSettingsPage() {
       } else {
         setEmailMessage({
           type: 'error',
-          text: result.error || 'Ошибка изменения email',
+          text: normalizeUserFacingMessage(result.error || 'Ошибка изменения email'),
         })
       }
     } catch {
@@ -273,7 +274,7 @@ export default function ManagerSettingsPage() {
       } else {
         setLogoutAllMessage({
           type: 'error',
-          text: result.error || 'Не удалось завершить сессии',
+          text: normalizeUserFacingMessage(result.error || 'Не удалось завершить сессии'),
         })
       }
     } catch {

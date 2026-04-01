@@ -1,19 +1,12 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react'
 import Modal from '../UI/Modal'
-import { setModalFunctions } from '@/utils/modals'
-
-interface ConfirmOptions {
-  title?: string
-  message: string
-  confirmText?: string
-  cancelText?: string
-}
+import { setModalFunctions, type AlertVariant, type ConfirmOptions } from '@/utils/modals'
 
 interface ModalContextType {
   confirm: (options: ConfirmOptions) => Promise<boolean>
-  alert: (message: string, title?: string) => Promise<void>
+  alert: (message: string, title?: string, options?: { variant?: AlertVariant }) => Promise<void>
 }
 
 const ModalContext = createContext<ModalContextType | null>(null)
@@ -21,7 +14,7 @@ const ModalContext = createContext<ModalContextType | null>(null)
 export function useModalContext() {
   const context = useContext(ModalContext)
   if (!context) {
-    throw new Error('useModalContext must be used within ModalProvider')
+    throw new Error('useModalContext: нужен ModalProvider')
   }
   return context
 }
@@ -37,10 +30,11 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     isOpen: boolean
     message: string
     title?: string
+    variant: AlertVariant
     resolve: () => void
   } | null>(null)
 
-  const confirm = (options: ConfirmOptions): Promise<boolean> => {
+  const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
       setConfirmState({
         isOpen: true,
@@ -48,18 +42,22 @@ export function ModalProvider({ children }: { children: ReactNode }) {
         resolve,
       })
     })
-  }
+  }, [])
 
-  const alert = (message: string, title?: string): Promise<void> => {
-    return new Promise((resolve) => {
-      setAlertState({
-        isOpen: true,
-        message,
-        title,
-        resolve,
+  const alert = useCallback(
+    (message: string, title?: string, options?: { variant?: AlertVariant }): Promise<void> => {
+      return new Promise((resolve) => {
+        setAlertState({
+          isOpen: true,
+          message,
+          title,
+          variant: options?.variant ?? 'default',
+          resolve,
+        })
       })
-    })
-  }
+    },
+    []
+  )
 
   const handleConfirm = () => {
     if (confirmState) {
@@ -83,18 +81,16 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Устанавливаем глобальные функции для использования в любом месте
     setModalFunctions(
       (options) => confirm(options),
-      (message, title) => alert(message, title)
+      (message, title, opts) => alert(message, title, opts)
     )
   }, [confirm, alert])
 
   return (
     <ModalContext.Provider value={{ confirm, alert }}>
       {children}
-      
-      {/* Confirm Dialog */}
+
       {confirmState && (
         <Modal
           isOpen={confirmState.isOpen}
@@ -105,20 +101,21 @@ export function ModalProvider({ children }: { children: ReactNode }) {
           onCancel={handleCancel}
           confirmText={confirmState.options.confirmText}
           cancelText={confirmState.options.cancelText}
+          destructive={confirmState.options.destructive}
         >
-          <p>{confirmState.options.message}</p>
+          <p className="whitespace-pre-wrap leading-relaxed">{confirmState.options.message}</p>
         </Modal>
       )}
 
-      {/* Alert Dialog */}
       {alertState && (
         <Modal
           isOpen={alertState.isOpen}
           onClose={handleAlertClose}
-          title={alertState.title || 'Уведомление'}
+          title={alertState.title ?? 'Уведомление'}
           type="alert"
+          variant={alertState.variant}
         >
-          <p>{alertState.message}</p>
+          <p className="whitespace-pre-wrap leading-relaxed">{alertState.message}</p>
         </Modal>
       )}
     </ModalContext.Provider>

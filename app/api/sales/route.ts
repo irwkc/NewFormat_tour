@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { z } from 'zod'
 import { createSaleSchema, createSaleDomain } from '@/lib/domain/sales'
 import { canCreateSale } from '@/lib/permissions'
@@ -36,6 +36,15 @@ export async function GET(request: NextRequest) {
 
         if (status) {
           where.payment_status = status
+        }
+
+        // Наличные/эквайринг до загрузки фото и создания билета остаются в БД как pending,
+        // в списке продаж их не показываем — только после оплаты (completed).
+        where.NOT = {
+          AND: [
+            { payment_method: { in: [PaymentMethod.cash, PaymentMethod.acquiring] } },
+            { payment_status: PaymentStatus.pending },
+          ],
         }
 
         const sales = await prisma.sale.findMany({

@@ -1,4 +1,12 @@
-export { customAlert, customConfirm, setModalFunctions } from './modals'
+export {
+  customAlert,
+  customConfirm,
+  setModalFunctions,
+  type AlertVariant,
+  type CustomAlertOptions,
+  type ConfirmOptions,
+} from './modals'
+export { normalizeUserFacingMessage } from './user-facing-message'
 export { generateQRCode } from './qr'
 export { preprocessImageData } from './face-preprocess'
 export { computeMinDistance, FACE_MATCH_THRESHOLD } from './face-descriptor'

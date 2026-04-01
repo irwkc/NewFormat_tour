@@ -120,7 +120,9 @@ function OwnerTeamContent() {
   }
 
   const handleResetDebt = async (userId: string) => {
-    const confirmed = await customConfirm('Обнулить долг компании этого менеджера?')
+    const confirmed = await customConfirm('Обнулить долг компании этого менеджера?', undefined, {
+      destructive: true,
+    })
     if (!confirmed) return
 
     try {

@@ -93,7 +93,7 @@ export default function ManagerInvitationsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    const confirmed = await customConfirm('Отозвать приглашение?')
+    const confirmed = await customConfirm('Отозвать приглашение?', undefined, { destructive: true })
     if (!confirmed) return
 
     try {

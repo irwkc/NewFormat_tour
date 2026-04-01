@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import { PaymentMethod, PaymentStatus } from '@prisma/client'
+import { PaymentStatus } from '@prisma/client'
 
-/** По умолчанию удаляем «зависшие» продажи старше этого возраста (минуты). */
-export const DEFAULT_STALE_PENDING_SALE_MINUTES = 30
+/** По умолчанию удаляем незавершённые (pending, без билета) продажи старше этого возраста (минуты). */
+export const DEFAULT_STALE_PENDING_SALE_MINUTES = 10
 
 /** Удаление продажи и связанных записей (без билета — вызывающий проверяет). */
 export async function deleteSaleCascadeById(saleId: string): Promise<void> {
@@ -14,19 +14,18 @@ export async function deleteSaleCascadeById(saleId: string): Promise<void> {
 }
 
 /**
- * Неоплаченные наличные/эквайринг без билета старше cutoff — удаляем (как ручная «Отмена»).
+ * Любая продажа в pending без билета старше cutoff — удаляем (наличные, эквайринг, онлайн и т.д.).
  * Места на рейс не трогаем — они учитываются только после создания билета.
  */
-export async function deleteStalePendingCashAcquiringSalesWithoutTicket(
+export async function deleteStalePendingSalesWithoutTicket(
   maxAgeMinutes: number
 ): Promise<{ count: number; ids: string[] }> {
-  const ms = Math.max(5, maxAgeMinutes) * 60 * 1000
+  const ms = Math.max(1, maxAgeMinutes) * 60 * 1000
   const cutoff = new Date(Date.now() - ms)
 
   const stale = await prisma.sale.findMany({
     where: {
       payment_status: PaymentStatus.pending,
-      payment_method: { in: [PaymentMethod.cash, PaymentMethod.acquiring] },
       created_at: { lt: cutoff },
       ticket: { is: null },
     },

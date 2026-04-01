@@ -125,7 +125,9 @@ export default function PartnerDashboard() {
   }
 
   const handleDelete = async (tourId: string) => {
-    const confirmed = await customConfirm('Удалить экскурсию? Это действие нельзя отменить.')
+    const confirmed = await customConfirm('Удалить экскурсию? Это действие нельзя отменить.', undefined, {
+      destructive: true,
+    })
     if (!confirmed) return
     try {
       const r = await fetch(`/api/tours/${tourId}`, {

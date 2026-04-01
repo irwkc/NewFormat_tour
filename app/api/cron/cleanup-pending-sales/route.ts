@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   DEFAULT_STALE_PENDING_SALE_MINUTES,
-  deleteStalePendingCashAcquiringSalesWithoutTicket,
+  deleteStalePendingSalesWithoutTicket,
 } from '@/lib/domain/cleanup-stale-sales'
 
 /**
- * Периодическая очистка незавершённых продаж (наличные/эквайринг без билета).
+ * Периодическая очистка незавершённых продаж (pending, без билета, старше порога).
  * Вызывать по cron (например Vercel Cron) с секретом в Authorization.
  *
  * Env: CRON_SECRET — обязателен в проде.
- * Env: STALE_PENDING_SALE_MINUTES — возраст в минутах (по умолчанию 30).
+ * Env: STALE_PENDING_SALE_MINUTES — возраст в минутах (по умолчанию 10).
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET?.trim()
@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
 
   const raw = process.env.STALE_PENDING_SALE_MINUTES
   const minutes = raw != null && raw !== '' ? Number(raw) : DEFAULT_STALE_PENDING_SALE_MINUTES
-  const maxAge = Number.isFinite(minutes) && minutes >= 5 ? minutes : DEFAULT_STALE_PENDING_SALE_MINUTES
+  const maxAge = Number.isFinite(minutes) && minutes >= 1 ? minutes : DEFAULT_STALE_PENDING_SALE_MINUTES
 
   try {
-    const result = await deleteStalePendingCashAcquiringSalesWithoutTicket(maxAge)
+    const result = await deleteStalePendingSalesWithoutTicket(maxAge)
     return NextResponse.json({
       success: true,
       data: {
