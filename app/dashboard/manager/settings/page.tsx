@@ -28,14 +28,6 @@ type ProfileFormData = z.infer<typeof profileSchema>
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 type ChangeEmailFormData = z.infer<typeof changeEmailSchema>
 
-type NotificationSettings = {
-  notify_new_sale_email: boolean
-  notify_refund_email: boolean
-  notify_flight_change_email: boolean
-  notify_account_block_email: boolean
-  notify_promoter_report_email: boolean
-}
-
 type LoginLog = {
   id: string
   ip_address: string | null
@@ -60,8 +52,6 @@ export default function ManagerSettingsPage() {
   const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [notifications, setNotifications] = useState<NotificationSettings | null>(null)
-  const [notificationsMessage, setNotificationsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [logins, setLogins] = useState<LoginLog[]>([])
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [securityLoading, setSecurityLoading] = useState(false)
@@ -121,16 +111,6 @@ export default function ManagerSettingsPage() {
         const profileJson = await profileRes.json()
         const loginsJson = await loginsRes.json()
         const sessionsJson = await sessionsRes.json()
-
-        if (profileJson.success) {
-          setNotifications({
-            notify_new_sale_email: !!profileJson.data.notify_new_sale_email,
-            notify_refund_email: !!profileJson.data.notify_refund_email,
-            notify_flight_change_email: !!profileJson.data.notify_flight_change_email,
-            notify_account_block_email: !!profileJson.data.notify_account_block_email,
-            notify_promoter_report_email: !!profileJson.data.notify_promoter_report_email,
-          })
-        }
 
         if (loginsJson.success) {
           setLogins(loginsJson.data)
@@ -270,38 +250,6 @@ export default function ManagerSettingsPage() {
       setEmailMessage({
         type: 'error',
         text: 'Ошибка изменения email',
-      })
-    }
-  }
-
-  const onSaveNotifications = async () => {
-    if (!token || !notifications) return
-    try {
-      setNotificationsMessage(null)
-      const response = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(notifications),
-      })
-      const result = await response.json()
-      if (result.success) {
-        setNotificationsMessage({
-          type: 'success',
-          text: 'Настройки уведомлений сохранены',
-        })
-      } else {
-        setNotificationsMessage({
-          type: 'error',
-          text: result.error || 'Ошибка сохранения уведомлений',
-        })
-      }
-    } catch {
-      setNotificationsMessage({
-        type: 'error',
-        text: 'Ошибка сохранения уведомлений',
       })
     }
   }
@@ -557,123 +505,6 @@ export default function ManagerSettingsPage() {
               {emailSubmitting ? 'Сохранение...' : 'Изменить email'}
             </button>
           </form>
-        </div>
-
-        <div className="glass-card p-6">
-          <h2 className="text-2xl font-bold mb-4 text-white">Уведомления по email</h2>
-          <p className="text-sm text-white/70 mb-4">
-            Выберите, о чём присылать письма на ваш email.
-          </p>
-
-          {notifications ? (
-            <div className="space-y-4">
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={notifications.notify_new_sale_email}
-                  onChange={(e) =>
-                    setNotifications({
-                      ...notifications,
-                      notify_new_sale_email: e.target.checked,
-                    })
-                  }
-                />
-                <div>
-                  <div className="text-sm font-medium text-white">
-                    Новые продажи
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Письмо при каждой новой продаже, где вы указаны продавцом.
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={notifications.notify_refund_email}
-                  onChange={(e) =>
-                    setNotifications({
-                      ...notifications,
-                      notify_refund_email: e.target.checked,
-                    })
-                  }
-                />
-                <div>
-                  <div className="text-sm font-medium text-white">
-                    Возвраты
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Уведомления о возвратах по вашим продажам.
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={notifications.notify_flight_change_email}
-                  onChange={(e) =>
-                    setNotifications({
-                      ...notifications,
-                      notify_flight_change_email: e.target.checked,
-                    })
-                  }
-                />
-                <div>
-                  <div className="text-sm font-medium text-white">
-                    Изменения рейсов
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Письма об изменениях времени/даты рейсов по вашим продажам.
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={notifications.notify_account_block_email}
-                  onChange={(e) =>
-                    setNotifications({
-                      ...notifications,
-                      notify_account_block_email: e.target.checked,
-                    })
-                  }
-                />
-                <div>
-                  <div className="text-sm font-medium text-white">
-                    Блокировка аккаунта
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Уведомления о блокировке и разблокировке вашего аккаунта.
-                  </div>
-                </div>
-              </label>
-
-              {notificationsMessage && (
-                <div
-                  className={
-                    notificationsMessage.type === 'success'
-                      ? 'alert-success'
-                      : 'alert-error'
-                  }
-                >
-                  <p className="text-sm font-medium">{notificationsMessage.text}</p>
-                </div>
-              )}
-
-              <button type="button" className="btn-primary" onClick={onSaveNotifications}>
-                Сохранить настройки уведомлений
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm text-white/60">Загрузка настроек...</p>
-          )}
         </div>
 
         <div className="glass-card p-6">

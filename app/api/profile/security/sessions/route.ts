@@ -14,37 +14,37 @@ type SessionSummary = {
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req: AuthRequest) => {
     try {
-      const logs = await prisma.$queryRawUnsafe<
-        {
-          id: string
-          user_id: string
-          ip_address: string | null
-          user_agent: string | null
-          success: boolean
-          created_at: Date
-        }[]
-      >(
-        'SELECT id, user_id, ip_address, user_agent, success, created_at FROM "user_login_logs" WHERE user_id = $1 AND success = true ORDER BY created_at DESC LIMIT 100',
-        req.user!.userId
-      )
+      const logs = await prisma.userLoginLog.findMany({
+        where: { user_id: req.user!.userId, success: true },
+        orderBy: { created_at: 'desc' },
+        take: 200,
+        select: {
+          ip_address: true,
+          user_agent: true,
+          created_at: true,
+        },
+      })
 
       const map = new Map<string, SessionSummary>()
 
       for (const log of logs) {
         const key = `${log.ip_address || 'unknown'}|${log.user_agent || 'unknown'}`
         const existing = map.get(key)
+        const t = log.created_at.toISOString()
         if (!existing) {
           map.set(key, {
             id: key,
             ip_address: log.ip_address,
             user_agent: log.user_agent,
-            last_seen_at: log.created_at.toISOString(),
-            first_seen_at: log.created_at.toISOString(),
+            last_seen_at: t,
+            first_seen_at: t,
             attempts: 1,
           })
         } else {
           existing.attempts += 1
-          existing.first_seen_at = log.created_at.toISOString()
+          if (log.created_at < new Date(existing.first_seen_at)) {
+            existing.first_seen_at = t
+          }
         }
       }
 

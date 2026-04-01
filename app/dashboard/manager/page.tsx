@@ -82,20 +82,18 @@ export default function ManagerDashboard() {
         <RoleOnboardingOverlay role="manager" onFinish={finishOnboarding} />
       )}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-1">Баланс</h2>
-            <div className={`text-3xl sm:text-4xl font-bold mb-1 ${netBalance >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-              {netBalance.toFixed(2)}₽
-            </div>
-          </div>
-          <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-3">Действия</h2>
-            <Link href="/dashboard/manager/sales/create" className="btn-primary w-full text-center">
-              Продать
-            </Link>
+        <div className="glass-card">
+          <h2 className="text-sm font-medium text-white/80 mb-1">Баланс</h2>
+          <div className={`text-3xl sm:text-4xl font-bold mb-1 ${netBalance >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+            {netBalance.toFixed(2)}₽
           </div>
         </div>
+        <Link
+          href="/dashboard/manager/sales/create"
+          className="btn-primary w-full block text-center py-5 text-lg md:text-xl font-bold rounded-2xl"
+        >
+          Продать
+        </Link>
 
         <div className="grid grid-cols-1 gap-6">
           <details className="glass-card open:shadow-xl sm:open:block" open>

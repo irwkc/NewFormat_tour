@@ -6,6 +6,7 @@ import { verifyTurnstile } from '@/lib/turnstile'
 import { requiresCaptcha as ipRequiresCaptcha, recordFail, recordSuccess } from '@/lib/rate-limit'
 import { sendPushToUser } from '@/lib/push'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 const loginSchema = z.object({
   email: z.string().email().optional(),
@@ -196,7 +197,8 @@ export async function POST(request: NextRequest) {
       // ignore logging errors
     }
 
-    if (isNewIp && ip && user.email) {
+    const skipStaffLoginAlerts = user.role === UserRole.manager || user.role === UserRole.promoter
+    if (isNewIp && ip && user.email && !skipStaffLoginAlerts) {
       try {
         await sendNewLoginFromIpEmail(user.email, ip, userAgent)
         await sendPushToUser(user.id, {

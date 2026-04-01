@@ -17,12 +17,17 @@ const updateTourSchema = z.object({
 })
 
 // GET /api/tours/:id - детали экскурсии
+// ?full_schedule=1 — все рейсы по дате (в т.ч. уже начавшиеся), для страницы экскурсии
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params
+    const { searchParams } = new URL(request.url)
+    const fullSchedule =
+      searchParams.get('full_schedule') === '1' ||
+      searchParams.get('full_schedule') === 'true'
 
     const tour = await prisma.tour.findUnique({
       where: { id },
@@ -56,10 +61,13 @@ export async function GET(
       )
     }
 
-    const filteredFlights = (tour.flights || []).filter((f) => !isFlightStarted(f.departure_time))
+    const flights = tour.flights || []
+    const outFlights = fullSchedule
+      ? flights
+      : flights.filter((f) => !isFlightStarted(f.departure_time))
     return NextResponse.json({
       success: true,
-      data: { ...tour, flights: filteredFlights },
+      data: { ...tour, flights: outFlights },
     })
   } catch (error) {
     console.error('Get tour error:', error)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuthStore } from '@/store/auth'
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
 
@@ -17,10 +18,14 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function PushProvider({ children }: { children: React.ReactNode }) {
   const [initialized, setInitialized] = useState(false)
+  const { user, hydrated } = useAuthStore()
 
   useEffect(() => {
     if (initialized) return
     if (typeof window === 'undefined') return
+    if (!hydrated) return
+    const role = user?.role
+    if (role === 'manager' || role === 'promoter') return
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     if (!VAPID_PUBLIC_KEY) return
 
@@ -54,7 +59,7 @@ export function PushProvider({ children }: { children: React.ReactNode }) {
     }
 
     registerAndSubscribe()
-  }, [initialized])
+  }, [initialized, hydrated, user?.role])
 
   return <>{children}</>
 }

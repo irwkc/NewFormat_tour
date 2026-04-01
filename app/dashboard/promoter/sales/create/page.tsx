@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -82,6 +82,8 @@ export default function CreateSalePage() {
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [paymentLink, setPaymentLink] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [tourIdFromUrl, setTourIdFromUrl] = useState<string | null>(null)
+  const appliedTourFromUrl = useRef(false)
 
   const {
     register,
@@ -112,6 +114,22 @@ export default function CreateSalePage() {
   useEffect(() => {
     fetchTours()
   }, [token])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const q = new URLSearchParams(window.location.search).get('tourId')
+    setTourIdFromUrl(q && /^[0-9a-f-]{36}$/i.test(q) ? q : null)
+  }, [])
+
+  useEffect(() => {
+    if (!tourIdFromUrl || !tours.length || appliedTourFromUrl.current) return
+    const t = tours.find((x) => x.id === tourIdFromUrl)
+    if (t) {
+      setSelectedCategory('all')
+      setValue('tour_id', tourIdFromUrl, { shouldValidate: true })
+      appliedTourFromUrl.current = true
+    }
+  }, [tours, tourIdFromUrl, setValue])
 
   useEffect(() => {
     if (selectedTourId) {

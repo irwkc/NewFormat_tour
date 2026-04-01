@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthRequest } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
+import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 import sharp from 'sharp'
 import { mkdir } from 'fs/promises'
@@ -50,9 +51,22 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      const isStaffSales =
+        req.user!.role === UserRole.manager || req.user!.role === UserRole.promoter
+      const payload = isStaffSales
+        ? {
+            ...user,
+            notify_new_sale_email: false,
+            notify_refund_email: false,
+            notify_flight_change_email: false,
+            notify_account_block_email: false,
+            notify_promoter_report_email: false,
+          }
+        : user
+
       return NextResponse.json({
         success: true,
-        data: user,
+        data: payload,
       })
     } catch (error) {
       console.error('Get profile error:', error)
@@ -68,6 +82,7 @@ export async function PATCH(request: NextRequest) {
   return withAuth(request, async (req: AuthRequest) => {
     try {
       const body = await request.json()
+      const isStaffSales = req.user!.role === UserRole.manager || req.user!.role === UserRole.promoter
 
       const profileResult = updateProfileSchema.safeParse(body)
       const notificationsResult = updateNotificationsSchema.safeParse(body)
@@ -97,7 +112,7 @@ export async function PATCH(request: NextRequest) {
         }
       }
 
-      if (notificationsResult.success) {
+      if (notificationsResult.success && !isStaffSales) {
         const {
           notify_new_sale_email,
           notify_refund_email,
@@ -120,6 +135,14 @@ export async function PATCH(request: NextRequest) {
         if (typeof notify_promoter_report_email === 'boolean') {
           data.notify_promoter_report_email = notify_promoter_report_email
         }
+      }
+
+      if (isStaffSales) {
+        data.notify_new_sale_email = false
+        data.notify_refund_email = false
+        data.notify_flight_change_email = false
+        data.notify_account_block_email = false
+        data.notify_promoter_report_email = false
       }
 
       if (Object.keys(data).length === 0) {
