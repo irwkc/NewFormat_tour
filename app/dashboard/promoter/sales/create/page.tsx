@@ -83,7 +83,9 @@ export default function CreateSalePage() {
   const [paymentLink, setPaymentLink] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [tourIdFromUrl, setTourIdFromUrl] = useState<string | null>(null)
+  const [flightIdFromUrl, setFlightIdFromUrl] = useState<string | null>(null)
   const appliedTourFromUrl = useRef(false)
+  const prevTourIdFromFormRef = useRef<string | undefined>(undefined)
 
   const {
     register,
@@ -117,30 +119,42 @@ export default function CreateSalePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const q = new URLSearchParams(window.location.search).get('tourId')
-    setTourIdFromUrl(q && /^[0-9a-f-]{36}$/i.test(q) ? q : null)
+    const q = new URLSearchParams(window.location.search)
+    const tid = q.get('tourId')
+    const fid = q.get('flightId')
+    setTourIdFromUrl(tid && /^[0-9a-f-]{36}$/i.test(tid) ? tid : null)
+    setFlightIdFromUrl(fid && /^[0-9a-f-]{36}$/i.test(fid) ? fid : null)
   }, [])
 
   useEffect(() => {
     if (!tourIdFromUrl || !tours.length || appliedTourFromUrl.current) return
     const t = tours.find((x) => x.id === tourIdFromUrl)
-    if (t) {
-      setSelectedCategory('all')
-      setValue('tour_id', tourIdFromUrl, { shouldValidate: true })
-      appliedTourFromUrl.current = true
+    if (!t) return
+    setSelectedCategory('all')
+    setValue('tour_id', tourIdFromUrl, { shouldValidate: true })
+    if (flightIdFromUrl && t.flights?.some((f) => f.id === flightIdFromUrl)) {
+      setValue('flight_id', flightIdFromUrl, { shouldValidate: true })
     }
-  }, [tours, tourIdFromUrl, setValue])
+    appliedTourFromUrl.current = true
+  }, [tours, tourIdFromUrl, flightIdFromUrl, setValue])
 
   useEffect(() => {
     if (selectedTourId) {
-      const tour = tours.find(t => t.id === selectedTourId)
+      const tour = tours.find((t) => t.id === selectedTourId)
       setSelectedTour(tour || null)
-      setValue('flight_id', '' as any, { shouldValidate: false })
+      if (
+        prevTourIdFromFormRef.current !== undefined &&
+        prevTourIdFromFormRef.current !== selectedTourId
+      ) {
+        setValue('flight_id', '' as any, { shouldValidate: false })
+      }
+      prevTourIdFromFormRef.current = selectedTourId
     } else {
       setSelectedTour(null)
       setValue('flight_id', '' as any, { shouldValidate: false })
+      prevTourIdFromFormRef.current = undefined
     }
-  }, [selectedTourId, tours])
+  }, [selectedTourId, tours, setValue])
 
   useEffect(() => {
     if (!childCount) {

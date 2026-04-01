@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
-import { isFlightStarted } from '@/lib/moscow-time'
 
 type TourFlight = {
   id: string
@@ -49,7 +48,7 @@ export default function PromoterTourDetailsPage() {
     if (!token || !params?.id) return
     const run = async () => {
       try {
-        const res = await fetch(`/api/tours/${params.id}?full_schedule=1`, {
+        const res = await fetch(`/api/tours/${params.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         const data = await res.json()
@@ -63,7 +62,7 @@ export default function PromoterTourDetailsPage() {
 
   return (
     <DashboardLayout title="Экскурсия">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto">
         <div className="glass-card space-y-4">
           {loading ? (
             <div className="text-white/70">Загрузка...</div>
@@ -102,38 +101,39 @@ export default function PromoterTourDetailsPage() {
                 {!tour.flights?.length ? (
                   <p className="text-white/60 text-sm">Нет рейсов в расписании.</p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 list-none p-0 m-0">
                     {tour.flights.map((f) => {
-                      const started = isFlightStarted(new Date(f.departure_time))
                       const { dateStr, timeStr } = formatFlightWhen(f)
                       const free = Math.max(0, f.max_places - f.current_booked_places)
                       return (
-                        <li
-                          key={f.id}
-                          className={`rounded-xl border border-white/15 px-4 py-3 text-sm ${
-                            started ? 'opacity-60' : ''
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <span className="text-white font-medium">
-                              {dateStr} · {timeStr}
-                              {f.duration_minutes != null && f.duration_minutes > 0 && (
-                                <span className="text-white/70 font-normal">
-                                  {' '}
-                                  ({f.duration_minutes} мин.)
+                        <li key={f.id}>
+                          <div className="flex items-center gap-3 rounded-xl border border-white/15 px-4 py-3 text-sm">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-white font-medium">
+                                {dateStr} · {timeStr}
+                                {f.duration_minutes != null && f.duration_minutes > 0 && (
+                                  <span className="text-white/70 font-normal">
+                                    {' '}
+                                    ({f.duration_minutes} мин.)
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-1 text-white/80">№ {f.flight_number}</div>
+                              <div className="mt-1 text-white/70 flex flex-wrap gap-x-3 gap-y-1">
+                                <span>
+                                  Свободно мест: {free} из {f.max_places}
                                 </span>
-                              )}
-                            </span>
-                            <span className="text-white/80">№ {f.flight_number}</span>
-                          </div>
-                          <div className="mt-1 text-white/70 flex flex-wrap gap-x-3 gap-y-1">
-                            <span>
-                              Свободно мест: {free} из {f.max_places}
-                            </span>
-                            {f.is_sale_stopped && !started && (
-                              <span className="text-amber-300">Продажи остановлены</span>
-                            )}
-                            {started && <span className="text-white/50">Рейс завершён</span>}
+                                {f.is_sale_stopped && (
+                                  <span className="text-amber-300">Продажи остановлены</span>
+                                )}
+                              </div>
+                            </div>
+                            <Link
+                              href={`/dashboard/promoter/sales/create?tourId=${tour.id}&flightId=${f.id}`}
+                              className="btn-primary shrink-0 px-4 py-2.5 text-sm font-semibold rounded-xl whitespace-nowrap text-center"
+                            >
+                              Выбрать
+                            </Link>
                           </div>
                         </li>
                       )
@@ -144,15 +144,6 @@ export default function PromoterTourDetailsPage() {
             </>
           )}
         </div>
-
-        {!loading && tour && (
-          <Link
-            href={`/dashboard/promoter/sales/create?tourId=${tour.id}`}
-            className="btn-primary w-full block text-center py-5 text-lg md:text-xl font-bold rounded-2xl"
-          >
-            Продать
-          </Link>
-        )}
       </div>
     </DashboardLayout>
   )
