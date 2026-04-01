@@ -8,30 +8,24 @@ import { RoleOnboardingOverlay } from '@/components/Onboarding/RoleOnboardingOve
 
 type DashboardFlight = {
   id: string
+  date: string
+  departure_time: string
+  duration_minutes?: number | null
 }
 
 type DashboardTour = {
   id: string
   company: string
+  category?: { name?: string } | null
+  description?: string | null
+  photo_urls?: unknown
   flights?: DashboardFlight[]
-}
-
-type DashboardSale = {
-  id: string
-  tour?: {
-    company?: string
-  }
-  adult_count: number
-  child_count: number
-  concession_count: number
-  total_amount: number | string
 }
 
 export default function PromoterDashboard() {
   const { token, user } = useAuthStore()
   const [tours, setTours] = useState<DashboardTour[]>([])
-  const [sales, setSales] = useState<DashboardSale[]>([])
-  const [balanceHistory, setBalanceHistory] = useState<unknown[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -53,31 +47,15 @@ export default function PromoterDashboard() {
 
   const fetchData = async () => {
     try {
-      const [toursRes, salesRes, historyRes] = await Promise.all([
-        fetch('/api/tours?moderation_status=approved', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }),
-        fetch('/api/sales', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }),
-        fetch('/api/users/me/balance-history', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }),
-      ])
+      const toursRes = await fetch('/api/tours?moderation_status=approved', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
 
       const toursData = await toursRes.json()
-      const salesData = await salesRes.json()
-      const historyData = await historyRes.json()
 
       if (toursData.success) setTours(toursData.data)
-      if (salesData.success) setSales(salesData.data)
-      if (historyData.success) setBalanceHistory(historyData.data)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -92,6 +70,9 @@ export default function PromoterDashboard() {
     { label: 'Реферальная программа', href: '/dashboard/promoter/invitations' },
     { label: 'Настройки', href: '/dashboard/promoter/settings' },
   ]
+  const categories = Array.from(new Set(tours.map((t) => t.category?.name).filter((name): name is string => Boolean(name))))
+  const filteredTours =
+    selectedCategory === 'all' ? tours : tours.filter((tour) => (tour.category?.name || '') === selectedCategory)
 
   return (
     <DashboardLayout title="Панель промоутера" navItems={navItems}>
@@ -101,26 +82,20 @@ export default function PromoterDashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-1">Доходы</h2>
+            <h2 className="text-sm font-medium text-white/80 mb-1">Баланс</h2>
             <div className="text-3xl sm:text-4xl font-bold text-green-300 mb-1">
               {Number(user?.balance || 0).toFixed(2)}₽
             </div>
-            <p className="text-xs text-white/60">
-              Сумма, которую вы заработали за подтверждённые билеты.
-            </p>
           </div>
           <div className="glass-card">
-            <h2 className="text-sm font-medium text-white/80 mb-1">Ваш промо‑ID</h2>
-            <div className="text-2xl font-bold text-white mb-1">
-              {user?.promoter_id ?? '—'}
-            </div>
-            <p className="text-xs text-white/60">
-              Показывайте этот ID менеджеру при продаже за вас.
-            </p>
+            <h2 className="text-sm font-medium text-white/80 mb-3">Действия</h2>
+            <Link href="/dashboard/promoter/sales/create" className="btn-primary w-full text-center">
+              Продать
+            </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <details className="glass-card open:shadow-xl sm:open:block" open>
             <summary className="sm:hidden cursor-pointer list-none mb-2 text-sm font-semibold text-white">
               Доступные экскурсии
@@ -135,45 +110,50 @@ export default function PromoterDashboard() {
             ) : tours.length === 0 ? (
               <p className="text-white/60 text-center py-4">Нет доступных экскурсий</p>
             ) : (
-              <div className="space-y-2">
-                {tours.slice(0, 5).map((tour) => (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-white/80">Тип рейса:</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="input-glass max-w-xs py-2"
+                  >
+                    <option value="all">Все</option>
+                    {categories.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {filteredTours.length === 0 && (
+                  <p className="text-white/60 text-center py-4">Нет экскурсий в выбранной категории</p>
+                )}
+                {filteredTours.slice(0, 5).map((tour) => (
                   <Link
                     key={tour.id}
-                    href={`/dashboard/promoter/sales/create?tourId=${tour.id}`}
-                    className="block p-3 rounded-xl border border-white/20 hover:bg-white/10 transition-all duration-200"
+                    href={`/dashboard/promoter/tours/${tour.id}`}
+                    className="block rounded-xl border border-white/20 p-3 hover:bg-white/10 transition-all duration-200"
                   >
-                    <div className="font-semibold text-white">{tour.company}</div>
-                    <div className="text-sm text-white/70">
-                      Рейсов: {tour.flights?.length || 0}
-                    </div>
+                    <div className="font-semibold text-white mb-2">{tour.company}</div>
+                    {tour.flights?.[0] ? (
+                      <div className="text-sm text-white/70">
+                        <div>
+                          Ближайший рейс:{' '}
+                          {new Date(tour.flights[0].departure_time).toLocaleString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                        <div>Длительность: {tour.flights[0].duration_minutes ?? 0} мин.</div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-white/70">Нет доступных рейсов</div>
+                    )}
                   </Link>
-                ))}
-              </div>
-            )}
-          </details>
-
-          <details className="glass-card open:shadow-xl sm:open:block" open>
-            <summary className="sm:hidden cursor-pointer list-none mb-2 text-sm font-semibold text-white">
-              Последние продажи
-            </summary>
-            <div className="hidden sm:block">
-              <h3 className="text-lg font-semibold mb-4 text-white">Последние продажи</h3>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-              </div>
-            ) : sales.length === 0 ? (
-              <p className="text-white/60 text-center py-4">Нет продаж</p>
-            ) : (
-              <div className="space-y-2">
-                {sales.slice(0, 5).map((sale) => (
-                  <div key={sale.id} className="p-3 rounded-xl border border-white/20">
-                    <div className="font-semibold text-white">{sale.tour?.company || 'Экскурсия'}</div>
-                    <div className="text-sm text-white/70">
-                      {sale.adult_count} взр. {sale.child_count > 0 && `${sale.child_count} дет.`} {sale.concession_count > 0 && `${sale.concession_count} льг.`} - {Number(sale.total_amount).toFixed(2)}₽
-                    </div>
-                  </div>
                 ))}
               </div>
             )}

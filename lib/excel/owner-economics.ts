@@ -423,12 +423,6 @@ export async function addOwnerEconomicsSheets(
   const summaryRows: SummaryEntry[] = [
     {
       kind: 'row',
-      label: 'Количество оплаченных продаж, шт.',
-      value: sales.length,
-      note: 'Число сделок с успешной оплатой; в интервал отчёта попадает дата продажи.',
-    },
-    {
-      kind: 'row',
       label: 'Мест (по продажам), шт.',
       value: places,
       note: 'Суммарно проданные места (взрослые, детские и льготные) по этим продажам.',

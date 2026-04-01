@@ -81,6 +81,7 @@ export default function CreateSalePage() {
   const [error, setError] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [paymentLink, setPaymentLink] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState('all')
 
   const {
     register,
@@ -226,6 +227,14 @@ export default function CreateSalePage() {
     const minConcession = Number(selectedTour.owner_min_concession_price ?? flightConcession ?? selectedTour.partner_min_concession_price ?? 0)
     return { minAdult, minChild, minConcession }
   }, [selectedTour, selectedFlight])
+  const categories = useMemo(
+    () => Array.from(new Set(tours.map((t) => t.category?.name).filter((name): name is string => Boolean(name)))),
+    [tours]
+  )
+  const filteredTours = useMemo(
+    () => (selectedCategory === 'all' ? tours : tours.filter((tour) => (tour.category?.name || '') === selectedCategory)),
+    [tours, selectedCategory]
+  )
 
   return (
     <DashboardLayout title="Создание продажи" navItems={navItems}>
@@ -244,9 +253,24 @@ export default function CreateSalePage() {
                     <p className="text-red-300 text-xs">{errors.tour_id.message}</p>
                   )}
                 </div>
+                <div className="mb-2 flex items-center gap-3">
+                  <label className="text-sm text-white/80">Тип рейса:</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="input-glass max-w-xs py-2"
+                  >
+                    <option value="all">Все</option>
+                    {categories.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {tours.map((tour) => {
+                  {filteredTours.map((tour) => {
                     const isSelected = selectedTourId === tour.id
                     const firstFlight = tour.flights?.[0]
                     const flightsCount = tour.flights?.length || 0

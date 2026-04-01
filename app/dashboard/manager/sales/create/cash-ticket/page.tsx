@@ -8,10 +8,15 @@ import { z } from 'zod'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
 
-const cashTicketSchema = z.object({
-  ticket_photo: z.any().optional(),
-  customer_email: z.string().optional(),
-})
+const cashTicketSchema = z
+  .object({
+    ticket_photo: z.any(),
+    customer_email: z.string().optional(),
+  })
+  .refine((data) => data.ticket_photo && typeof data.ticket_photo.length === 'number' && data.ticket_photo.length > 0, {
+    message: 'Загрузите фото билета',
+    path: ['ticket_photo'],
+  })
 
 type CashTicketFormData = z.infer<typeof cashTicketSchema>
 
@@ -22,8 +27,32 @@ function CashTicketPageContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [sale, setSale] = useState<{ sale_number?: string | null; total_amount?: number | string } | null>(null)
+  const [saleLoading, setSaleLoading] = useState(true)
 
   const saleId = searchParams?.get('sale_id')
+
+  useEffect(() => {
+    if (!saleId || !token) {
+      setSaleLoading(false)
+      return
+    }
+    setSaleLoading(true)
+    fetch(`/api/sales/${saleId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data) {
+          setSale({
+            sale_number: d.data.sale_number ?? null,
+            total_amount: d.data.total_amount ?? 0,
+          })
+        } else {
+          setSale(null)
+        }
+      })
+      .catch(() => setSale(null))
+      .finally(() => setSaleLoading(false))
+  }, [saleId, token])
 
   const {
     register,
@@ -60,15 +89,13 @@ function CashTicketPageContent() {
       setError(null)
       setLoading(true)
 
-      let photoBase64: string | undefined
-      if (data.ticket_photo?.[0]) {
-        photoBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(data.ticket_photo[0])
-        })
-      }
+      const file = data.ticket_photo[0]
+      const photoBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
 
       const response = await fetch('/api/tickets', {
         method: 'POST',
@@ -109,7 +136,34 @@ function CashTicketPageContent() {
       <div className="space-y-6 max-w-2xl mx-auto">
         <div className="glass-card">
           <h2 className="text-2xl font-bold mb-6 text-white">Подтверждение продажи (наличные)</h2>
-          <p className="text-white/70 text-sm mb-4">Билеты безномерные. Нажмите «Создать билет» для завершения продажи.</p>
+
+          <div className="mb-6 p-4 rounded-xl bg-white/10 border border-white/20 space-y-2">
+            {saleLoading ? (
+              <p className="text-white/70">Загрузка данных заказа...</p>
+            ) : sale ? (
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <span className="text-white/60 text-sm">Код заказа (6 цифр с чека):</span>
+                    <div className="text-2xl font-bold text-white tracking-widest mt-1">{sale.sale_number || '—'}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-white/60 text-sm">Сумма к оплате:</span>
+                    <div className="text-2xl font-bold text-white mt-1">
+                      {Number(sale.total_amount ?? 0).toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                </div>
+                <p className="text-white/50 text-xs mt-2">Укажите этот код при проверке билета на посадке</p>
+              </>
+            ) : (
+              <p className="text-white/70">Заказ не найден. Проверьте ссылку.</p>
+            )}
+          </div>
+
+          <p className="text-white/70 text-sm mb-4">
+            Билеты безномерные. Загрузите фото билета и нажмите «Создать билет» для завершения продажи.
+          </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -129,7 +183,7 @@ function CashTicketPageContent() {
 
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
-                Фото билета (опционально)
+                Фото билета *
               </label>
               <input
                 {...register('ticket_photo')}
