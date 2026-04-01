@@ -165,6 +165,7 @@ export default function CreateSalePage() {
     const load = async () => {
       try {
         const res = await fetch('/api/app-settings', {
+          credentials: 'include',
           headers: { Authorization: `Bearer ${token}` },
         })
         const j = await res.json()
@@ -233,10 +234,15 @@ export default function CreateSalePage() {
       prevTourIdFromFormRef.current = selectedTourId
     } else {
       setSelectedTour(null)
-      setValue('flight_id', '' as any, { shouldValidate: false })
+      // Пока в URL есть tourId+flightId, не обнуляем рейс в том же тике, что и загрузка туров —
+      // иначе эффект успевает очистить flight_id до подстановки из другого useEffect (гонка / гидратация).
+      const waitingFromUrl = Boolean(tourIdFromUrl && flightIdFromUrl)
+      if (!waitingFromUrl) {
+        setValue('flight_id', '' as any, { shouldValidate: false })
+      }
       prevTourIdFromFormRef.current = undefined
     }
-  }, [selectedTourId, tours, setValue])
+  }, [selectedTourId, tours, setValue, tourIdFromUrl, flightIdFromUrl])
 
   useEffect(() => {
     if (!childCount) setValue('child_price', undefined, { shouldValidate: true })

@@ -149,10 +149,13 @@ export default function CreateSalePage() {
       prevTourIdFromFormRef.current = selectedTourId
     } else {
       setSelectedTour(null)
-      setValue('flight_id', '' as any, { shouldValidate: false })
+      const waitingFromUrl = Boolean(tourIdFromUrl && flightIdFromUrl)
+      if (!waitingFromUrl) {
+        setValue('flight_id', '' as any, { shouldValidate: false })
+      }
       prevTourIdFromFormRef.current = undefined
     }
-  }, [selectedTourId, tours, setValue])
+  }, [selectedTourId, tours, setValue, tourIdFromUrl, flightIdFromUrl])
 
   useEffect(() => {
     if (!childCount) {

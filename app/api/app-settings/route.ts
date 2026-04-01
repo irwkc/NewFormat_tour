@@ -8,22 +8,19 @@ const patchSchema = z.object({
   max_manager_percent_of_ticket_for_promoter_sale: z.number().min(0).max(100),
 })
 
+/** Чтение лимита — любой авторизованный пользователь ЛК (не только менеджер: иначе 403 и лишние ошибки в консоли). */
 export async function GET(request: NextRequest) {
-  return withAuth(
-    request,
-    async () => {
-      const settings = await getAppSettings()
-      return NextResponse.json({
-        success: true,
-        data: {
-          max_manager_percent_of_ticket_for_promoter_sale: Number(
-            settings.max_manager_percent_of_ticket_for_promoter_sale
-          ),
-        },
-      })
-    },
-    [UserRole.owner, UserRole.manager]
-  )
+  return withAuth(request, async () => {
+    const settings = await getAppSettings()
+    return NextResponse.json({
+      success: true,
+      data: {
+        max_manager_percent_of_ticket_for_promoter_sale: Number(
+          settings.max_manager_percent_of_ticket_for_promoter_sale
+        ),
+      },
+    })
+  })
 }
 
 export async function PATCH(request: NextRequest) {
