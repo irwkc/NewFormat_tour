@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useAuthStore } from '@/store/auth'
-import Link from 'next/link'
-
 type PromoterSalesRow = {
   id: string
   tour: {
@@ -61,21 +59,8 @@ export default function PromoterSalesPage() {
   ]
 
   return (
-    <DashboardLayout title="Мои продажи" navItems={navItems}>
+    <DashboardLayout title="Продажи" navItems={navItems}>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Мои продажи</h2>
-            <p className="text-white/70 text-sm mt-1">История всех ваших продаж</p>
-          </div>
-          <Link
-            href="/dashboard/promoter/sales/create"
-            className="btn-primary"
-          >
-            + Создать продажу
-          </Link>
-        </div>
-
         <div className="table-container">
           {loading ? (
             <div className="p-6 text-center text-white/70">Загрузка...</div>

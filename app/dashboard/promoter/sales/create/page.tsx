@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -81,7 +82,7 @@ export default function CreateSalePage() {
   const [error, setError] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [paymentLink, setPaymentLink] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [toursLoaded, setToursLoaded] = useState(false)
   const [tourIdFromUrl, setTourIdFromUrl] = useState<string | null>(null)
   const [flightIdFromUrl, setFlightIdFromUrl] = useState<string | null>(null)
   const appliedTourFromUrl = useRef(false)
@@ -130,7 +131,6 @@ export default function CreateSalePage() {
     if (!tourIdFromUrl || !tours.length || appliedTourFromUrl.current) return
     const t = tours.find((x) => x.id === tourIdFromUrl)
     if (!t) return
-    setSelectedCategory('all')
     setValue('tour_id', tourIdFromUrl, { shouldValidate: true })
     if (flightIdFromUrl && t.flights?.some((f) => f.id === flightIdFromUrl)) {
       setValue('flight_id', flightIdFromUrl, { shouldValidate: true })
@@ -181,6 +181,8 @@ export default function CreateSalePage() {
       }
     } catch (error) {
       console.error('Error fetching tours:', error)
+    } finally {
+      setToursLoaded(true)
     }
   }
 
@@ -259,14 +261,11 @@ export default function CreateSalePage() {
     const minConcession = Number(selectedTour.owner_min_concession_price ?? flightConcession ?? selectedTour.partner_min_concession_price ?? 0)
     return { minAdult, minChild, minConcession }
   }, [selectedTour, selectedFlight])
-  const categories = useMemo(
-    () => Array.from(new Set(tours.map((t) => t.category?.name).filter((name): name is string => Boolean(name)))),
-    [tours]
-  )
-  const filteredTours = useMemo(
-    () => (selectedCategory === 'all' ? tours : tours.filter((tour) => (tour.category?.name || '') === selectedCategory)),
-    [tours, selectedCategory]
-  )
+
+  const flightNotInTour =
+    toursLoaded &&
+    Boolean(tourIdFromUrl && flightIdFromUrl && selectedTour) &&
+    !selectedTour?.flights?.some((f) => f.id === flightIdFromUrl)
 
   return (
     <DashboardLayout title="Создание продажи" navItems={navItems}>
@@ -275,120 +274,74 @@ export default function CreateSalePage() {
           <h2 className="text-2xl font-bold mb-6 text-white">Создать продажу</h2>
 
           {!qrCode ? (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-white/90">
-                    Экскурсия *
-                  </label>
-                  {errors.tour_id && (
-                    <p className="text-red-300 text-xs">{errors.tour_id.message}</p>
-                  )}
+            <>
+              {!toursLoaded ? (
+                <div className="text-white/70 py-8 text-center">Загрузка...</div>
+              ) : tourIdFromUrl && !flightIdFromUrl ? (
+                <div className="text-white/80 space-y-4">
+                  <p>Выберите рейс на странице экскурсии.</p>
+                  <Link href={`/dashboard/promoter/tours/${tourIdFromUrl}`} className="btn-primary inline-block">
+                    К экскурсии
+                  </Link>
                 </div>
-                <div className="mb-2 flex items-center gap-3">
-                  <label className="text-sm text-white/80">Тип рейса:</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="input-glass max-w-xs py-2"
-                  >
-                    <option value="all">Все</option>
-                    {categories.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
+              ) : flightNotInTour ? (
+                <div className="text-white/80 space-y-4">
+                  <p>Выбранный рейс недоступен или ссылка устарела.</p>
+                  <Link href="/dashboard/promoter" className="btn-primary inline-block">
+                    На главную
+                  </Link>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredTours.map((tour) => {
-                    const isSelected = selectedTourId === tour.id
-                    const firstFlight = tour.flights?.[0]
-                    const flightsCount = tour.flights?.length || 0
-                    return (
-                      <button
-                        key={tour.id}
-                        type="button"
-                        onClick={() => setValue('tour_id', tour.id, { shouldValidate: true })}
-                        className={`text-left glass rounded-2xl p-4 border transition-all ${
-                          isSelected ? 'border-white/60 bg-white/10' : 'border-white/20 hover:bg-white/10'
-                        }`}
+              ) : !selectedTour || !selectedFlight ? (
+                <div className="text-white/80 space-y-4">
+                  <p>Откройте экскурсию на главной и нажмите «Выбрать» у нужного рейса.</p>
+                  <Link href="/dashboard/promoter" className="btn-primary inline-block">
+                    На главную
+                  </Link>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="rounded-xl border border-white/15 p-4 space-y-2 text-sm mb-2">
+                    <div className="text-lg font-semibold text-white">{selectedTour.company}</div>
+                    {selectedTour.category?.name && (
+                      <p className="text-white/60 text-sm">{selectedTour.category.name}</p>
+                    )}
+                    <div className="pt-2 border-t border-white/10">
+                      <div className="text-white font-medium">
+                        {new Date(selectedFlight.date).toLocaleDateString('ru-RU', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                        {' · '}
+                        {new Date(selectedFlight.departure_time).toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                      <div className="mt-1 text-white/80">№ {selectedFlight.flight_number}</div>
+                      <div className="mt-1 text-white/70">
+                        Свободно мест:{' '}
+                        {Math.max(0, selectedFlight.max_places - selectedFlight.current_booked_places)} из{' '}
+                        {selectedFlight.max_places}
+                        {selectedFlight.is_sale_stopped && (
+                          <span className="text-amber-300 ml-2">Продажи остановлены</span>
+                        )}
+                      </div>
+                    </div>
+                    {selectedFlight.boarding_location_url && (
+                      <a
+                        className="inline-block text-sm text-blue-300 hover:text-blue-200 underline"
+                        href={selectedFlight.boarding_location_url}
+                        target="_blank"
+                        rel="noreferrer"
                       >
-                        <div className="flex gap-3">
-                          <img
-                            src="/logo.png"
-                            alt="tour"
-                            className="w-12 h-12 rounded-xl bg-white/10 object-contain p-2"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-white font-semibold truncate">{tour.company}</div>
-                            <div className="text-xs text-white/70 truncate">{tour.category?.name || ''}</div>
-                            <div className="text-xs text-white/70 mt-1">
-                              Рейсов: {flightsCount}
-                              {firstFlight && (
-                                <> · Ближайший: {new Date(firstFlight.date).toLocaleDateString('ru-RU')} {new Date(firstFlight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* скрытое поле для react-hook-form */}
-                <input type="hidden" {...register('tour_id')} />
-              </div>
-
-              {selectedTour && selectedTour.flights && selectedTour.flights.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-white/90">
-                      Рейс (время посадки) *
-                    </label>
-                    {errors.flight_id && (
-                      <p className="text-red-300 text-xs">{errors.flight_id.message}</p>
+                        Точка посадки на карте
+                      </a>
                     )}
                   </div>
-
-                  <select
-                    {...register('flight_id')}
-                    className="input-glass"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Выберите рейс
-                    </option>
-                    {selectedTour.flights
-                      .filter((flight: any) => {
-                        const available = flight.max_places - flight.current_booked_places
-                        return !flight.is_sale_stopped && available > 0
-                      })
-                      .map((flight: any) => {
-                        const availablePlaces = flight.max_places - flight.current_booked_places
-                        const dateStr = new Date(flight.date).toLocaleDateString('ru-RU')
-                        const timeStr = new Date(flight.departure_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-                        return (
-                          <option key={flight.id} value={flight.id}>
-                            {flight.flight_number} · {dateStr} {timeStr} · свободно {availablePlaces}
-                          </option>
-                        )
-                      })}
-                  </select>
-
-                  {selectedFlight?.boarding_location_url && (
-                    <a
-                      className="inline-block mt-2 text-sm text-blue-300 hover:text-blue-200 underline"
-                      href={selectedFlight.boarding_location_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Точка посадки на карте
-                    </a>
-                  )}
-                </div>
-              )}
+                  <input type="hidden" {...register('tour_id')} />
+                  <input type="hidden" {...register('flight_id')} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -558,7 +511,9 @@ export default function CreateSalePage() {
               >
                 {loading ? 'Создание...' : 'Создать продажу'}
               </button>
-            </form>
+                </form>
+              )}
+            </>
           ) : (
             <div className="space-y-4">
               <div className="text-center">

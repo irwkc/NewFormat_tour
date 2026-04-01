@@ -86,12 +86,6 @@ export default function PromoterDashboard() {
             {Number(user?.balance || 0).toFixed(2)}₽
           </div>
         </div>
-        <Link
-          href="/dashboard/promoter/sales/create"
-          className="btn-primary w-full block text-center py-5 text-lg md:text-xl font-bold rounded-2xl"
-        >
-          Продать
-        </Link>
 
         <div className="grid grid-cols-1 gap-6">
           <details className="glass-card open:shadow-xl sm:open:block" open>
