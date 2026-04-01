@@ -385,3 +385,51 @@ export async function completeSaleFromYookassaDomain(payment: any) {
   return { status: 'ok' } as const
 }
 
+/**
+ * Платёж ЮKassa отменён / не прошёл: удаляем «висящую» продажу промоутера с онлайн-оплатой.
+ * Места на рейс не откатываем — они увеличиваются только после успешной оплаты (создание билета).
+ */
+export async function deletePromoterPendingOnlineSaleOnYooKassaCanceled(payment: any) {
+  let saleId: string | null = payment.metadata?.sale_id ?? null
+  const paymentId = payment.id != null ? String(payment.id) : null
+
+  if (!saleId && paymentId) {
+    const row = await prisma.yookassaPayment.findFirst({
+      where: { payment_id: paymentId },
+      select: { sale_id: true },
+    })
+    saleId = row?.sale_id ?? null
+  }
+
+  if (!saleId) {
+    return { status: 'no_sale_id' as const }
+  }
+
+  const sale = await prisma.sale.findUnique({
+    where: { id: saleId },
+    include: { seller: { select: { role: true } } },
+  })
+
+  if (!sale) {
+    return { status: 'sale_not_found' as const }
+  }
+  if (sale.payment_status !== 'pending') {
+    return { status: 'not_pending' as const }
+  }
+  if (sale.payment_method !== PaymentMethod.online_yookassa) {
+    return { status: 'not_online' as const }
+  }
+  if (sale.seller.role !== UserRole.promoter) {
+    return { status: 'skipped_not_promoter' as const }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.balanceHistory.deleteMany({ where: { sale_id: saleId } })
+    await tx.ticket.deleteMany({ where: { sale_id: saleId } })
+    await tx.yookassaPayment.deleteMany({ where: { sale_id: saleId } })
+    await tx.sale.delete({ where: { id: saleId } })
+  })
+
+  return { status: 'deleted' as const }
+}
+
