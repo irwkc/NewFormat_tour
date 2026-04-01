@@ -23,6 +23,7 @@ function AcquiringReceiptPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [sale, setSale] = useState<{ sale_number?: string | null; total_amount?: number | string } | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   const saleId = searchParams.get('sale_id')
   const [saleLoading, setSaleLoading] = useState(true)
@@ -128,6 +129,26 @@ function AcquiringReceiptPageContent() {
     }
   }
 
+  const handleCancel = async () => {
+    if (!saleId || !token) {
+      router.push('/dashboard/promoter/sales')
+      return
+    }
+    try {
+      setCancelLoading(true)
+      await fetch(`/api/sales/${saleId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch {
+      // ignore
+    } finally {
+      setCancelLoading(false)
+      router.push('/dashboard/promoter/sales')
+    }
+  }
+
   const navItems = [
     { label: 'Продажи', href: '/dashboard/promoter/sales' },
     { label: 'История баланса', href: '/dashboard/promoter/balance-history' },
@@ -163,7 +184,10 @@ function AcquiringReceiptPageContent() {
             )}
           </div>
 
-          <p className="text-white/70 text-sm mb-4">Билеты безномерные. Загрузите фото чека и завершите продажу.</p>
+          <p className="text-white/70 text-sm mb-4">
+            Билеты безномерные. Загрузите фото чека и завершите продажу. «Отмена» удалит незавершённую продажу (пока
+            билет не создан).
+          </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
@@ -219,10 +243,11 @@ function AcquiringReceiptPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => router.back()}
+                disabled={cancelLoading}
+                onClick={() => void handleCancel()}
                 className="btn-secondary flex-1"
               >
-                Отмена
+                {cancelLoading ? 'Отмена…' : 'Отмена'}
               </button>
             </div>
           </form>

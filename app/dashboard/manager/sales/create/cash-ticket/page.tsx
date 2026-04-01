@@ -29,6 +29,7 @@ function CashTicketPageContent() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [sale, setSale] = useState<{ sale_number?: string | null; total_amount?: number | string } | null>(null)
   const [saleLoading, setSaleLoading] = useState(true)
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   const saleId = searchParams?.get('sale_id')
 
@@ -124,6 +125,26 @@ function CashTicketPageContent() {
     }
   }
 
+  const handleCancel = async () => {
+    if (!saleId || !token) {
+      router.push('/dashboard/manager/sales')
+      return
+    }
+    try {
+      setCancelLoading(true)
+      await fetch(`/api/sales/${saleId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch {
+      // всё равно уходим со страницы незавершённой продажи
+    } finally {
+      setCancelLoading(false)
+      router.push('/dashboard/manager/sales')
+    }
+  }
+
   const navItems = [
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
@@ -162,7 +183,8 @@ function CashTicketPageContent() {
           </div>
 
           <p className="text-white/70 text-sm mb-4">
-            Билеты безномерные. Загрузите фото билета и нажмите «Создать билет» для завершения продажи.
+            Билеты безномерные. Загрузите фото билета и нажмите «Создать билет» для завершения продажи. «Отмена»
+            удалит незавершённую продажу (пока билет не создан).
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -219,10 +241,11 @@ function CashTicketPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => router.back()}
+                disabled={cancelLoading}
+                onClick={() => void handleCancel()}
                 className="btn-secondary flex-1"
               >
-                Отмена
+                {cancelLoading ? 'Отмена…' : 'Отмена'}
               </button>
             </div>
           </form>
