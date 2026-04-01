@@ -123,7 +123,6 @@ export default function CreateSalePage() {
   const [toursLoaded, setToursLoaded] = useState(false)
   const [tourIdFromUrl, setTourIdFromUrl] = useState<string | null>(null)
   const [flightIdFromUrl, setFlightIdFromUrl] = useState<string | null>(null)
-  const appliedTourFromUrl = useRef(false)
   const prevTourIdFromFormRef = useRef<string | undefined>(undefined)
   const [saleId, setSaleId] = useState<string | null>(null)
   const [step, setStep] = useState<'form' | 'success'>('form')
@@ -188,15 +187,16 @@ export default function CreateSalePage() {
     setFlightIdFromUrl(fid && /^[0-9a-f-]{36}$/i.test(fid) ? fid : null)
   }, [])
 
+  // Подставляем тур/рейс из ?tourId=&flightId= при каждом обновлении списка (без «один раз» — иначе рейс
+  // из деталки экскурсии может отсутствовать в отфильтрованном GET /api/tours до подмешивания деталки).
   useEffect(() => {
-    if (!tourIdFromUrl || !tours.length || appliedTourFromUrl.current) return
+    if (!tourIdFromUrl || !tours.length) return
     const t = tours.find((x) => x.id === tourIdFromUrl)
     if (!t) return
     setValue('tour_id', tourIdFromUrl, { shouldValidate: true })
     if (flightIdFromUrl && t.flights?.some((f) => f.id === flightIdFromUrl)) {
       setValue('flight_id', flightIdFromUrl, { shouldValidate: true })
     }
-    appliedTourFromUrl.current = true
   }, [tours, tourIdFromUrl, flightIdFromUrl, setValue])
 
   useEffect(() => {
@@ -259,19 +259,28 @@ export default function CreateSalePage() {
       if (typeof window !== 'undefined') {
         const q = new URLSearchParams(window.location.search)
         const tid = q.get('tourId')
-        if (tid && /^[0-9a-f-]{36}$/i.test(tid)) {
-          const detailRes = await fetch(`/api/tours/${tid}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          const detailJson = await detailRes.json()
-          if (detailJson.success && detailJson.data) {
-            const d = detailJson.data as CreateSaleTour
-            const idx = list.findIndex((t) => t.id === d.id)
-            if (idx >= 0) {
-              list = [...list]
-              list[idx] = d
-            } else {
-              list = [...list, d]
+        const fid = q.get('flightId')
+        const tidOk = tid && /^[0-9a-f-]{36}$/i.test(tid)
+        const fidOk = fid && /^[0-9a-f-]{36}$/i.test(fid)
+        if (tidOk && token) {
+          const existing = list.find((t) => t.id === tid)
+          const flightMissing =
+            fidOk && existing && !existing.flights?.some((f) => f.id === fid)
+          const needDetail = !existing || flightMissing
+          if (needDetail) {
+            const detailRes = await fetch(`/api/tours/${tid}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            const detailJson = await detailRes.json()
+            if (detailJson.success && detailJson.data) {
+              const d = detailJson.data as CreateSaleTour
+              const idx = list.findIndex((t) => t.id === d.id)
+              if (idx >= 0) {
+                list = [...list]
+                list[idx] = d
+              } else {
+                list = [...list, d]
+              }
             }
           }
         }
