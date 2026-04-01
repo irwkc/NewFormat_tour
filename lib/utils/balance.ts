@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { TicketStatus, PaymentMethod } from '@prisma/client'
 import { calcIncomeSplit } from '@/lib/domain/commission-calc'
+import { buildTourParamsFromTourAndRules } from '@/lib/domain/tour-commission-params'
+
+function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100
+}
 
 /**
  * Обновление баланса при подтверждении билета.
@@ -50,43 +55,24 @@ export async function updateBalanceOnTicketConfirm(
     total_amount: Number(sale.total_amount),
   }
 
-  const t = tour as {
-    partner_commission_type?: string | null
-    partner_fixed_adult_price?: unknown
-    partner_fixed_child_price?: unknown
-    partner_fixed_concession_price?: unknown
-  }
-  const tourParams = {
-    partner_min_adult_price: Number(tour.partner_min_adult_price),
-    partner_min_child_price: Number(tour.partner_min_child_price),
-    partner_min_concession_price: tour.partner_min_concession_price != null ? Number(tour.partner_min_concession_price) : 0,
-    partner_commission_type: (t.partner_commission_type as 'fixed' | 'percentage') ?? undefined,
-    partner_fixed_adult_price: t.partner_fixed_adult_price != null ? Number(t.partner_fixed_adult_price) : null,
-    partner_fixed_child_price: t.partner_fixed_child_price != null ? Number(t.partner_fixed_child_price) : null,
-    partner_fixed_concession_price: t.partner_fixed_concession_price != null ? Number(t.partner_fixed_concession_price) : null,
-    partner_commission_percentage: tour.partner_commission_percentage != null ? Number(tour.partner_commission_percentage) : null,
-    owner_min_adult_price: tour.owner_min_adult_price != null ? Number(tour.owner_min_adult_price) : Number(tour.partner_min_adult_price),
-    owner_min_child_price: tour.owner_min_child_price != null ? Number(tour.owner_min_child_price) : Number(tour.partner_min_child_price),
-    owner_min_concession_price: tour.owner_min_concession_price != null ? Number(tour.owner_min_concession_price) : 0,
-    commission_type: tour.commission_type as 'percentage' | 'fixed',
-    commission_percentage: tour.commission_percentage != null ? Number(tour.commission_percentage) : undefined,
-    commission_fixed_amount: tour.commission_fixed_amount != null ? Number(tour.commission_fixed_amount) : undefined,
-    commission_fixed_adult: tour.commission_fixed_adult != null ? Number(tour.commission_fixed_adult) : null,
-    commission_fixed_child: tour.commission_fixed_child != null ? Number(tour.commission_fixed_child) : null,
-    commission_fixed_concession: tour.commission_fixed_concession != null ? Number(tour.commission_fixed_concession) : null,
-    commission_rules: rules.map((r) => ({
-      threshold_adult: Number((r as any).threshold_adult ?? r.threshold_amount ?? 0),
-      threshold_child: Number((r as any).threshold_child ?? r.threshold_amount ?? 0),
-      threshold_concession: Number((r as any).threshold_concession ?? r.threshold_amount ?? 0),
-      commission_percentage: Number(r.commission_percentage ?? 0),
-    })),
-  }
+  const tourParams = buildTourParamsFromTourAndRules(tour, rules)
 
   const split = calcIncomeSplit(saleParams, tourParams)
   const commissionAmount = split.promoter
+  const totalAmountNum = Number(sale.total_amount)
+  const managerPct =
+    sale.manager_commission_percent_of_ticket != null
+      ? Number(sale.manager_commission_percent_of_ticket)
+      : 0
+  let managerCut =
+    isManagerSaleForPromoter && managerPct > 0
+      ? roundMoney(totalAmountNum * (managerPct / 100))
+      : 0
+  managerCut = Math.min(managerCut, commissionAmount)
+  const promoterCredit = Math.max(0, commissionAmount - managerCut)
 
   const balanceBefore = Number(seller.balance)
-  const balanceAfter = balanceBefore + commissionAmount
+  const balanceAfter = balanceBefore + promoterCredit
 
   await prisma.user.update({
     where: { id: seller.id },
@@ -98,15 +84,42 @@ export async function updateBalanceOnTicketConfirm(
       user_id: seller.id,
       balance_type: 'balance',
       transaction_type: 'credit',
-      amount: commissionAmount,
+      amount: promoterCredit,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
-      description: `Пополнение от продажи билета #${ticket.id}, сумма продажи: ${sale.total_amount}₽, процент промоутера: ${commissionAmount}₽`,
+      description:
+        managerCut > 0
+          ? `Пополнение от продажи билета #${ticket.id}, сумма продажи: ${sale.total_amount}₽, доля промоутера: ${promoterCredit}₽ (из ${commissionAmount}₽ до сплита с менеджером)`
+          : `Пополнение от продажи билета #${ticket.id}, сумма продажи: ${sale.total_amount}₽, доля промоутера: ${promoterCredit}₽`,
       ticket_id: ticket.id,
       sale_id: sale.id,
       performed_by_user_id: performedByUserId,
     },
   })
+
+  if (managerCut > 0) {
+    const managerUser = sale.seller
+    const mbBefore = Number(managerUser.balance)
+    const mbAfter = mbBefore + managerCut
+    await prisma.user.update({
+      where: { id: managerUser.id },
+      data: { balance: mbAfter },
+    })
+    await prisma.balanceHistory.create({
+      data: {
+        user_id: managerUser.id,
+        balance_type: 'balance',
+        transaction_type: 'credit',
+        amount: managerCut,
+        balance_before: mbBefore,
+        balance_after: mbAfter,
+        description: `Комиссия менеджера от продажи билета #${ticket.id} за промоутера (${managerPct}% от суммы билетов): ${managerCut}₽`,
+        ticket_id: ticket.id,
+        sale_id: sale.id,
+        performed_by_user_id: performedByUserId,
+      },
+    })
+  }
 
   if (
     (paymentMethod === PaymentMethod.cash || paymentMethod === PaymentMethod.acquiring) &&

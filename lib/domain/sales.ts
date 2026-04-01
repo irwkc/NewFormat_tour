@@ -4,12 +4,25 @@ import { z } from 'zod'
 import { generateRandomToken } from '@/lib/auth'
 import { generateTicketPDF } from '@/utils/pdf'
 import { sendTicketEmail } from '@/lib/email'
+import { calcIncomeSplit } from '@/lib/domain/commission-calc'
+import { buildTourParamsFromTourAndRules } from '@/lib/domain/tour-commission-params'
+import { getAppSettings } from '@/lib/app-settings'
+
+function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100
+}
 
 const optionalPrice = z.preprocess((v) => {
   if (v === '' || v === null || v === undefined) return undefined
   const n = Number(v)
   return Number.isFinite(n) ? n : undefined
 }, z.number().positive().optional())
+
+const optionalManagerPct = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().min(0).max(100).optional())
 
 export const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
@@ -22,6 +35,7 @@ export const createSaleSchema = z.object({
   concession_price: optionalPrice,
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
+  manager_commission_percent_of_ticket: optionalManagerPct,
 }).refine((data) => {
   if (data.child_count > 0) return data.child_price !== undefined
   return true
@@ -30,6 +44,22 @@ export const createSaleSchema = z.object({
     if (data.concession_count > 0) return data.concession_price !== undefined
     return true
   }, { message: 'concession_price is required when concession_count > 0', path: ['concession_price'] })
+  .refine(
+    (data) => {
+      const needs =
+        Boolean(data.promoter_user_id) &&
+        (data.payment_method === 'cash' || data.payment_method === 'acquiring')
+      if (!needs) return true
+      return (
+        data.manager_commission_percent_of_ticket !== undefined &&
+        data.manager_commission_percent_of_ticket !== null
+      )
+    },
+    {
+      message: 'Укажите процент менеджера от суммы билетов',
+      path: ['manager_commission_percent_of_ticket'],
+    }
+  )
 
 export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, user: { id: string; role: UserRole }) {
   // Проверка экскурсии
@@ -111,12 +141,56 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     }
   }
 
+  const needsManagerPromoterSplit =
+    Boolean(input.promoter_user_id) &&
+    user.role === UserRole.manager &&
+    (input.payment_method === 'cash' || input.payment_method === 'acquiring')
+
+  if (input.manager_commission_percent_of_ticket != null && !needsManagerPromoterSplit) {
+    return { status: 'manager_percent_forbidden' } as const
+  }
+
   // Вычислить общую сумму
   const childPrice = input.child_count > 0 ? (input.child_price || 0) : 0
   const concessionPrice = input.concession_count > 0 ? (input.concession_price || 0) : 0
   const totalAmount = (input.adult_count * input.adult_price) +
     (input.child_count * childPrice) +
     ((input.concession_count || 0) * concessionPrice)
+
+  let managerPctToStore: number | null = null
+  if (needsManagerPromoterSplit) {
+    const pct = Number(input.manager_commission_percent_of_ticket)
+    if (!Number.isFinite(pct)) {
+      return { status: 'manager_percent_required' } as const
+    }
+    const settings = await getAppSettings()
+    const maxOwner = Number(settings.max_manager_percent_of_ticket_for_promoter_sale)
+    if (pct > maxOwner) {
+      return { status: 'manager_percent_exceeds_owner_cap', max: maxOwner } as const
+    }
+
+    const rules = await prisma.tourCommissionRule.findMany({
+      where: { tour_id: tour.id },
+      orderBy: { order: 'asc' },
+    })
+    const tourParams = buildTourParamsFromTourAndRules(tour, rules)
+    const saleParams = {
+      adult_count: input.adult_count,
+      child_count: input.child_count || 0,
+      concession_count: input.concession_count || 0,
+      adult_price: input.adult_price,
+      child_price: childPrice,
+      concession_price: concessionPrice,
+      total_amount: totalAmount,
+    }
+    const split = calcIncomeSplit(saleParams, tourParams)
+    const promoterShare = roundMoney(split.promoter)
+    const managerRub = roundMoney(totalAmount * (pct / 100))
+    if (managerRub >= promoterShare) {
+      return { status: 'manager_percent_too_high_vs_promoter' } as const
+    }
+    managerPctToStore = roundMoney(pct)
+  }
 
   // Генерация уникального 6-значного номера продажи
   let saleNumber = ''
@@ -145,6 +219,7 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
       payment_method: input.payment_method as PaymentMethod,
       payment_status: 'pending',
       payment_link_token: generateRandomToken(),
+      manager_commission_percent_of_ticket: managerPctToStore,
     },
     include: {
       tour: {

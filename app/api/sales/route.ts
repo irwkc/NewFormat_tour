@@ -190,6 +190,37 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           )
         }
+        if (result.status === 'manager_percent_required') {
+          return NextResponse.json(
+            { success: false, error: 'Укажите процент менеджера от суммы билетов' },
+            { status: 400 }
+          )
+        }
+        if (result.status === 'manager_percent_forbidden') {
+          return NextResponse.json(
+            { success: false, error: 'Процент менеджера допустим только при продаже за промоутера' },
+            { status: 400 }
+          )
+        }
+        if (result.status === 'manager_percent_exceeds_owner_cap') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Процент менеджера не может превышать ${result.max}% (лимит владельца)`,
+            },
+            { status: 400 }
+          )
+        }
+        if (result.status === 'manager_percent_too_high_vs_promoter') {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                'Процент менеджера от суммы билетов должен быть строго меньше доли промоутера по этой продаже',
+            },
+            { status: 400 }
+          )
+        }
 
         const sale = result.sale
 

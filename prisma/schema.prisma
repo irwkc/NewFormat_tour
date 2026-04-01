@@ -226,6 +226,15 @@ model TourCommissionRule {
   @@map("tour_commission_rules")
 }
 
+/// Глобальные настройки приложения (одна строка id = default).
+model AppSettings {
+  id                                              String   @id @default("default")
+  max_manager_percent_of_ticket_for_promoter_sale Decimal  @default(100) @map("max_manager_percent_of_ticket_for_promoter_sale") @db.Decimal(5, 2)
+  updated_at                                      DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
 model Flight {
   id                       String          @id @default(uuid())
   tour_id                  String          @map("tour_id")
@@ -277,6 +286,8 @@ model Sale {
   payment_link_url    String?
   receipt_photo_url   String?
   customer_email      String?
+  /// Доля менеджера от суммы билетов (%) при продаже за промоутера (наличные/эквайринг); остаток доли промоутера уходит промоутеру.
+  manager_commission_percent_of_ticket Decimal? @map("manager_commission_percent_of_ticket") @db.Decimal(5, 2)
   created_at          DateTime      @default(now())
   updated_at          DateTime      @updatedAt
 

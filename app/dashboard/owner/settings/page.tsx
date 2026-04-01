@@ -71,6 +71,13 @@ export default function OwnerSettingsPage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [securityLoading, setSecurityLoading] = useState(false)
   const [logoutAllMessage, setLogoutAllMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [maxManagerPercent, setMaxManagerPercent] = useState<number | null>(null)
+  const [maxManagerPercentDraft, setMaxManagerPercentDraft] = useState<string>('')
+  const [maxManagerPercentMessage, setMaxManagerPercentMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
+  const [maxManagerPercentLoading, setMaxManagerPercentLoading] = useState(false)
 
   const {
     register: registerPassword,
@@ -188,6 +195,26 @@ export default function OwnerSettingsPage() {
     }
 
     fetchProfileExtras()
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const load = async () => {
+      try {
+        const res = await fetch('/api/app-settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const j = await res.json()
+        if (j.success && j.data) {
+          const v = j.data.max_manager_percent_of_ticket_for_promoter_sale as number
+          setMaxManagerPercent(v)
+          setMaxManagerPercentDraft(String(v))
+        }
+      } catch {
+        setMaxManagerPercent(null)
+      }
+    }
+    load()
   }, [token])
 
   const refreshFaceStatus = useCallback(async () => {
@@ -357,6 +384,40 @@ export default function OwnerSettingsPage() {
     }
   }
 
+  const onSaveMaxManagerPercent = async () => {
+    if (!token) return
+    const n = Number(maxManagerPercentDraft.replace(',', '.'))
+    if (!Number.isFinite(n) || n < 0 || n > 100) {
+      setMaxManagerPercentMessage({ type: 'error', text: 'Введите число от 0 до 100' })
+      return
+    }
+    try {
+      setMaxManagerPercentMessage(null)
+      setMaxManagerPercentLoading(true)
+      const res = await fetch('/api/app-settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ max_manager_percent_of_ticket_for_promoter_sale: n }),
+      })
+      const j = await res.json()
+      if (j.success && j.data) {
+        const v = j.data.max_manager_percent_of_ticket_for_promoter_sale as number
+        setMaxManagerPercent(v)
+        setMaxManagerPercentDraft(String(v))
+        setMaxManagerPercentMessage({ type: 'success', text: 'Лимит сохранён' })
+      } else {
+        setMaxManagerPercentMessage({ type: 'error', text: j.error || 'Ошибка сохранения' })
+      }
+    } catch {
+      setMaxManagerPercentMessage({ type: 'error', text: 'Ошибка сохранения' })
+    } finally {
+      setMaxManagerPercentLoading(false)
+    }
+  }
+
   const onLogoutAll = async () => {
     if (!token) return
     try {
@@ -391,6 +452,48 @@ export default function OwnerSettingsPage() {
     <DashboardLayout title="Настройки">
       <div className="space-y-6">
         <div className="space-y-6 max-w-2xl">
+          {/* Лимит процента менеджера при продаже за промоутера */}
+          <div className="glass-card p-6">
+            <h2 className="text-2xl font-bold mb-2 text-white">Продажа менеджера за промоутера</h2>
+            <p className="text-white/70 text-sm mb-4">
+              Максимальный процент от суммы билетов, который менеджер может указать при продаже наличными или
+              эквайрингом за промоутера. Он должен быть строго меньше доли промоутера по туру; здесь задаётся только
+              верхняя граница.
+            </p>
+            {maxManagerPercent != null ? (
+              <div className="space-y-3 max-w-xs">
+                <label className="block text-sm font-medium text-white/90">Макс. % менеджера от суммы билетов</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  className="input-glass w-full"
+                  value={maxManagerPercentDraft}
+                  onChange={(e) => setMaxManagerPercentDraft(e.target.value)}
+                  disabled={maxManagerPercentLoading}
+                />
+                {maxManagerPercentMessage && (
+                  <div
+                    className={
+                      maxManagerPercentMessage.type === 'success' ? 'alert-success' : 'alert-error'
+                    }
+                  >
+                    <p className="text-sm font-medium">{maxManagerPercentMessage.text}</p>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={maxManagerPercentLoading}
+                  onClick={onSaveMaxManagerPercent}
+                >
+                  {maxManagerPercentLoading ? 'Сохранение…' : 'Сохранить'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-white/60 text-sm">Загрузка…</p>
+            )}
+          </div>
+
           {/* Вход по лицу (2FA) — только для владельца */}
           <div className="glass-card p-6">
             <h2 className="text-2xl font-bold mb-2 text-white">Вход по лицу (2FA)</h2>

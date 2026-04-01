@@ -61,6 +61,12 @@ const optionalPositiveInt = z.preprocess((v) => {
   return Number.isFinite(n) ? n : undefined
 }, z.number().int().positive().optional())
 
+const optionalManagerPct = z.preprocess((v) => {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}, z.number().min(0).max(100).optional())
+
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   flight_id: z.string().uuid(),
@@ -72,6 +78,7 @@ const createSaleSchema = z.object({
   concession_price: optionalNumber,
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
   promoter_user_id: z.string().uuid().optional(),
+  manager_commission_percent_of_ticket: optionalManagerPct,
   promoter_id: optionalPositiveInt,
   ticket_number: z.string().regex(/^[A-Z]{2}\d{8}$/).optional(),
   ticket_photo: z.any().optional(),
@@ -84,6 +91,22 @@ const createSaleSchema = z.object({
     if (data.concession_count > 0) return data.concession_price !== undefined
     return true
   }, { message: 'Укажите цену льготного билета', path: ['concession_price'] })
+  .refine(
+    (data) => {
+      const needs =
+        Boolean(data.promoter_user_id) &&
+        (data.payment_method === 'cash' || data.payment_method === 'acquiring')
+      if (!needs) return true
+      return (
+        data.manager_commission_percent_of_ticket !== undefined &&
+        data.manager_commission_percent_of_ticket !== null
+      )
+    },
+    {
+      message: 'Укажите процент менеджера от суммы билетов',
+      path: ['manager_commission_percent_of_ticket'],
+    }
+  )
 
 type CreateSaleFormData = z.infer<typeof createSaleSchema>
 
@@ -104,6 +127,7 @@ export default function CreateSalePage() {
   const prevTourIdFromFormRef = useRef<string | undefined>(undefined)
   const [saleId, setSaleId] = useState<string | null>(null)
   const [step, setStep] = useState<'form' | 'success'>('form')
+  const [ownerMaxManagerPercent, setOwnerMaxManagerPercent] = useState<number | null>(null)
 
   const {
     register,
@@ -121,6 +145,7 @@ export default function CreateSalePage() {
   })
 
   const paymentMethod = watch('payment_method')
+  const promoterUserIdWatch = watch('promoter_user_id')
   const promoterId = watch('promoter_id')
   const selectedTourId = watch('tour_id')
   const selectedFlightId = watch('flight_id')
@@ -134,6 +159,24 @@ export default function CreateSalePage() {
 
   useEffect(() => {
     fetchTours()
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    const load = async () => {
+      try {
+        const res = await fetch('/api/app-settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const j = await res.json()
+        if (j.success && j.data) {
+          setOwnerMaxManagerPercent(j.data.max_manager_percent_of_ticket_for_promoter_sale)
+        }
+      } catch {
+        setOwnerMaxManagerPercent(null)
+      }
+    }
+    load()
   }, [token])
 
   useEffect(() => {
@@ -164,6 +207,7 @@ export default function CreateSalePage() {
       setPromoterInfo(null)
       setValue('promoter_id', undefined, { shouldValidate: false })
       setValue('promoter_user_id', undefined, { shouldValidate: false })
+      setValue('manager_commission_percent_of_ticket', undefined, { shouldValidate: false })
       return
     }
 
@@ -172,8 +216,9 @@ export default function CreateSalePage() {
     } else {
       setPromoterInfo(null)
       setValue('promoter_user_id', undefined, { shouldValidate: false })
+      setValue('manager_commission_percent_of_ticket', undefined, { shouldValidate: false })
     }
-  }, [promoterId, paymentMethod])
+  }, [promoterId, paymentMethod, setValue])
 
   useEffect(() => {
     if (selectedTourId) {
@@ -205,13 +250,34 @@ export default function CreateSalePage() {
     try {
       const response = await fetch('/api/tours?moderation_status=approved', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       })
       const data = await response.json()
-      if (data.success) {
-        setTours(data.data)
+      let list: CreateSaleTour[] = data.success ? data.data : []
+
+      if (typeof window !== 'undefined') {
+        const q = new URLSearchParams(window.location.search)
+        const tid = q.get('tourId')
+        if (tid && /^[0-9a-f-]{36}$/i.test(tid)) {
+          const detailRes = await fetch(`/api/tours/${tid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const detailJson = await detailRes.json()
+          if (detailJson.success && detailJson.data) {
+            const d = detailJson.data as CreateSaleTour
+            const idx = list.findIndex((t) => t.id === d.id)
+            if (idx >= 0) {
+              list = [...list]
+              list[idx] = d
+            } else {
+              list = [...list, d]
+            }
+          }
+        }
       }
+
+      setTours(list)
     } catch (error) {
       console.error('Error fetching tours:', error)
     } finally {
@@ -259,12 +325,24 @@ export default function CreateSalePage() {
 
       // Если указан promoter_id, user_id уже получен в checkPromoter
       const promoterUserId = watch('promoter_user_id')
+      const needsPromoterSplit =
+        Boolean(promoterUserId) &&
+        (data.payment_method === 'cash' || data.payment_method === 'acquiring')
 
       const payload = {
-        ...data,
-        promoter_user_id: promoterUserId,
+        tour_id: data.tour_id,
+        flight_id: data.flight_id,
+        adult_count: data.adult_count,
+        child_count: data.child_count,
+        concession_count: data.concession_count,
+        adult_price: data.adult_price,
         child_price: data.child_count > 0 ? data.child_price : undefined,
         concession_price: data.concession_count > 0 ? data.concession_price : undefined,
+        payment_method: data.payment_method,
+        promoter_user_id: promoterUserId,
+        manager_commission_percent_of_ticket: needsPromoterSplit
+          ? data.manager_commission_percent_of_ticket
+          : undefined,
       }
 
       const response = await fetch('/api/sales', {
@@ -422,6 +500,7 @@ export default function CreateSalePage() {
                   </div>
                   <input type="hidden" {...register('tour_id')} />
                   <input type="hidden" {...register('flight_id')} />
+                  <input type="hidden" {...register('promoter_user_id')} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -602,6 +681,40 @@ export default function CreateSalePage() {
                   )}
                   {errors.promoter_id && (
                     <p className="text-red-300 text-xs mt-1">{errors.promoter_id.message}</p>
+                  )}
+                </div>
+              )}
+
+              {(paymentMethod === 'cash' || paymentMethod === 'acquiring') && promoterUserIdWatch && (
+                <div>
+                  <label className="block text-sm font-medium text-white/90 mb-2">
+                    Ваш процент от суммы билетов (₽ по билетам) *
+                  </label>
+                  <input
+                    {...register('manager_commission_percent_of_ticket', {
+                      setValueAs: (v) => {
+                        if (v === '' || v === null || v === undefined) return undefined
+                        const n = Number(v)
+                        return Number.isFinite(n) ? n : undefined
+                      },
+                    })}
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={ownerMaxManagerPercent ?? 100}
+                    className="input-glass"
+                    placeholder="Например 5"
+                  />
+                  <p className="text-xs text-white/60 mt-2">
+                    Доля от общей суммы билетов (как процент от неё). Должна быть строго меньше доли промоутера по
+                    туру и не выше лимита владельца
+                    {ownerMaxManagerPercent != null ? ` (${ownerMaxManagerPercent}%)` : ''}. Остаток доли промоутера
+                    получает промоутер.
+                  </p>
+                  {errors.manager_commission_percent_of_ticket && (
+                    <p className="text-red-300 text-xs mt-1">
+                      {errors.manager_commission_percent_of_ticket.message}
+                    </p>
                   )}
                 </div>
               )}
