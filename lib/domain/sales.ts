@@ -151,6 +151,9 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
     if (!promoter || promoter.role !== UserRole.promoter) {
       return { status: 'promoter_not_found' } as const
     }
+    if (!promoter.is_active) {
+      return { status: 'promoter_inactive' } as const
+    }
   }
 
   const needsManagerPromoterSplit =

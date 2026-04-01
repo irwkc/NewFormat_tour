@@ -3,10 +3,16 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 
+async function routeParams(
+  params: { promoter_id: string } | Promise<{ promoter_id: string }>
+): Promise<{ promoter_id: string }> {
+  return Promise.resolve(params)
+}
+
 // GET /api/promoters/check/:promoter_id/user-id - получение user_id по promoter_id (для менеджера)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { promoter_id: string } }
+  segment: { params: { promoter_id: string } | Promise<{ promoter_id: string }> }
 ) {
   return withAuth(
     request,
@@ -19,10 +25,10 @@ export async function GET(
           )
         }
 
-        const { promoter_id } = params
-        const promoterId = parseInt(promoter_id)
+        const { promoter_id: promoterIdRaw } = await routeParams(segment.params)
+        const promoterId = parseInt(String(promoterIdRaw ?? '').trim(), 10)
 
-        if (isNaN(promoterId)) {
+        if (isNaN(promoterId) || promoterId < 1) {
           return NextResponse.json(
             { success: false, error: 'Invalid promoter ID' },
             { status: 400 }
@@ -41,7 +47,7 @@ export async function GET(
           },
         })
 
-        if (!promoter || promoter.role !== 'promoter') {
+        if (!promoter || promoter.role !== UserRole.promoter) {
           return NextResponse.json(
             { success: false, error: 'Promoter not found' },
             { status: 404 }

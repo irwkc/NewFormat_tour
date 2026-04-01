@@ -199,6 +199,12 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           )
         }
+        if (result.status === 'promoter_inactive') {
+          return NextResponse.json(
+            { success: false, error: 'Аккаунт промоутера заблокирован' },
+            { status: 400 }
+          )
+        }
         if (result.status === 'manager_percent_required') {
           return NextResponse.json(
             { success: false, error: 'Укажите процент менеджера от суммы билетов' },

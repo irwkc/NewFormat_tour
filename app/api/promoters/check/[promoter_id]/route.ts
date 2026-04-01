@@ -3,10 +3,17 @@ import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 
+/** Next.js 15: params в route может быть Promise — иначе promoter_id теряется. */
+async function routeParams(
+  params: { promoter_id: string } | Promise<{ promoter_id: string }>
+): Promise<{ promoter_id: string }> {
+  return Promise.resolve(params)
+}
+
 // GET /api/promoters/check/:promoter_id - проверка промоутера по ID (для менеджера)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { promoter_id: string } }
+  segment: { params: { promoter_id: string } | Promise<{ promoter_id: string }> }
 ) {
   return withAuth(
     request,
@@ -19,17 +26,17 @@ export async function GET(
           )
         }
 
-        const { promoter_id } = params
-        const promoterId = parseInt(promoter_id)
+        const { promoter_id: promoterIdRaw } = await routeParams(segment.params)
+        const promoterId = parseInt(String(promoterIdRaw ?? '').trim(), 10)
 
-        if (isNaN(promoterId)) {
+        if (isNaN(promoterId) || promoterId < 1) {
           return NextResponse.json(
             { success: false, error: 'Invalid promoter ID' },
             { status: 400 }
           )
         }
 
-        const promoter = await prisma.user.findUnique({
+        const row = await prisma.user.findUnique({
           where: { promoter_id: promoterId },
           select: {
             id: true,
@@ -41,17 +48,31 @@ export async function GET(
           },
         })
 
-        if (!promoter || promoter.role !== 'promoter') {
+        if (!row) {
           return NextResponse.json({
             success: true,
-            data: { exists: false },
+            data: { exists: false, reason: 'not_found' as const },
           })
         }
 
-        if (!promoter.is_active) {
+        if (row.role !== UserRole.promoter) {
           return NextResponse.json({
             success: true,
-            data: { exists: false },
+            data: { exists: false, reason: 'not_promoter' as const },
+          })
+        }
+
+        if (!row.is_active) {
+          return NextResponse.json({
+            success: true,
+            data: {
+              exists: true,
+              is_active: false,
+              reason: 'inactive' as const,
+              full_name: row.full_name,
+              user_id: row.id,
+              photo_url: row.photo_url,
+            },
           })
         }
 
@@ -59,9 +80,10 @@ export async function GET(
           success: true,
           data: {
             exists: true,
-            full_name: promoter.full_name,
-            user_id: promoter.id,
-            photo_url: promoter.photo_url,
+            is_active: true,
+            full_name: row.full_name,
+            user_id: row.id,
+            photo_url: row.photo_url,
           },
         })
       } catch (error) {

@@ -44,6 +44,8 @@ type PromoterInfo = {
   full_name?: string
   user_id?: string
   photo_url?: string | null
+  /** Найден, но аккаунт выключен — продажа за него недоступна */
+  blocked?: boolean
 }
 
 const optionalNumber = z.preprocess((v) => {
@@ -229,19 +231,48 @@ export default function CreateSalePage() {
           headers: { Authorization: `Bearer ${token}` },
         })
         const result = await response.json()
-        if (result.success && result.data?.exists && result.data.user_id) {
-          setPromoterInfo({
-            exists: true,
-            full_name: result.data.full_name ?? undefined,
-            user_id: result.data.user_id,
-            photo_url: result.data.photo_url ?? null,
-          })
-          setValue('promoter_user_id', result.data.user_id, { shouldValidate: true })
-        } else {
+        if (!response.ok) {
           setPromoterInfo(null)
           setValue('promoter_user_id', undefined, { shouldValidate: false })
-          setPromoterCheckError('Промоутер с таким ID не найден или недоступен')
+          setPromoterCheckError(result.error || 'Ошибка проверки ID промоутера')
+          return
         }
+        const d = result.data
+        if (result.success && d?.exists && d.is_active === false && d.user_id) {
+          setPromoterInfo({
+            exists: true,
+            blocked: true,
+            full_name: d.full_name ?? undefined,
+            user_id: d.user_id,
+            photo_url: d.photo_url ?? null,
+          })
+          setValue('promoter_user_id', undefined, { shouldValidate: false })
+          setPromoterCheckError(
+            d.full_name
+              ? `Промоутер «${d.full_name}» найден, но аккаунт заблокирован — продажа за него недоступна`
+              : 'Промоутер с таким ID найден, но аккаунт заблокирован'
+          )
+          return
+        }
+        if (result.success && d?.exists && d.user_id && d.is_active !== false) {
+          setPromoterInfo({
+            exists: true,
+            full_name: d.full_name ?? undefined,
+            user_id: d.user_id,
+            photo_url: d.photo_url ?? null,
+          })
+          setValue('promoter_user_id', d.user_id, { shouldValidate: true })
+          return
+        }
+        if (d?.reason === 'not_promoter') {
+          setPromoterInfo(null)
+          setValue('promoter_user_id', undefined, { shouldValidate: false })
+          setPromoterCheckError('Пользователь с таким номером есть, но это не промоутер')
+          return
+        }
+        setPromoterInfo(null)
+        setValue('promoter_user_id', undefined, { shouldValidate: false })
+        setPromoterCheckError('Промоутер с таким ID не найден')
       } catch {
         setPromoterInfo(null)
         setValue('promoter_user_id', undefined, { shouldValidate: false })
@@ -729,7 +760,13 @@ export default function CreateSalePage() {
                     <p className="text-sm text-white/60 mt-2">Проверка…</p>
                   )}
                   {promoterInfo?.exists && promoterInfo.full_name && (
-                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
+                    <div
+                      className={`mt-3 flex items-center gap-3 rounded-xl border p-3 ${
+                        promoterInfo.blocked
+                          ? 'border-amber-500/40 bg-amber-500/10'
+                          : 'border-white/15 bg-white/5'
+                      }`}
+                    >
                       {promoterInfo.photo_url ? (
                         <img
                           src={promoterInfo.photo_url}
@@ -744,6 +781,9 @@ export default function CreateSalePage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white">{promoterInfo.full_name}</p>
                         <p className="text-xs text-white/60">ID: {promoterId}</p>
+                        {promoterInfo.blocked && (
+                          <p className="text-xs text-amber-200/90 mt-1">Аккаунт заблокирован</p>
+                        )}
                       </div>
                     </div>
                   )}
