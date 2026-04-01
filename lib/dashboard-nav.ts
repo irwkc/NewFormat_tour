@@ -3,7 +3,7 @@
  * Одинаковый список на всех страницах — пункты не пропадают при переходе.
  */
 
-export type NavItem = { label: string; href: string }
+export type NavItem = { label: string; href: string; /** только полное совпадение пути (для «Главная») */ exact?: boolean }
 
 export const DASHBOARD_NAV: Record<string, NavItem[]> = {
   owner: [
@@ -29,6 +29,7 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
     { label: 'Проверка билетов', href: '/dashboard/partner-controller/tickets/check' },
   ],
   manager: [
+    { label: 'Главная', href: '/dashboard/manager', exact: true },
     { label: 'Продажи', href: '/dashboard/manager/sales' },
     { label: 'История баланса', href: '/dashboard/manager/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/manager/issued-items' },
@@ -36,6 +37,7 @@ export const DASHBOARD_NAV: Record<string, NavItem[]> = {
     { label: 'Настройки', href: '/dashboard/manager/settings' },
   ],
   promoter: [
+    { label: 'Главная', href: '/dashboard/promoter', exact: true },
     { label: 'Продажи', href: '/dashboard/promoter/sales' },
     { label: 'История баланса', href: '/dashboard/promoter/balance-history' },
     { label: 'Выданные вещи', href: '/dashboard/promoter/issued-items' },
