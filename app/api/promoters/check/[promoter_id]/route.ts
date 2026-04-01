@@ -21,7 +21,11 @@ export async function GET(
       try {
         if (req.user!.role !== UserRole.manager) {
           return NextResponse.json(
-            { success: false, error: 'Only managers can check promoters' },
+            {
+              success: false,
+              error:
+                'Проверка ID промоутера доступна только менеджерам. Войдите под аккаунтом менеджера или откройте раздел «Продажи» из меню менеджера.',
+            },
             { status: 403 }
           )
         }
@@ -93,7 +97,6 @@ export async function GET(
           { status: 500 }
         )
       }
-    },
-    [UserRole.manager]
+    }
   )
 }

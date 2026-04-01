@@ -20,7 +20,11 @@ export async function GET(
       try {
         if (req.user!.role !== UserRole.manager) {
           return NextResponse.json(
-            { success: false, error: 'Only managers can get promoter user_id' },
+            {
+              success: false,
+              error:
+                'Проверка ID промоутера доступна только менеджерам. Войдите под аккаунтом менеджера.',
+            },
             { status: 403 }
           )
         }
@@ -77,7 +81,6 @@ export async function GET(
           { status: 500 }
         )
       }
-    },
-    [UserRole.manager]
+    }
   )
 }

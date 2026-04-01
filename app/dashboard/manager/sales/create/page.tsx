@@ -234,7 +234,12 @@ export default function CreateSalePage() {
         if (!response.ok) {
           setPromoterInfo(null)
           setValue('promoter_user_id', undefined, { shouldValidate: false })
-          setPromoterCheckError(result.error || 'Ошибка проверки ID промоутера')
+          const msg = result.error
+          setPromoterCheckError(
+            response.status === 403 && (!msg || msg === 'Forbidden')
+              ? 'Проверка ID промоутера доступна только менеджерам. Войдите под аккаунтом менеджера.'
+              : msg || 'Ошибка проверки ID промоутера'
+          )
           return
         }
         const d = result.data
