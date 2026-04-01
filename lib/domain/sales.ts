@@ -27,10 +27,10 @@ const optionalManagerPct = z.preprocess((v) => {
 export const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   flight_id: z.string().uuid(),
-  adult_count: z.number().int().positive(),
+  adult_count: z.number().int().min(0),
   child_count: z.number().int().min(0).default(0),
   concession_count: z.number().int().min(0).default(0),
-  adult_price: z.number().positive(),
+  adult_price: z.number().min(0),
   child_price: optionalPrice,
   concession_price: optionalPrice,
   payment_method: z.enum(['online_yookassa', 'cash', 'acquiring']),
@@ -44,6 +44,18 @@ export const createSaleSchema = z.object({
     if (data.concession_count > 0) return data.concession_price !== undefined
     return true
   }, { message: 'concession_price is required when concession_count > 0', path: ['concession_price'] })
+  .refine(
+    (data) =>
+      data.adult_count + data.child_count + (data.concession_count || 0) >= 1,
+    {
+      message: 'Укажите хотя бы один билет (взрослый, детский или льготный)',
+      path: ['adult_count'],
+    }
+  )
+  .refine((data) => data.adult_count === 0 || data.adult_price > 0, {
+    message: 'Укажите цену взрослого билета',
+    path: ['adult_price'],
+  })
   .refine(
     (data) => {
       const needs =
@@ -114,7 +126,7 @@ export async function createSaleDomain(input: z.infer<typeof createSaleSchema>, 
   const partnerMinChild = flightChild ?? Number(tour.partner_min_child_price ?? 0)
   const partnerMinConcession = flightConcession ?? Number(tour.partner_min_concession_price ?? 0)
   const minAdult = Number((tour.owner_min_adult_price ?? partnerMinAdult) || 0)
-  if (minAdult > 0 && input.adult_price < minAdult) {
+  if (input.adult_count > 0 && minAdult > 0 && input.adult_price < minAdult) {
     return { status: 'adult_price_too_low', min: minAdult } as const
   }
 

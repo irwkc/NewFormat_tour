@@ -45,15 +45,15 @@ const optionalNumber = z.preprocess((v) => {
   return Number.isFinite(n) ? n : undefined
 }, z.number().positive().optional())
 
-const requiredNumber = z.preprocess((v) => Number(v), z.number().positive())
+const nonNegativeNumber = z.preprocess((v) => Number(v), z.number().min(0))
 
 const createSaleSchema = z.object({
   tour_id: z.string().uuid(),
   flight_id: z.string().uuid(),
-  adult_count: z.number().int().positive(),
+  adult_count: z.number().int().min(0),
   child_count: z.number().int().min(0).default(0),
   concession_count: z.number().int().min(0).default(0),
-  adult_price: requiredNumber,
+  adult_price: nonNegativeNumber,
   child_price: optionalNumber,
   concession_price: optionalNumber,
   payment_method: z.enum(['online_yookassa', 'acquiring']),
@@ -69,6 +69,16 @@ const createSaleSchema = z.object({
 }, {
   message: 'Укажите цену льготного билета',
   path: ['concession_price'],
+}).refine(
+  (data) =>
+    data.adult_count + data.child_count + (data.concession_count || 0) >= 1,
+  {
+    message: 'Укажите хотя бы один билет (взрослый, детский или льготный)',
+    path: ['adult_count'],
+  }
+).refine((data) => data.adult_count === 0 || data.adult_price > 0, {
+  message: 'Укажите цену взрослого билета',
+  path: ['adult_price'],
 })
 
 type CreateSaleFormData = z.infer<typeof createSaleSchema>
@@ -96,6 +106,7 @@ export default function CreateSalePage() {
   } = useForm<CreateSaleFormData>({
     resolver: zodResolver(createSaleSchema),
     defaultValues: {
+      adult_count: 1,
       child_count: 0,
       concession_count: 0,
       payment_method: 'acquiring',
@@ -104,6 +115,7 @@ export default function CreateSalePage() {
 
   const selectedTourId = watch('tour_id')
   const selectedFlightId = watch('flight_id')
+  const adultCount = watch('adult_count')
   const childCount = watch('child_count')
   const concessionCount = watch('concession_count')
   const paymentMethod = watch('payment_method')
@@ -156,6 +168,10 @@ export default function CreateSalePage() {
       prevTourIdFromFormRef.current = undefined
     }
   }, [selectedTourId, tours, setValue, tourIdFromUrl, flightIdFromUrl])
+
+  useEffect(() => {
+    if (!adultCount) setValue('adult_price', 0, { shouldValidate: true })
+  }, [adultCount, setValue])
 
   useEffect(() => {
     if (!childCount) {
@@ -227,6 +243,7 @@ export default function CreateSalePage() {
 
       const payload = {
         ...data,
+        adult_price: data.adult_count > 0 ? data.adult_price : 0,
         child_price: data.child_count > 0 ? data.child_price : undefined,
         concession_price: data.concession_count > 0 ? data.concession_price : undefined,
       }
@@ -380,12 +397,12 @@ export default function CreateSalePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Количество взрослых *
+                    Количество взрослых
                   </label>
                   <input
                     {...register('adult_count', { valueAsNumber: true })}
                     type="number"
-                    min="1"
+                    min="0"
                     className="input-glass"
                   />
                   {errors.adult_count && (
@@ -427,7 +444,7 @@ export default function CreateSalePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/90 mb-2">
-                    Цена взрослого билета (₽) *
+                    Цена взрослого билета (₽){adultCount > 0 ? ' *' : ''}
                   </label>
                   <input
                     {...register('adult_price', { valueAsNumber: true })}
@@ -435,6 +452,7 @@ export default function CreateSalePage() {
                     step="0.01"
                     min="0"
                     className="input-glass"
+                    disabled={!adultCount}
                     placeholder={minPrices ? `мин. ${minPrices.minAdult.toFixed(2)}` : undefined}
                   />
                   {errors.adult_price && (
