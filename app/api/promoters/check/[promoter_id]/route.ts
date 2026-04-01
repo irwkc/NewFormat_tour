@@ -35,6 +35,7 @@ export async function GET(
             id: true,
             promoter_id: true,
             full_name: true,
+            photo_url: true,
             is_active: true,
             role: true,
           },
@@ -60,6 +61,7 @@ export async function GET(
             exists: true,
             full_name: promoter.full_name,
             user_id: promoter.id,
+            photo_url: promoter.photo_url,
           },
         })
       } catch (error) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { UserRole, TicketStatus } from '@prisma/client'
+import { UserRole, TicketStatus, PaymentStatus } from '@prisma/client'
 import { z } from 'zod'
 import { isFlightStarted } from '@/lib/moscow-time'
 
@@ -208,13 +208,23 @@ export async function DELETE(
           )
         }
 
-        // Удалить продажи со статусом pending
-        await prisma.sale.deleteMany({
+        const pendingSalesCount = await prisma.sale.count({
           where: {
             tour_id: id,
-            payment_status: 'pending',
+            payment_status: PaymentStatus.pending,
           },
         })
+
+        if (pendingSalesCount > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                'Нельзя удалить экскурсию: есть неоплаченные продажи (ожидают оплаты). Дождитесь оплаты или отмените такие продажи.',
+            },
+            { status: 400 }
+          )
+        }
 
         // Удалить экскурсию
         await prisma.tour.delete({

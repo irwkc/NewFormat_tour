@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -43,6 +43,7 @@ type PromoterInfo = {
   exists: boolean
   full_name?: string
   user_id?: string
+  photo_url?: string | null
 }
 
 const optionalNumber = z.preprocess((v) => {
@@ -127,6 +128,8 @@ export default function CreateSalePage() {
   const [saleId, setSaleId] = useState<string | null>(null)
   const [step, setStep] = useState<'form' | 'success'>('form')
   const [ownerMaxManagerPercent, setOwnerMaxManagerPercent] = useState<number | null>(null)
+  const [promoterLookupLoading, setPromoterLookupLoading] = useState(false)
+  const [promoterCheckError, setPromoterCheckError] = useState<string | null>(null)
 
   const {
     register,
@@ -136,6 +139,7 @@ export default function CreateSalePage() {
     formState: { errors },
   } = useForm<CreateSaleFormData>({
     resolver: zodResolver(createSaleSchema),
+    mode: 'onChange',
     defaultValues: {
       child_count: 0,
       concession_count: 0,
@@ -200,26 +204,68 @@ export default function CreateSalePage() {
     }
   }, [tours, tourIdFromUrl, flightIdFromUrl, setValue])
 
+  const loadPromoterById = useCallback(
+    async (id: number) => {
+      if (!token) return
+      setPromoterLookupLoading(true)
+      setPromoterCheckError(null)
+      try {
+        const response = await fetch(`/api/promoters/check/${id}`, {
+          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const result = await response.json()
+        if (result.success && result.data?.exists && result.data.user_id) {
+          setPromoterInfo({
+            exists: true,
+            full_name: result.data.full_name ?? undefined,
+            user_id: result.data.user_id,
+            photo_url: result.data.photo_url ?? null,
+          })
+          setValue('promoter_user_id', result.data.user_id, { shouldValidate: true })
+        } else {
+          setPromoterInfo(null)
+          setValue('promoter_user_id', undefined, { shouldValidate: false })
+          setPromoterCheckError('Промоутер с таким ID не найден или недоступен')
+        }
+      } catch {
+        setPromoterInfo(null)
+        setValue('promoter_user_id', undefined, { shouldValidate: false })
+        setPromoterCheckError('Не удалось проверить ID')
+      } finally {
+        setPromoterLookupLoading(false)
+      }
+    },
+    [token, setValue]
+  )
+
   useEffect(() => {
     const needsPromoter = paymentMethod === 'cash' || paymentMethod === 'acquiring'
-    const hasPromoterId = typeof promoterId === 'number' && Number.isFinite(promoterId) && promoterId > 0
-
     if (!needsPromoter) {
       setPromoterInfo(null)
+      setPromoterCheckError(null)
+      setPromoterLookupLoading(false)
       setValue('promoter_id', undefined, { shouldValidate: false })
       setValue('promoter_user_id', undefined, { shouldValidate: false })
       setValue('manager_commission_percent_of_ticket', undefined, { shouldValidate: false })
       return
     }
 
-    if (hasPromoterId) {
-      checkPromoter()
-    } else {
+    const hasPromoterId = typeof promoterId === 'number' && Number.isFinite(promoterId) && promoterId > 0
+    if (!hasPromoterId || !token) {
       setPromoterInfo(null)
+      setPromoterCheckError(null)
+      setPromoterLookupLoading(false)
       setValue('promoter_user_id', undefined, { shouldValidate: false })
       setValue('manager_commission_percent_of_ticket', undefined, { shouldValidate: false })
+      return
     }
-  }, [promoterId, paymentMethod, setValue])
+
+    const t = setTimeout(() => {
+      void loadPromoterById(promoterId)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [promoterId, paymentMethod, token, setValue, loadPromoterById])
 
   useEffect(() => {
     if (selectedTourId) {
@@ -297,39 +343,6 @@ export default function CreateSalePage() {
       console.error('Error fetching tours:', error)
     } finally {
       setToursLoaded(true)
-    }
-  }
-
-  const checkPromoter = async () => {
-    if (!promoterId) return
-    
-    try {
-      const response = await fetch(`/api/promoters/check/${promoterId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      const result = await response.json()
-      if (result.success && result.data.exists) {
-        // Получить user_id
-        const userIdResponse = await fetch(`/api/promoters/check/${promoterId}/user-id`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-        const userIdResult = await userIdResponse.json()
-        if (userIdResult.success) {
-          setPromoterInfo({ ...result.data, user_id: userIdResult.data.user_id })
-          setValue('promoter_user_id', userIdResult.data.user_id)
-        } else {
-          setPromoterInfo(result.data)
-        }
-      } else {
-        setPromoterInfo(null)
-        setValue('promoter_user_id', undefined)
-      }
-    } catch (error) {
-      console.error('Error checking promoter:', error)
     }
   }
 
@@ -688,11 +701,35 @@ export default function CreateSalePage() {
                       },
                     })}
                     type="number"
+                    min={1}
+                    step={1}
                     className="input-glass"
                     placeholder="Введите ID промоутера"
                   />
-                  {promoterInfo && (
-                    <p className="text-sm text-green-300 mt-1">Промоутер: {promoterInfo.full_name}</p>
+                  {promoterLookupLoading && (
+                    <p className="text-sm text-white/60 mt-2">Проверка…</p>
+                  )}
+                  {promoterInfo?.exists && promoterInfo.full_name && (
+                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-3">
+                      {promoterInfo.photo_url ? (
+                        <img
+                          src={promoterInfo.photo_url}
+                          alt=""
+                          className="h-14 w-14 shrink-0 rounded-full object-cover border border-white/20"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white/90 border border-white/20">
+                          {(promoterInfo.full_name || '?').slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white">{promoterInfo.full_name}</p>
+                        <p className="text-xs text-white/60">ID: {promoterId}</p>
+                      </div>
+                    </div>
+                  )}
+                  {promoterCheckError && !promoterLookupLoading && (
+                    <p className="text-sm text-amber-300 mt-2">{promoterCheckError}</p>
                   )}
                   {errors.promoter_id && (
                     <p className="text-red-300 text-xs mt-1">{errors.promoter_id.message}</p>
